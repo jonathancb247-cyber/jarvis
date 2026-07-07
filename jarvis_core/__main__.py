@@ -2,7 +2,7 @@ from jarvis_core.cli import run_cli
 from jarvis_core.runtime import build_runtime
 
 
-def main():
+def main() -> None:
     run_cli(build_runtime())
 
 
