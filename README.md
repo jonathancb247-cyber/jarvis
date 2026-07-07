@@ -7,6 +7,25 @@ JarvisOS is an agent-oriented cognitive operating system for future physical AI 
 AVP-001 is the first executable architecture checkpoint for JarvisOS. It is intentionally small: the goal is not to build the full product yet, but to validate the smallest working loop that can grow into a modular physical AI operating system.
 
 ```text
+
+
+In this phase, JarvisOS receives user requests from an interactive CLI, publishes them through an internal event bus, routes them through a simple planner, resolves registered capabilities, executes them, and returns responses.
+
+## Phase 1.1 Scope
+
+Phase 1.1 keeps the AVP-001 behavior minimal while replacing the fixed example command with a small interactive CLI loop.
+
+Included in Phase 1.1:
+
+- Runtime/bootstrap module for wiring core components.
+- Clean `python -m jarvis_core` entrypoint.
+- Interactive prompt that accepts user text until `exit` or `quit`.
+- Event bus, planner, capability registry, and clock capability.
+- Unit tests for the current core loop and CLI loop.
+- No external runtime dependencies.
+
+Out of scope for Phase 1.1:
+=======
 CLI → Runtime Bootstrap → Event Bus → Planner → Capability Registry → Time Capability → CLI
 ```
 
@@ -26,6 +45,7 @@ Included in Phase 1.0:
 
 Out of scope for Phase 1.0:
 
+
 - MQTT.
 - Raspberry Pi GPIO.
 - ESP32 integration.
@@ -41,12 +61,22 @@ Out of scope for Phase 1.0:
 python -m jarvis_core
 ```
 
-Example output:
+
 
 ```text
 Jarvis AVP-001
 jarvis> what time is it?
 Jarvis: The current time is 17:30.
+jarvis> exit
+Bye.
+```
+
+## Test
+
+Run the unit test suite with the Python standard library:
+
+```bash
+python -m unittest
 ```
 
 ## Test
