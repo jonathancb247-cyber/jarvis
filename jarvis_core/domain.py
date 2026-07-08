@@ -28,3 +28,4 @@ class RuntimeContext:
 
     event_bus: object
     capability_registry: object
+    device_registry: object = None
