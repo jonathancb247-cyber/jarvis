@@ -1,38 +1,26 @@
 import unittest
 
-from jarvis_core.capabilities.clock import ClockCapability
+from jarvis_core.domain import Command
 from jarvis_core.planner import Planner
-from jarvis_core.registry import CapabilityRegistry
 
 
 class PlannerTest(unittest.TestCase):
-    def test_plan_resolves_time_intent_in_english(self):
-        planner = Planner(CapabilityRegistry())
+    def test_plan_returns_time_command_in_english(self):
+        command = Planner().plan("what time is it?")
 
-        self.assertEqual(planner.plan("what time is it?"), "time.now")
+        self.assertEqual(command, Command(name="time.now", args={}, source="cli"))
 
-    def test_plan_resolves_time_intent_in_spanish(self):
-        planner = Planner(CapabilityRegistry())
+    def test_plan_returns_time_command_in_spanish(self):
+        command = Planner().plan("que hora es?")
 
-        self.assertEqual(planner.plan("que hora es?"), "time.now")
+        self.assertEqual(command, Command(name="time.now", args={}, source="cli"))
 
-    def test_execute_unknown_intent_returns_fallback(self):
-        planner = Planner(CapabilityRegistry())
+    def test_plan_returns_unknown_command_for_unknown_input(self):
+        command = Planner().plan("turn on the lights")
 
-        self.assertEqual(
-            planner.execute("turn on the lights"),
-            "I do not know how to handle that yet.",
-        )
-
-    def test_execute_time_intent_runs_registered_capability(self):
-        registry = CapabilityRegistry()
-        registry.register(ClockCapability.name, ClockCapability())
-        planner = Planner(registry)
-
-        response = planner.execute("what time is it?")
-
-        self.assertTrue(response.startswith("The current time is "))
-        self.assertTrue(response.endswith("."))
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"text": "turn on the lights"})
+        self.assertEqual(command.source, "cli")
 
 
 if __name__ == "__main__":
