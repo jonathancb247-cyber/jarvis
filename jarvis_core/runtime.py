@@ -1,6 +1,7 @@
 """Runtime bootstrap helpers for JarvisOS AVP-001."""
 
 from jarvis_core.capabilities.clock import ClockCapability
+from jarvis_core.devices import DeviceRegistry
 from jarvis_core.domain import CapabilityResult, RuntimeContext
 from jarvis_core.event_bus import EventBus
 from jarvis_core.planner import Planner
@@ -44,9 +45,14 @@ def build_runtime():
     """Build the minimal AVP-001 runtime and return its event bus."""
     bus = EventBus()
     registry = CapabilityRegistry()
+    device_registry = DeviceRegistry()
     registry.register(ClockCapability.name, ClockCapability())
     planner = Planner()
-    context = RuntimeContext(event_bus=bus, capability_registry=registry)
+    context = RuntimeContext(
+        event_bus=bus,
+        capability_registry=registry,
+        device_registry=device_registry,
+    )
     runtime = Runtime(planner, context)
 
     def route_user_input(payload):
