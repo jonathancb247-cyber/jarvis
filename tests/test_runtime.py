@@ -1,6 +1,7 @@
 import unittest
 
 from jarvis_core.capabilities.clock import ClockCapability
+from jarvis_core.devices import DeviceRegistry
 from jarvis_core.domain import CapabilityResult, Command, RuntimeContext
 from jarvis_core.event_bus import EventBus
 from jarvis_core.planner import Planner
@@ -13,7 +14,11 @@ class RuntimeTest(unittest.TestCase):
         bus = EventBus()
         registry = CapabilityRegistry()
         registry.register(ClockCapability.name, ClockCapability())
-        context = RuntimeContext(event_bus=bus, capability_registry=registry)
+        context = RuntimeContext(
+            event_bus=bus,
+            capability_registry=registry,
+            device_registry=DeviceRegistry(),
+        )
         return Runtime(Planner(), context)
 
     def test_execute_runs_registered_capability(self):
@@ -41,6 +46,19 @@ class RuntimeTest(unittest.TestCase):
 
         self.assertEqual(len(responses), 1)
         self.assertTrue(responses[0].startswith("The current time is "))
+
+    def test_runtime_context_includes_device_registry(self):
+        bus = EventBus()
+        registry = CapabilityRegistry()
+        device_registry = DeviceRegistry()
+
+        context = RuntimeContext(
+            event_bus=bus,
+            capability_registry=registry,
+            device_registry=device_registry,
+        )
+
+        self.assertIs(context.device_registry, device_registry)
 
 
 if __name__ == "__main__":
