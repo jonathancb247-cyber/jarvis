@@ -105,8 +105,8 @@ def build_runtime():
     )
     runtime = Runtime(planner, context)
 
-    def route_user_input(payload):
-        return runtime.handle_user_input(payload.get("text", ""))
+    def route_user_input(event):
+        return runtime.handle_user_input(event.payload.get("text", ""))
 
-    bus.subscribe("user.input", route_user_input)
+    bus.subscribe("user.input.received", route_user_input)
     return bus
