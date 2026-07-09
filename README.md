@@ -12,11 +12,11 @@ Interactive CLI -> Runtime Bootstrap -> Event Bus -> Planner -> Capability Regis
 
 In this phase, JarvisOS receives user requests from an interactive CLI, publishes them through an internal event bus, routes them through a simple planner, resolves registered capabilities, executes them, and returns responses.
 
-## Phase 1.4 Scope
+## Phase 1.5 Scope
 
-Phase 1.4 keeps the AVP-001 behavior, interactive CLI, command execution model, and internal device model while clarifying runtime boundaries.
+Phase 1.5 keeps the AVP-001 Foundation Stable behavior while formalizing the minimum executable capability contract.
 
-Included in Phase 1.4:
+Included in Phase 1.5:
 
 - Runtime/bootstrap module for wiring core components.
 - Clean `python -m jarvis_core` entrypoint.
@@ -30,10 +30,13 @@ Included in Phase 1.4:
 - `DeviceRegistry` for registering, looking up, listing, and updating internal device models.
 - Event bus, planner, capability registry, and clock capability.
 - Runtime-owned structured error handling for unknown commands, missing capabilities, and capability execution failures.
-- Unit tests for the current core loop, CLI loop, runtime boundaries, domain execution flow, and device registry.
+- Capability contract validation in `CapabilityRegistry`.
+- Runtime protection when a capability returns something other than `CapabilityResult`.
+- `ClockCapability` as the reference implementation of the executable capability contract.
+- Unit tests for the current core loop, CLI loop, runtime boundaries, capability contracts, domain execution flow, and device registry.
 - No external runtime dependencies.
 
-Out of scope for Phase 1.4:
+Out of scope for Phase 1.5:
 
 - MQTT.
 - Raspberry Pi GPIO.
@@ -50,9 +53,33 @@ Out of scope for Phase 1.4:
 - LLM-based planning.
 - Persistent storage.
 
+## Capability Contracts
+
+Phase 1.5 defines the minimum contract for executable capabilities.
+
+A capability registered in `CapabilityRegistry` must provide:
+
+- `name`: a non-empty string.
+- `run(command, context)`: a callable method that returns `CapabilityResult`.
+
+`CapabilityRegistry` validates the static part of the contract at registration time:
+
+- registry name must be a non-empty string;
+- capability must define `name`;
+- capability `name` must match the registry name;
+- capability must define callable `run`.
+
+`Runtime` validates the execution result:
+
+- a capability that returns `CapabilityResult` is accepted;
+- a capability that raises an exception is converted into a structured failure;
+- a capability that returns any other type is converted into an `invalid_capability_result` failure.
+
+`ClockCapability` is the current reference implementation of this contract.
+
 ## Runtime Boundaries
 
-Phase 1.4 defines the current internal boundaries without adding new product behavior.
+Phase 1.5 preserves the current internal boundaries without adding new product behavior.
 
 ### Core
 
@@ -98,7 +125,7 @@ Adapters may present messages and collect input, but they should not bypass the 
 
 ## Domain Concepts
 
-Phase 1.4 uses only the internal concepts needed by the current AVP-001 loop:
+Phase 1.5 uses only the internal concepts needed by the current AVP-001 loop:
 
 - `Command`: a normalized executable action, such as `time.now`.
 - `CapabilityResult`: a structured capability execution result with success, message, data, and error fields.
@@ -107,7 +134,7 @@ Phase 1.4 uses only the internal concepts needed by the current AVP-001 loop:
 - `DeviceState`: the known state snapshot for a device.
 - `DeviceRegistry`: the in-memory registry of known device models.
 
-`Device` and `DeviceState` are internal models only. They do not communicate with hardware, external protocols, physical devices, or persistent storage in Phase 1.4.
+`Device` and `DeviceState` are internal models only. They do not communicate with hardware, external protocols, physical devices, or persistent storage in Phase 1.5.
 
 ## Run
 
