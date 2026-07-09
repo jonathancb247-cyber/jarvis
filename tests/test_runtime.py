@@ -2,7 +2,7 @@ import unittest
 
 from jarvis_core.capabilities.clock import ClockCapability
 from jarvis_core.devices import DeviceRegistry
-from jarvis_core.domain import CapabilityResult, Command, RuntimeContext
+from jarvis_core.domain import CapabilityResult, Command, Event, RuntimeContext
 from jarvis_core.event_bus import EventBus
 from jarvis_core.planner import Planner
 from jarvis_core.registry import CapabilityRegistry
@@ -128,7 +128,27 @@ class RuntimeTest(unittest.TestCase):
     def test_build_runtime_preserves_avp_001_bus_response(self):
         bus = build_runtime()
 
-        responses = bus.publish("user.input", {"text": "what time is it?"})
+        responses = bus.publish(
+            Event(
+                type="user.input.received",
+                source="cli",
+                payload={"text": "what time is it?"},
+            )
+        )
+
+        self.assertEqual(len(responses), 1)
+        self.assertTrue(responses[0].startswith("The current time is "))
+
+    def test_build_runtime_subscribes_to_user_input_received_event(self):
+        bus = build_runtime()
+
+        responses = bus.publish(
+            Event(
+                type="user.input.received",
+                source="cli",
+                payload={"text": "que hora es?"},
+            )
+        )
 
         self.assertEqual(len(responses), 1)
         self.assertTrue(responses[0].startswith("The current time is "))

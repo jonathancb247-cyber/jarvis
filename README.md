@@ -7,36 +7,37 @@ JarvisOS is an agent-oriented cognitive operating system for future physical AI 
 AVP-001 is the first executable architecture checkpoint for JarvisOS. It is intentionally small: the goal is not to build the full product yet, but to validate the smallest working loop that can grow into a modular physical AI operating system.
 
 ```text
-Interactive CLI -> Runtime Bootstrap -> Event Bus -> Planner -> Capability Registry -> Time Capability -> CLI
+Interactive CLI -> Event -> Runtime Bootstrap -> Event Bus -> Planner -> Capability Registry -> Time Capability -> CLI
 ```
 
 In this phase, JarvisOS receives user requests from an interactive CLI, publishes them through an internal event bus, routes them through a simple planner, resolves registered capabilities, executes them, and returns responses.
 
-## Phase 1.5 Scope
+## Phase 1.7 Scope
 
-Phase 1.5 keeps the AVP-001 Foundation Stable behavior while formalizing the minimum executable capability contract.
+Phase 1.7 keeps the AVP-001 behavior while introducing `Event` as an internal Domain Signal and making the in-memory Event Bus transport `Event` objects.
 
-Included in Phase 1.5:
+Included in Phase 1.7:
 
 - Runtime/bootstrap module for wiring core components.
 - Clean `python -m jarvis_core` entrypoint.
 - Interactive prompt that accepts user text until `exit` or `quit`.
 - `Command` as the normalized executable action produced by the planner.
 - `CapabilityResult` as the structured result returned by capabilities.
+- `Event` as an internal structured signal describing something that happened.
 - `RuntimeContext` as the small container for runtime resources, including the device registry.
 - Runtime-owned command execution.
 - `Device` as the internal model of something controllable or observable.
 - `DeviceState` as the known state snapshot for a device.
 - `DeviceRegistry` for registering, looking up, listing, and updating internal device models.
-- Event bus, planner, capability registry, and clock capability.
+- In-memory Event Bus based on `Event`, plus planner, capability registry, and clock capability.
 - Runtime-owned structured error handling for unknown commands, missing capabilities, and capability execution failures.
 - Capability contract validation in `CapabilityRegistry`.
 - Runtime protection when a capability returns something other than `CapabilityResult`.
 - `ClockCapability` as the reference implementation of the executable capability contract.
-- Unit tests for the current core loop, CLI loop, runtime boundaries, capability contracts, domain execution flow, and device registry.
+- Unit tests for the current core loop, CLI loop, runtime boundaries, capability contracts, Event Bus, domain execution flow, and device registry.
 - No external runtime dependencies.
 
-Out of scope for Phase 1.5:
+Out of scope for Phase 1.7:
 
 - MQTT.
 - Raspberry Pi GPIO.
@@ -47,15 +48,38 @@ Out of scope for Phase 1.5:
 - Real adapters.
 - Intent.
 - PlannerResult.
-- Event as a domain entity.
+- Event lifecycle emission such as `command.planned` or `capability.execution.completed`.
 - Real devices.
 - Physical device actions.
 - LLM-based planning.
 - Persistent storage.
+- Observability.
+- Async runtime.
+- Scheduler.
+- Event sourcing.
+
+## Events
+
+Phase 1.7 defines `Event` as a Domain Signal, not an infrastructure message.
+
+An `Event` describes something that happened inside JarvisOS. It does not replace `Command`, `CapabilityResult`, `Runtime`, or `EventBus`.
+
+Minimum fields:
+
+- `type`: non-empty string naming the event.
+- `source`: non-empty string naming the producer.
+- `payload`: event-specific data.
+- `timestamp`: event creation time.
+- `correlation_id`: optional flow identifier.
+- `causation_id`: optional cause identifier.
+
+The public `EventBus` contract accepts `Event` objects, not raw event-name strings.
+
+The current AVP-001 CLI publishes `Event(type="user.input.received", source="cli", payload={"text": ...})` into the in-memory Event Bus. Runtime bootstrap subscribes to `user.input.received` and preserves the existing printable CLI response.
 
 ## Capability Contracts
 
-Phase 1.5 defines the minimum contract for executable capabilities.
+Phase 1.7 preserves the minimum contract for executable capabilities.
 
 A capability registered in `CapabilityRegistry` must provide:
 
@@ -79,7 +103,7 @@ A capability registered in `CapabilityRegistry` must provide:
 
 ## Runtime Boundaries
 
-Phase 1.5 preserves the current internal boundaries without adding new product behavior.
+Phase 1.7 preserves the current internal boundaries without adding external product behavior.
 
 ### Core
 
@@ -98,6 +122,7 @@ Domain defines internal concepts and data structures:
 
 - `Command`;
 - `CapabilityResult`;
+- `Event`;
 - `RuntimeContext`;
 - `Device`;
 - `DeviceState`;
@@ -125,16 +150,17 @@ Adapters may present messages and collect input, but they should not bypass the 
 
 ## Domain Concepts
 
-Phase 1.5 uses only the internal concepts needed by the current AVP-001 loop:
+Phase 1.7 uses only the internal concepts needed by the current AVP-001 loop:
 
 - `Command`: a normalized executable action, such as `time.now`.
 - `CapabilityResult`: a structured capability execution result with success, message, data, and error fields.
+- `Event`: a structured Domain Signal describing something that happened.
 - `RuntimeContext`: the runtime resources needed while executing commands.
 - `Device`: the internal model of something controllable or observable.
 - `DeviceState`: the known state snapshot for a device.
 - `DeviceRegistry`: the in-memory registry of known device models.
 
-`Device` and `DeviceState` are internal models only. They do not communicate with hardware, external protocols, physical devices, or persistent storage in Phase 1.5.
+`Device` and `DeviceState` are internal models only. They do not communicate with hardware, external protocols, physical devices, or persistent storage in Phase 1.7.
 
 ## Run
 

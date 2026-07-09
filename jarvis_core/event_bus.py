@@ -1,13 +1,17 @@
+from jarvis_core.domain import Event
+
+
 class EventBus:
     def __init__(self):
         self.handlers = {}
 
-    def subscribe(self, event_name, handler):
-        self.handlers.setdefault(event_name, []).append(handler)
+    def subscribe(self, event_type, handler):
+        self.handlers.setdefault(event_type, []).append(handler)
 
-    def publish(self, event_name, payload=None):
-        payload = payload or {}
+    def publish(self, event):
+        if not isinstance(event, Event):
+            raise TypeError("EventBus.publish expects an Event")
         results = []
-        for handler in self.handlers.get(event_name, []):
-            results.append(handler(payload))
+        for handler in self.handlers.get(event.type, []):
+            results.append(handler(event))
         return results
