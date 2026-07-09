@@ -9,6 +9,7 @@ from jarvis_core.registry import CapabilityRegistry
 from jarvis_core.runtime import (
     CAPABILITY_EXECUTION_ERROR,
     CAPABILITY_NOT_FOUND_ERROR,
+    INVALID_CAPABILITY_RESULT_ERROR,
     UNKNOWN_COMMAND_ERROR,
     Runtime,
     build_runtime,
@@ -16,8 +17,17 @@ from jarvis_core.runtime import (
 
 
 class FailingCapability:
+    name = "failing.capability"
+
     def run(self, command, context):
         raise RuntimeError("boom")
+
+
+class InvalidResultCapability:
+    name = "invalid.result"
+
+    def run(self, command, context):
+        return "not a capability result"
 
 
 class RuntimeTest(unittest.TestCase):
@@ -87,6 +97,33 @@ class RuntimeTest(unittest.TestCase):
         self.assertEqual(result.data["args"], {})
         self.assertEqual(result.data["source"], "cli")
         self.assertEqual(result.data["details"], "boom")
+
+    def test_execute_invalid_capability_result_returns_structured_failure(self):
+        bus = EventBus()
+        registry = CapabilityRegistry()
+        registry.register("invalid.result", InvalidResultCapability())
+        context = RuntimeContext(
+            event_bus=bus,
+            capability_registry=registry,
+            device_registry=DeviceRegistry(),
+        )
+        runtime = Runtime(Planner(), context)
+
+        result = runtime.execute(Command(name="invalid.result"))
+
+        self.assertFalse(result.success)
+        self.assertEqual(result.message, "I could not complete that command.")
+        self.assertEqual(result.error, INVALID_CAPABILITY_RESULT_ERROR)
+        self.assertEqual(result.data["command"], "invalid.result")
+        self.assertEqual(result.data["details"], "Capability returned an invalid result")
+
+    def test_clock_capability_satisfies_capability_contract(self):
+        capability = ClockCapability()
+
+        self.assertIsInstance(capability.name, str)
+        self.assertTrue(capability.name)
+        self.assertTrue(callable(capability.run))
+        self.assertIsInstance(capability.run(Command(name="time.now")), CapabilityResult)
 
     def test_build_runtime_preserves_avp_001_bus_response(self):
         bus = build_runtime()
