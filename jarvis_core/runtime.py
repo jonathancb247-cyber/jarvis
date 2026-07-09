@@ -1,4 +1,9 @@
-"""Runtime bootstrap helpers for JarvisOS AVP-001."""
+"""Runtime boundary and bootstrap helpers for JarvisOS AVP-001.
+
+The runtime coordinates command execution. It does not define domain
+entities, parse user intent, manage physical devices, or talk to external
+systems directly.
+"""
 
 from jarvis_core.capabilities.clock import ClockCapability
 from jarvis_core.devices import DeviceRegistry
@@ -8,41 +13,77 @@ from jarvis_core.planner import Planner
 from jarvis_core.registry import CapabilityRegistry
 
 
+UNKNOWN_COMMAND_ERROR = "unknown_command"
+CAPABILITY_NOT_FOUND_ERROR = "capability_not_found"
+CAPABILITY_EXECUTION_ERROR = "capability_execution_failed"
+UNKNOWN_COMMAND_MESSAGE = "I do not know how to handle that yet."
+RUNTIME_ERROR_MESSAGE = "I could not complete that command."
+
+
 class Runtime:
-    """Coordinates planning and command execution for the AVP-001 runtime."""
+    """Coordinates planning and command execution across runtime boundaries.
+
+    Planner turns input into a Command. Runtime resolves and executes the
+    command through registered capabilities. Capabilities return
+    CapabilityResult. Adapters decide how to present the result.
+    """
 
     def __init__(self, planner, context):
         self.planner = planner
         self.context = context
 
     def handle_user_input(self, text):
+        """Plan text input and return the user-facing message.
+
+        This preserves the AVP-001 CLI contract: adapters receive a printable
+        message, while Runtime.execute keeps the structured result boundary.
+        """
         command = self.planner.plan(text)
         result = self.execute(command)
         return result.message
 
     def execute(self, command):
+        """Execute a Command and always return a CapabilityResult."""
         if command.name == "unknown":
-            return CapabilityResult(
-                success=False,
-                message="I do not know how to handle that yet.",
-                data={"command": command.name, "args": command.args},
-                error="unknown_command",
-            )
+            return self._failure(command, UNKNOWN_COMMAND_ERROR, UNKNOWN_COMMAND_MESSAGE)
 
         try:
             capability = self.context.capability_registry.resolve(command.name)
         except KeyError:
-            return CapabilityResult(
-                success=False,
-                message="I do not know how to handle that yet.",
-                data={"command": command.name, "args": command.args},
-                error="capability_not_found",
+            return self._failure(
+                command,
+                CAPABILITY_NOT_FOUND_ERROR,
+                UNKNOWN_COMMAND_MESSAGE,
             )
-        return capability.run(command, self.context)
+
+        try:
+            return capability.run(command, self.context)
+        except Exception as error:
+            return self._failure(
+                command,
+                CAPABILITY_EXECUTION_ERROR,
+                RUNTIME_ERROR_MESSAGE,
+                details=str(error),
+            )
+
+    def _failure(self, command, error, message, details=None):
+        data = {
+            "command": command.name,
+            "args": command.args,
+            "source": command.source,
+        }
+        if details:
+            data["details"] = details
+        return CapabilityResult(
+            success=False,
+            message=message,
+            data=data,
+            error=error,
+        )
 
 
 def build_runtime():
-    """Build the minimal AVP-001 runtime and return its event bus."""
+    """Wire the minimal AVP-001 core and return its adapter-facing bus."""
     bus = EventBus()
     registry = CapabilityRegistry()
     device_registry = DeviceRegistry()
