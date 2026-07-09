@@ -6,7 +6,18 @@ from jarvis_core.domain import CapabilityResult, Command, RuntimeContext
 from jarvis_core.event_bus import EventBus
 from jarvis_core.planner import Planner
 from jarvis_core.registry import CapabilityRegistry
-from jarvis_core.runtime import Runtime, build_runtime
+from jarvis_core.runtime import (
+    CAPABILITY_EXECUTION_ERROR,
+    CAPABILITY_NOT_FOUND_ERROR,
+    UNKNOWN_COMMAND_ERROR,
+    Runtime,
+    build_runtime,
+)
+
+
+class FailingCapability:
+    def run(self, command, context):
+        raise RuntimeError("boom")
 
 
 class RuntimeTest(unittest.TestCase):
@@ -37,7 +48,45 @@ class RuntimeTest(unittest.TestCase):
 
         self.assertFalse(result.success)
         self.assertEqual(result.message, "I do not know how to handle that yet.")
-        self.assertEqual(result.error, "unknown_command")
+        self.assertEqual(result.error, UNKNOWN_COMMAND_ERROR)
+        self.assertEqual(
+            result.data,
+            {"command": "unknown", "args": {"text": "unknown"}, "source": "cli"},
+        )
+
+    def test_execute_missing_capability_returns_structured_failure_result(self):
+        runtime = self.build_test_runtime()
+
+        result = runtime.execute(Command(name="missing.capability", source="test"))
+
+        self.assertFalse(result.success)
+        self.assertEqual(result.message, "I do not know how to handle that yet.")
+        self.assertEqual(result.error, CAPABILITY_NOT_FOUND_ERROR)
+        self.assertEqual(
+            result.data,
+            {"command": "missing.capability", "args": {}, "source": "test"},
+        )
+
+    def test_execute_capability_exception_returns_structured_failure_result(self):
+        bus = EventBus()
+        registry = CapabilityRegistry()
+        registry.register("failing.capability", FailingCapability())
+        context = RuntimeContext(
+            event_bus=bus,
+            capability_registry=registry,
+            device_registry=DeviceRegistry(),
+        )
+        runtime = Runtime(Planner(), context)
+
+        result = runtime.execute(Command(name="failing.capability"))
+
+        self.assertFalse(result.success)
+        self.assertEqual(result.message, "I could not complete that command.")
+        self.assertEqual(result.error, CAPABILITY_EXECUTION_ERROR)
+        self.assertEqual(result.data["command"], "failing.capability")
+        self.assertEqual(result.data["args"], {})
+        self.assertEqual(result.data["source"], "cli")
+        self.assertEqual(result.data["details"], "boom")
 
     def test_build_runtime_preserves_avp_001_bus_response(self):
         bus = build_runtime()
@@ -46,6 +95,13 @@ class RuntimeTest(unittest.TestCase):
 
         self.assertEqual(len(responses), 1)
         self.assertTrue(responses[0].startswith("The current time is "))
+
+    def test_handle_user_input_preserves_adapter_message_boundary(self):
+        runtime = self.build_test_runtime()
+
+        message = runtime.handle_user_input("what time is it?")
+
+        self.assertTrue(message.startswith("The current time is "))
 
     def test_runtime_context_includes_device_registry(self):
         bus = EventBus()
