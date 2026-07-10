@@ -39,6 +39,29 @@ Out of scope for Phase 2.2:
 - Async runtime.
 - MQTT, GPIO, ESP32, Web UI, HTTP API, or AI.
 
+## Phase 2.3 Scope
+
+Phase 2.3 formalizes the command-line interface as the first official JarvisOS adapter without introducing a general adapter hierarchy.
+
+Included in Phase 2.3:
+
+- `CliAdapter` as a lightweight CLI adapter.
+- `CliAdapter.run()` preserves the existing AVP-001 CLI behavior.
+- `run_cli(...)` remains as a compatibility wrapper.
+- CLI captures external text input, calls `Runtime.handle_adapter_input(text, source="cli")`, and prints `CapabilityResult.message`.
+- CLI does not know EventBus, create Event, create or execute Command, resolve capabilities, or mutate DeviceRegistry.
+
+Out of scope for Phase 2.3:
+
+- BaseAdapter.
+- Protocol.
+- AdapterInput.
+- RuntimeResponse.
+- `adapters/` package.
+- New adapters.
+- EventBus, Domain, Planner, CapabilityRegistry, or DeviceRegistry changes.
+- Security, observability, persistence, async runtime, MQTT, GPIO, ESP32, Web UI, HTTP API, or AI.
+
 ## Phase 1.7 Scope
 
 Phase 1.7 keeps the AVP-001 behavior while introducing `Event` as an internal Domain Signal and making the in-memory Event Bus transport `Event` objects.
@@ -173,7 +196,7 @@ Runtime does not define new domain entities, parse natural language, manage phys
 
 ### Adapters
 
-Adapters are boundaries between JarvisOS and the outside world. In AVP-001, the CLI is the only adapter-like boundary.
+Adapters are boundaries between JarvisOS and the outside world. In AVP-001, `CliAdapter` is the first official adapter.
 
 Adapters may present messages and collect input, but they must enter JarvisOS through exactly one Runtime-owned boundary. They must not bypass Runtime, publish directly to EventBus, execute commands, or mutate domain state directly.
 
