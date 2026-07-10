@@ -7,7 +7,7 @@ systems directly.
 
 from jarvis_core.capabilities.clock import ClockCapability
 from jarvis_core.devices import DeviceRegistry
-from jarvis_core.domain import CapabilityResult, RuntimeContext
+from jarvis_core.domain import CapabilityResult, Event, RuntimeContext
 from jarvis_core.event_bus import EventBus
 from jarvis_core.planner import Planner
 from jarvis_core.registry import CapabilityRegistry
@@ -17,8 +17,10 @@ UNKNOWN_COMMAND_ERROR = "unknown_command"
 CAPABILITY_NOT_FOUND_ERROR = "capability_not_found"
 CAPABILITY_EXECUTION_ERROR = "capability_execution_failed"
 INVALID_CAPABILITY_RESULT_ERROR = "invalid_capability_result"
+INVALID_ADAPTER_INPUT_ERROR = "invalid_adapter_input"
 UNKNOWN_COMMAND_MESSAGE = "I do not know how to handle that yet."
 RUNTIME_ERROR_MESSAGE = "I could not complete that command."
+ADAPTER_INPUT_ERROR_MESSAGE = "I could not process that input."
 
 
 class Runtime:
@@ -39,9 +41,29 @@ class Runtime:
         This preserves the AVP-001 CLI contract: adapters receive a printable
         message, while Runtime.execute keeps the structured result boundary.
         """
+        return self.handle_adapter_input(text).message
+
+    def handle_adapter_input(self, text, source="cli"):
+        """Runtime-owned boundary for external adapter input.
+
+        Adapters enter JarvisOS here. Runtime owns the internal Event creation,
+        planning, and command execution flow. EventBus remains an internal
+        transport and is not exposed as an adapter-facing API.
+        """
+        if not isinstance(source, str) or not source.strip():
+            return self._adapter_input_failure(source, "Adapter source must be a non-empty string")
+        if not isinstance(text, str) or not text.strip():
+            return self._adapter_input_failure(source, "Adapter text input must be a non-empty string")
+
+        event = Event(
+            type="user.input.received",
+            source=source,
+            payload={"text": text},
+        )
+        self.context.event_bus.publish(event)
+
         command = self.planner.plan(text)
-        result = self.execute(command)
-        return result.message
+        return self.execute(command)
 
     def execute(self, command):
         """Execute a Command and always return a CapabilityResult."""
@@ -90,9 +112,17 @@ class Runtime:
             error=error,
         )
 
+    def _adapter_input_failure(self, source, details):
+        return CapabilityResult(
+            success=False,
+            message=ADAPTER_INPUT_ERROR_MESSAGE,
+            data={"source": source, "details": details},
+            error=INVALID_ADAPTER_INPUT_ERROR,
+        )
+
 
 def build_runtime():
-    """Wire the minimal AVP-001 core and return its adapter-facing bus."""
+    """Wire the minimal AVP-001 core and return its Runtime boundary."""
     bus = EventBus()
     registry = CapabilityRegistry()
     device_registry = DeviceRegistry()
@@ -104,9 +134,4 @@ def build_runtime():
         device_registry=device_registry,
     )
     runtime = Runtime(planner, context)
-
-    def route_user_input(event):
-        return runtime.handle_user_input(event.payload.get("text", ""))
-
-    bus.subscribe("user.input.received", route_user_input)
-    return bus
+    return runtime

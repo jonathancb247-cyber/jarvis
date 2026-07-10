@@ -2,13 +2,15 @@ import unittest
 
 from jarvis_core.capabilities.clock import ClockCapability
 from jarvis_core.devices import DeviceRegistry
-from jarvis_core.domain import CapabilityResult, Command, Event, RuntimeContext
+from jarvis_core.domain import CapabilityResult, Command, RuntimeContext
 from jarvis_core.event_bus import EventBus
 from jarvis_core.planner import Planner
 from jarvis_core.registry import CapabilityRegistry
 from jarvis_core.runtime import (
+    ADAPTER_INPUT_ERROR_MESSAGE,
     CAPABILITY_EXECUTION_ERROR,
     CAPABILITY_NOT_FOUND_ERROR,
+    INVALID_ADAPTER_INPUT_ERROR,
     INVALID_CAPABILITY_RESULT_ERROR,
     UNKNOWN_COMMAND_ERROR,
     Runtime,
@@ -28,6 +30,16 @@ class InvalidResultCapability:
 
     def run(self, command, context):
         return "not a capability result"
+
+
+class RecordingEventBus(EventBus):
+    def __init__(self):
+        super().__init__()
+        self.published = []
+
+    def publish(self, event):
+        self.published.append(event)
+        return super().publish(event)
 
 
 class RuntimeTest(unittest.TestCase):
@@ -125,33 +137,14 @@ class RuntimeTest(unittest.TestCase):
         self.assertTrue(callable(capability.run))
         self.assertIsInstance(capability.run(Command(name="time.now")), CapabilityResult)
 
-    def test_build_runtime_preserves_avp_001_bus_response(self):
-        bus = build_runtime()
+    def test_build_runtime_returns_runtime_adapter_boundary(self):
+        runtime = build_runtime()
 
-        responses = bus.publish(
-            Event(
-                type="user.input.received",
-                source="cli",
-                payload={"text": "what time is it?"},
-            )
-        )
+        result = runtime.handle_adapter_input("what time is it?", source="cli")
 
-        self.assertEqual(len(responses), 1)
-        self.assertTrue(responses[0].startswith("The current time is "))
-
-    def test_build_runtime_subscribes_to_user_input_received_event(self):
-        bus = build_runtime()
-
-        responses = bus.publish(
-            Event(
-                type="user.input.received",
-                source="cli",
-                payload={"text": "que hora es?"},
-            )
-        )
-
-        self.assertEqual(len(responses), 1)
-        self.assertTrue(responses[0].startswith("The current time is "))
+        self.assertIsInstance(result, CapabilityResult)
+        self.assertTrue(result.success)
+        self.assertTrue(result.message.startswith("The current time is "))
 
     def test_handle_user_input_preserves_adapter_message_boundary(self):
         runtime = self.build_test_runtime()
@@ -159,6 +152,51 @@ class RuntimeTest(unittest.TestCase):
         message = runtime.handle_user_input("what time is it?")
 
         self.assertTrue(message.startswith("The current time is "))
+
+    def test_handle_adapter_input_returns_capability_result(self):
+        runtime = self.build_test_runtime()
+
+        result = runtime.handle_adapter_input("que hora es?", source="cli")
+
+        self.assertIsInstance(result, CapabilityResult)
+        self.assertTrue(result.success)
+        self.assertTrue(result.message.startswith("The current time is "))
+
+    def test_handle_adapter_input_creates_internal_user_input_event(self):
+        bus = RecordingEventBus()
+        registry = CapabilityRegistry()
+        registry.register(ClockCapability.name, ClockCapability())
+        context = RuntimeContext(
+            event_bus=bus,
+            capability_registry=registry,
+            device_registry=DeviceRegistry(),
+        )
+        runtime = Runtime(Planner(), context)
+
+        runtime.handle_adapter_input("what time is it?", source="cli")
+
+        self.assertEqual(len(bus.published), 1)
+        self.assertEqual(bus.published[0].type, "user.input.received")
+        self.assertEqual(bus.published[0].source, "cli")
+        self.assertEqual(bus.published[0].payload, {"text": "what time is it?"})
+
+    def test_handle_adapter_input_rejects_non_text_input(self):
+        runtime = self.build_test_runtime()
+
+        result = runtime.handle_adapter_input(None, source="cli")
+
+        self.assertFalse(result.success)
+        self.assertEqual(result.message, ADAPTER_INPUT_ERROR_MESSAGE)
+        self.assertEqual(result.error, INVALID_ADAPTER_INPUT_ERROR)
+
+    def test_handle_adapter_input_rejects_empty_source(self):
+        runtime = self.build_test_runtime()
+
+        result = runtime.handle_adapter_input("what time is it?", source="")
+
+        self.assertFalse(result.success)
+        self.assertEqual(result.message, ADAPTER_INPUT_ERROR_MESSAGE)
+        self.assertEqual(result.error, INVALID_ADAPTER_INPUT_ERROR)
 
     def test_runtime_context_includes_device_registry(self):
         bus = EventBus()
