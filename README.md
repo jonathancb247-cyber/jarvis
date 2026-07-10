@@ -7,10 +7,37 @@ JarvisOS is an agent-oriented cognitive operating system for future physical AI 
 AVP-001 is the first executable architecture checkpoint for JarvisOS. It is intentionally small: the goal is not to build the full product yet, but to validate the smallest working loop that can grow into a modular physical AI operating system.
 
 ```text
-Interactive CLI -> Event -> Runtime Bootstrap -> Event Bus -> Planner -> Capability Registry -> Time Capability -> CLI
+Interactive CLI -> Runtime-owned Adapter Boundary -> Event -> Planner -> Capability Registry -> Time Capability -> CLI
 ```
 
-In this phase, JarvisOS receives user requests from an interactive CLI, publishes them through an internal event bus, routes them through a simple planner, resolves registered capabilities, executes them, and returns responses.
+In this phase, JarvisOS receives user requests from an interactive CLI through a Runtime-owned adapter boundary. Runtime creates the internal event, routes the input through a simple planner, resolves registered capabilities, executes them, and returns structured results for the CLI to print.
+
+## Phase 2.2 Scope
+
+Phase 2.2 removes the temporary AVP wiring where CLI published directly into EventBus. The CLI now enters JarvisOS through `Runtime.handle_adapter_input(...)`.
+
+Included in Phase 2.2:
+
+- `Runtime.handle_adapter_input(...)` as the Runtime-owned adapter boundary for the current textual CLI input path.
+- CLI uses only the Runtime-owned boundary.
+- Runtime creates the internal `Event(type="user.input.received")`.
+- EventBus remains internal to Runtime context and is not exposed as the CLI-facing API.
+- Runtime still invokes Planner and executes Command.
+- Runtime returns `CapabilityResult`.
+- CLI prints `CapabilityResult.message`, preserving AVP-001 behavior.
+
+Out of scope for Phase 2.2:
+
+- New adapters.
+- Driver interfaces.
+- RuntimeResponse.
+- AdapterInput.
+- Security.
+- Observability.
+- Persistence.
+- New lifecycle events.
+- Async runtime.
+- MQTT, GPIO, ESP32, Web UI, HTTP API, or AI.
 
 ## Phase 1.7 Scope
 
@@ -75,7 +102,7 @@ Minimum fields:
 
 The public `EventBus` contract accepts `Event` objects, not raw event-name strings.
 
-The current AVP-001 CLI publishes `Event(type="user.input.received", source="cli", payload={"text": ...})` into the in-memory Event Bus. Runtime bootstrap subscribes to `user.input.received` and preserves the existing printable CLI response.
+The CLI does not publish directly to EventBus. Runtime creates `Event(type="user.input.received", source="cli", payload={"text": ...})` internally through the Runtime-owned adapter boundary.
 
 ## Capability Contracts
 
@@ -134,6 +161,8 @@ Domain objects do not execute commands, resolve capabilities, publish user inter
 
 Runtime coordinates command execution:
 
+- receive external adapter input through `handle_adapter_input(...)`;
+- create internal input events without exposing EventBus as an adapter API;
 - receive a `Command`;
 - resolve a registered capability;
 - execute the capability with the current `RuntimeContext`;
@@ -146,7 +175,7 @@ Runtime does not define new domain entities, parse natural language, manage phys
 
 Adapters are boundaries between JarvisOS and the outside world. In AVP-001, the CLI is the only adapter-like boundary.
 
-Adapters may present messages and collect input, but they should not bypass the Runtime to execute commands or mutate domain state directly.
+Adapters may present messages and collect input, but they must enter JarvisOS through exactly one Runtime-owned boundary. They must not bypass Runtime, publish directly to EventBus, execute commands, or mutate domain state directly.
 
 ## Domain Concepts
 

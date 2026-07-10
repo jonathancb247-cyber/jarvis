@@ -1,13 +1,11 @@
 """Interactive command-line interface for JarvisOS AVP-001."""
 
-from jarvis_core.domain import Event
-
 
 EXIT_COMMANDS = {"exit", "quit"}
 PROMPT = "jarvis> "
 
 
-def run_cli(bus, input_fn=input, output_fn=print):
+def run_cli(runtime, input_fn=input, output_fn=print):
     """Run the minimal interactive CLI loop."""
     output_fn("Jarvis AVP-001")
 
@@ -25,11 +23,5 @@ def run_cli(bus, input_fn=input, output_fn=print):
         if not normalized:
             continue
 
-        event = Event(
-            type="user.input.received",
-            source="cli",
-            payload={"text": text},
-        )
-        responses = bus.publish(event)
-        for response in responses:
-            output_fn("Jarvis: " + response)
+        result = runtime.handle_adapter_input(text, source="cli")
+        output_fn("Jarvis: " + result.message)
