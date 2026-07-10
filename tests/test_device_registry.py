@@ -1,6 +1,6 @@
 import unittest
 
-from jarvis_core.devices import Device, DeviceRegistry, DeviceState
+from jarvis_core.devices import Device, DeviceCapability, DeviceRegistry, DeviceState
 
 
 class DeviceRegistryTest(unittest.TestCase):
@@ -50,6 +50,20 @@ class DeviceRegistryTest(unittest.TestCase):
             name="Living Room Light",
             type="light",
             capabilities=["turn_on", "turn_off"],
+        )
+
+        registry.register(device)
+
+        self.assertIs(registry.get("living_room_light"), device)
+
+    def test_register_device_with_device_capability(self):
+        registry = DeviceRegistry()
+        capability = DeviceCapability(name="power.switch", kind="action")
+        device = Device(
+            id="living_room_light",
+            name="Living Room Light",
+            type="light",
+            capabilities=[capability],
         )
 
         registry.register(device)
