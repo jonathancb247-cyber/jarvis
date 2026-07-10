@@ -188,6 +188,53 @@ Out of scope for Phase 3.2:
 - UI generation.
 - Planner, Runtime, CapabilityRegistry, adapter, or AI changes.
 
+## Phase 3.5 Scope
+
+Phase 3.5 introduces `SimulatedDriver` as an experimental in-memory validation artifact for the Driver Boundary. It validates the separation between device-domain descriptors and physical/protocol communication without defining the final Driver API for JarvisOS.
+
+Included in Phase 3.5:
+
+- `DriverResult` as an internal result for experimental driver-boundary operations.
+- `SimulatedDriver` with minimal experimental operations:
+  - `is_available(device)`;
+  - `read(device, capability_name)`;
+  - `apply(device, capability_name, parameters)`.
+- Read operations accept only `DeviceCapability` descriptors with `kind == "reading"`.
+- Apply operations accept only `DeviceCapability` descriptors with `kind == "action"`.
+- Structured internal errors for invalid devices, missing capabilities, kind mismatches, invalid parameters, unavailable driver state, simulated failures, and simulated timeout failures.
+- Ephemeral technical state for simulation and tests only.
+
+Stable boundary rules:
+
+- `SimulatedDriver` is an experimental validation artifact.
+- It does not define the final Driver API for JarvisOS.
+- A `SimulatedDriver` owns simulated communication, not the semantic state of the Device.
+- `DriverResult` is internal to the Driver Boundary, is not adapter-facing, does not replace `CapabilityResult`, has no user-facing message, and does not represent official `DeviceState`.
+- `DeviceState` remains the only official representation of known device state.
+
+State ownership:
+
+- `SimulatedDriver` may keep in-memory technical simulation data.
+- That data is not persisted, is not `DeviceState`, and is not the semantic source of truth.
+- `SimulatedDriver` does not mutate `Device.state` or `DeviceRegistry`.
+
+Exit criteria:
+
+- `SimulatedDriver` remains a validation artifact.
+- Before any real driver is implemented, JarvisOS must review the Driver Boundary again and decide whether the experimental interface becomes official, changes, or is replaced.
+
+Out of scope for Phase 3.5:
+
+- ABC or general Driver Protocol.
+- DriverRegistry.
+- Real drivers.
+- MQTT, GPIO, ESP32, Zigbee, Tuya, protocols, or hardware.
+- Runtime, Planner, CLI, EventBus, or adapter integration.
+- Command routing.
+- `DriverResult` to `DeviceState` transformation.
+- `DriverResult` to `CapabilityResult` transformation.
+- Persistence, async, security, or discovery.
+
 ## Phase 1.7 Scope
 
 Phase 1.7 keeps the AVP-001 behavior while introducing `Event` as an internal Domain Signal and making the in-memory Event Bus transport `Event` objects.
