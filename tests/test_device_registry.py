@@ -4,6 +4,45 @@ from jarvis_core.devices import Device, DeviceRegistry, DeviceState
 
 
 class DeviceRegistryTest(unittest.TestCase):
+    def test_device_rejects_empty_id(self):
+        with self.assertRaises(ValueError):
+            Device(id="", name="Device 1", type="sensor")
+
+    def test_device_rejects_empty_name(self):
+        with self.assertRaises(ValueError):
+            Device(id="device_1", name="", type="sensor")
+
+    def test_device_rejects_empty_type(self):
+        with self.assertRaises(ValueError):
+            Device(id="device_1", name="Device 1", type="")
+
+    def test_device_rejects_non_list_capabilities(self):
+        with self.assertRaises(ValueError):
+            Device(
+                id="device_1",
+                name="Device 1",
+                type="sensor",
+                capabilities="observe",
+            )
+
+    def test_device_rejects_non_dict_metadata(self):
+        with self.assertRaises(ValueError):
+            Device(id="device_1", name="Device 1", type="sensor", metadata=[])
+
+    def test_device_state_rejects_empty_status(self):
+        with self.assertRaises(ValueError):
+            DeviceState(status="")
+
+    def test_device_state_rejects_non_dict_properties(self):
+        with self.assertRaises(ValueError):
+            DeviceState(status="on", properties=[])
+
+    def test_register_rejects_non_device(self):
+        registry = DeviceRegistry()
+
+        with self.assertRaises(TypeError):
+            registry.register(object())
+
     def test_register_and_get_device(self):
         registry = DeviceRegistry()
         device = Device(
@@ -80,6 +119,13 @@ class DeviceRegistryTest(unittest.TestCase):
 
         with self.assertRaises(KeyError):
             registry.update_state("missing", DeviceState(status="off"))
+
+    def test_update_state_rejects_non_device_state(self):
+        registry = DeviceRegistry()
+        registry.register(Device(id="fan_1", name="Fan 1", type="fan"))
+
+        with self.assertRaises(TypeError):
+            registry.update_state("fan_1", object())
 
     def test_has_reports_registered_device(self):
         registry = DeviceRegistry()

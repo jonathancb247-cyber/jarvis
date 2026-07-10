@@ -24,6 +24,12 @@ INVALID_ADAPTER_INPUT_ERROR = "invalid_adapter_input"
 UNKNOWN_COMMAND_MESSAGE = "I do not know how to handle that yet."
 RUNTIME_ERROR_MESSAGE = "I could not complete that command."
 ADAPTER_INPUT_ERROR_MESSAGE = "I could not process that input."
+USER_INPUT_RECEIVED_EVENT = "user.input.received"
+COMMAND_PLANNED_EVENT = "command.planned"
+COMMAND_EXECUTION_STARTED_EVENT = "command.execution.started"
+CAPABILITY_EXECUTION_COMPLETED_EVENT = "capability.execution.completed"
+CAPABILITY_EXECUTION_FAILED_EVENT = "capability.execution.failed"
+RUNTIME_ERROR_EVENT = "runtime.error"
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -75,7 +81,7 @@ class Runtime:
             return self._adapter_input_failure(source)
 
         self._publish_event(
-            type="user.input.received",
+            type=USER_INPUT_RECEIVED_EVENT,
             source=source,
             payload={"input_length": len(text)},
             correlation_id=correlation_id,
@@ -91,7 +97,7 @@ class Runtime:
 
         command = self.planner.plan(text)
         self._publish_event(
-            type="command.planned",
+            type=COMMAND_PLANNED_EVENT,
             source="runtime",
             payload={
                 "command": command.name,
@@ -112,7 +118,7 @@ class Runtime:
     def execute(self, command, correlation_id=None):
         """Execute a Command and always return a CapabilityResult."""
         self._publish_event(
-            type="command.execution.started",
+            type=COMMAND_EXECUTION_STARTED_EVENT,
             source="runtime",
             payload={
                 "command": command.name,
@@ -163,7 +169,7 @@ class Runtime:
                 CAPABILITY_EXECUTION_ERROR,
                 RUNTIME_ERROR_MESSAGE,
                 correlation_id=correlation_id,
-                event_type="capability.execution.failed",
+                event_type=CAPABILITY_EXECUTION_FAILED_EVENT,
             )
         if not isinstance(result, CapabilityResult):
             logger.warning(
@@ -182,7 +188,7 @@ class Runtime:
                 correlation_id=correlation_id,
             )
         self._publish_event(
-            type="capability.execution.completed",
+            type=CAPABILITY_EXECUTION_COMPLETED_EVENT,
             source="runtime",
             payload={
                 "command": command.name,
@@ -210,11 +216,10 @@ class Runtime:
         error,
         message,
         correlation_id=None,
-        event_type="runtime.error",
+        event_type=RUNTIME_ERROR_EVENT,
     ):
         data = {
             "command": command.name,
-            "args": command.args,
             "source": command.source,
         }
         self._publish_event(
@@ -253,7 +258,7 @@ class Runtime:
 
     def _record_runtime_error(self, error, reason, correlation_id, source=None):
         self._publish_event(
-            type="runtime.error",
+            type=RUNTIME_ERROR_EVENT,
             source="runtime",
             payload={
                 "source": source,

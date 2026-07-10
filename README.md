@@ -101,6 +101,43 @@ Out of scope for Phase 2.4:
 - Security or permissions.
 - MQTT, GPIO, ESP32, Web UI, HTTP API, or AI.
 
+## Phase 2.6 Scope
+
+Phase 2.6 hardens existing kernel contracts without adding new runtime features or changing AVP-001 visible behavior.
+
+Included in Phase 2.6:
+
+- Minimum domain invariants for `Command`, `Event`, and `RuntimeContext`.
+- Minimum device model invariants for `Device` and `DeviceState`.
+- `DeviceRegistry.register(...)` accepts only valid `Device` objects.
+- `DeviceRegistry.update_state(...)` accepts only `DeviceState` objects.
+- `EventBus.subscribe(...)` validates event type and handler inputs.
+- Runtime error results do not expose complete `Command.args` back to adapters.
+- Tests for domain validation, EventBus contract behavior, device registry hardening, and adapter-facing privacy.
+
+Privacy rule for `Command.args`:
+
+- `Command.args` may contain sensitive execution data.
+- Runtime must not return complete `Command.args` in adapter-facing error results.
+- Unknown textual input must not appear in `CapabilityResult.data`, lifecycle events, or logging.
+- Diagnostics continue to record only minimum safe metadata, such as source, correlation ID, input length, command name, and error code.
+
+Out of scope for Phase 2.6:
+
+- CapabilityRegistry duplicate-policy changes.
+- Protocols.
+- BaseAdapter.
+- State Store.
+- Persistence.
+- Drivers.
+- New adapters.
+- Advanced security.
+- AI.
+- Async runtime.
+- Advanced observability.
+- Event Sourcing.
+- Runtime refactor or repository reorganization.
+
 ## Phase 1.7 Scope
 
 Phase 1.7 keeps the AVP-001 behavior while introducing `Event` as an internal Domain Signal and making the in-memory Event Bus transport `Event` objects.
@@ -165,6 +202,14 @@ Minimum fields:
 The public `EventBus` contract accepts `Event` objects, not raw event-name strings.
 
 The CLI does not publish directly to EventBus. Runtime creates `Event(type="user.input.received", source="cli", payload={"input_length": ...})` internally through the Runtime-owned adapter boundary.
+
+Current EventBus contract:
+
+- `subscribe(event_type, handler)` requires a non-empty string event type and a callable handler.
+- Handlers run in subscription order.
+- `publish(event)` returns handler results in a list.
+- Handler exceptions propagate to the caller.
+- EventBus is internal kernel transport, not a logging system and not a public adapter API.
 
 ## Capability Contracts
 
@@ -252,6 +297,8 @@ Phase 1.7 uses only the internal concepts needed by the current AVP-001 loop:
 - `DeviceRegistry`: the in-memory registry of known device models.
 
 `Device` and `DeviceState` are internal models only. They do not communicate with hardware, external protocols, physical devices, or persistent storage in Phase 1.7.
+
+`Device.capabilities` is currently a list of internal device descriptors. It is not the same concept as executable runtime `Capability` objects registered in `CapabilityRegistry`.
 
 ## Run
 
