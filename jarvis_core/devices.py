@@ -3,6 +3,48 @@
 from dataclasses import dataclass, field
 
 
+DEVICE_CAPABILITY_KINDS = {"action", "reading"}
+
+
+@dataclass
+class DeviceCapability:
+    """Domain descriptor for what a device supports."""
+
+    name: str
+    kind: str
+    parameters: dict = field(default_factory=dict)
+    constraints: dict = field(default_factory=dict)
+    availability_policy: dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
+
+    def __post_init__(self):
+        if not isinstance(self.name, str) or not self.name:
+            raise ValueError("DeviceCapability name must be a non-empty string")
+        if self.kind not in DEVICE_CAPABILITY_KINDS:
+            raise ValueError("DeviceCapability kind must be action or reading")
+        if not isinstance(self.parameters, dict):
+            raise ValueError("DeviceCapability parameters must be a dict")
+        for parameter_name, descriptor in self.parameters.items():
+            if not isinstance(parameter_name, str) or not parameter_name:
+                raise ValueError("DeviceCapability parameter names must be non-empty strings")
+            if not isinstance(descriptor, dict):
+                raise ValueError("DeviceCapability parameter descriptors must be dicts")
+            if "required" in descriptor and not isinstance(descriptor["required"], bool):
+                raise ValueError("DeviceCapability parameter required must be a bool")
+            if "constraints" in descriptor and not isinstance(
+                descriptor["constraints"], dict
+            ):
+                raise ValueError("DeviceCapability parameter constraints must be a dict")
+            if "metadata" in descriptor and not isinstance(descriptor["metadata"], dict):
+                raise ValueError("DeviceCapability parameter metadata must be a dict")
+        if not isinstance(self.constraints, dict):
+            raise ValueError("DeviceCapability constraints must be a dict")
+        if not isinstance(self.availability_policy, dict):
+            raise ValueError("DeviceCapability availability_policy must be a dict")
+        if not isinstance(self.metadata, dict):
+            raise ValueError("DeviceCapability metadata must be a dict")
+
+
 @dataclass
 class DeviceState:
     """Known state snapshot for an internal device model."""
@@ -38,6 +80,14 @@ class Device:
             raise ValueError("Device type must be a non-empty string")
         if not isinstance(self.capabilities, list):
             raise ValueError("Device capabilities must be a list")
+        for capability in self.capabilities:
+            if isinstance(capability, DeviceCapability):
+                continue
+            if isinstance(capability, str) and capability:
+                continue
+            raise ValueError(
+                "Device capabilities must contain DeviceCapability or non-empty string descriptors"
+            )
         if not isinstance(self.metadata, dict):
             raise ValueError("Device metadata must be a dict")
 

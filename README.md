@@ -138,6 +138,56 @@ Out of scope for Phase 2.6:
 - Event Sourcing.
 - Runtime refactor or repository reorganization.
 
+## Phase 3.2 Scope
+
+Phase 3.2 introduces `DeviceCapability` as a minimal domain descriptor for what a device supports. It does not add execution, drivers, protocols, persistence, or hardware behavior.
+
+Included in Phase 3.2:
+
+- `DeviceCapability` as a device-domain descriptor.
+- `Device.capabilities` accepts formal `DeviceCapability` descriptors.
+- `Device.capabilities` temporarily keeps compatibility with non-empty legacy string descriptors.
+- Device capability parameters are represented as a map of parameter name to declarative parameter descriptor.
+- Unit tests cover `DeviceCapability` validation and registry compatibility.
+
+Stable rule:
+
+- `DeviceCapability` defines what a Device supports.
+- `DeviceState` defines what is currently available or known.
+
+Runtime Capability vs DeviceCapability:
+
+- Runtime Capability is executable by `Runtime` through `CapabilityRegistry` and returns `CapabilityResult`.
+- `DeviceCapability` is declared by a `Device` and does not execute, return `CapabilityResult`, register in `CapabilityRegistry`, or talk to hardware.
+
+Parameter descriptors:
+
+- `parameters` is a map of parameter name to descriptor.
+- Parameter names are unique by construction.
+- Parameter order has no semantic meaning.
+- Parameter descriptors are declarative and may include `type`, `required`, `constraints`, and `metadata`.
+- Validation of `Command.args` against parameter descriptors is outside Phase 3.2.
+
+Legacy compatibility:
+
+- Existing non-empty string descriptors in `Device.capabilities` remain supported temporarily.
+- Strings are legacy-compatible descriptors and are not automatically converted to `DeviceCapability`.
+- A future phase may remove legacy string descriptors after an explicit migration plan.
+
+Out of scope for Phase 3.2:
+
+- Public `ParameterDescriptor` class.
+- Drivers or DriverRegistry.
+- Protocols, MQTT, GPIO, ESP32, Zigbee, Tuya, or hardware.
+- Command routing.
+- Execution of `DeviceCapability`.
+- Full validation of `Command.args`.
+- Operational availability per capability.
+- Persistence or State Store.
+- Discovery.
+- UI generation.
+- Planner, Runtime, CapabilityRegistry, adapter, or AI changes.
+
 ## Phase 1.7 Scope
 
 Phase 1.7 keeps the AVP-001 behavior while introducing `Event` as an internal Domain Signal and making the in-memory Event Bus transport `Event` objects.
