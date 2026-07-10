@@ -11,6 +11,12 @@ class DeviceState:
     properties: dict = field(default_factory=dict)
     updated_at: str = None
 
+    def __post_init__(self):
+        if not isinstance(self.status, str) or not self.status:
+            raise ValueError("DeviceState status must be a non-empty string")
+        if not isinstance(self.properties, dict):
+            raise ValueError("DeviceState properties must be a dict")
+
 
 @dataclass
 class Device:
@@ -23,6 +29,18 @@ class Device:
     state: DeviceState = field(default_factory=DeviceState)
     metadata: dict = field(default_factory=dict)
 
+    def __post_init__(self):
+        if not isinstance(self.id, str) or not self.id:
+            raise ValueError("Device id must be a non-empty string")
+        if not isinstance(self.name, str) or not self.name:
+            raise ValueError("Device name must be a non-empty string")
+        if not isinstance(self.type, str) or not self.type:
+            raise ValueError("Device type must be a non-empty string")
+        if not isinstance(self.capabilities, list):
+            raise ValueError("Device capabilities must be a list")
+        if not isinstance(self.metadata, dict):
+            raise ValueError("Device metadata must be a dict")
+
 
 class DeviceRegistry:
     """Stores and looks up internal device models."""
@@ -31,6 +49,8 @@ class DeviceRegistry:
         self.devices = {}
 
     def register(self, device):
+        if not isinstance(device, Device):
+            raise TypeError("DeviceRegistry.register expects a Device")
         if device.id in self.devices:
             raise ValueError(f"Device already registered: {device.id}")
         self.devices[device.id] = device
@@ -50,6 +70,8 @@ class DeviceRegistry:
         return [device for device in self.devices.values() if device.type == device_type]
 
     def update_state(self, device_id, state):
+        if not isinstance(state, DeviceState):
+            raise TypeError("DeviceRegistry.update_state expects a DeviceState")
         device = self.get(device_id)
         device.state = state
         return device

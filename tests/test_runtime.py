@@ -73,7 +73,7 @@ class RuntimeTest(unittest.TestCase):
         self.assertEqual(result.error, UNKNOWN_COMMAND_ERROR)
         self.assertEqual(
             result.data,
-            {"command": "unknown", "args": {"text": "unknown"}, "source": "cli"},
+            {"command": "unknown", "source": "cli"},
         )
 
     def test_execute_missing_capability_returns_structured_failure_result(self):
@@ -86,7 +86,7 @@ class RuntimeTest(unittest.TestCase):
         self.assertEqual(result.error, CAPABILITY_NOT_FOUND_ERROR)
         self.assertEqual(
             result.data,
-            {"command": "missing.capability", "args": {}, "source": "test"},
+            {"command": "missing.capability", "source": "test"},
         )
 
     def test_execute_capability_exception_returns_structured_failure_result(self):
@@ -106,8 +106,8 @@ class RuntimeTest(unittest.TestCase):
         self.assertEqual(result.message, "I could not complete that command.")
         self.assertEqual(result.error, CAPABILITY_EXECUTION_ERROR)
         self.assertEqual(result.data["command"], "failing.capability")
-        self.assertEqual(result.data["args"], {})
         self.assertEqual(result.data["source"], "cli")
+        self.assertNotIn("args", result.data)
         self.assertNotIn("details", result.data)
         self.assertEqual(bus.published[-1].type, "capability.execution.failed")
         self.assertEqual(bus.published[-1].payload["error"], CAPABILITY_EXECUTION_ERROR)
@@ -129,6 +129,7 @@ class RuntimeTest(unittest.TestCase):
         self.assertEqual(result.message, "I could not complete that command.")
         self.assertEqual(result.error, INVALID_CAPABILITY_RESULT_ERROR)
         self.assertEqual(result.data["command"], "invalid.result")
+        self.assertNotIn("args", result.data)
         self.assertNotIn("details", result.data)
 
     def test_clock_capability_satisfies_capability_contract(self):
@@ -229,6 +230,27 @@ class RuntimeTest(unittest.TestCase):
         self.assertEqual(result.error, UNKNOWN_COMMAND_ERROR)
         self.assertEqual(bus.published[-1].type, "runtime.error")
         self.assertEqual(bus.published[-1].payload["error"], UNKNOWN_COMMAND_ERROR)
+
+    def test_unknown_command_text_is_not_exposed_to_adapter(self):
+        bus = RecordingEventBus()
+        registry = CapabilityRegistry()
+        context = RuntimeContext(
+            event_bus=bus,
+            capability_registry=registry,
+            device_registry=DeviceRegistry(),
+        )
+        runtime = Runtime(Planner(), context)
+
+        with self.assertLogs("jarvis_core.runtime", level="INFO") as logs:
+            result = runtime.handle_adapter_input("secret token value", source="cli")
+
+        self.assertFalse(result.success)
+        self.assertNotIn("secret token value", str(result.data))
+        self.assertNotIn("args", result.data)
+        self.assertNotIn("secret token value", "\n".join(logs.output))
+        self.assertTrue(
+            all("secret token value" not in str(event.payload) for event in bus.published)
+        )
 
     def test_handle_adapter_input_rejects_non_text_input(self):
         bus = RecordingEventBus()

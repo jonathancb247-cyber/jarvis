@@ -22,6 +22,17 @@ class EventBusTest(unittest.TestCase):
 
         self.assertEqual(results, ["HELLO"])
 
+    def test_publish_runs_handlers_in_subscription_order(self):
+        bus = EventBus()
+        calls = []
+        bus.subscribe("runtime.error", lambda event: calls.append("first") or "first")
+        bus.subscribe("runtime.error", lambda event: calls.append("second") or "second")
+
+        results = bus.publish(Event(type="runtime.error", source="test"))
+
+        self.assertEqual(calls, ["first", "second"])
+        self.assertEqual(results, ["first", "second"])
+
     def test_publish_without_subscribers_returns_empty_list(self):
         bus = EventBus()
 
@@ -34,6 +45,35 @@ class EventBusTest(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             bus.publish("user.input.received")
+
+    def test_subscribe_rejects_empty_event_type(self):
+        bus = EventBus()
+
+        with self.assertRaises(ValueError):
+            bus.subscribe("", lambda event: None)
+
+    def test_subscribe_rejects_non_string_event_type(self):
+        bus = EventBus()
+
+        with self.assertRaises(ValueError):
+            bus.subscribe(None, lambda event: None)
+
+    def test_subscribe_rejects_non_callable_handler(self):
+        bus = EventBus()
+
+        with self.assertRaises(TypeError):
+            bus.subscribe("runtime.error", None)
+
+    def test_publish_propagates_handler_exceptions(self):
+        bus = EventBus()
+
+        def fail(event):
+            raise RuntimeError("handler failed")
+
+        bus.subscribe("runtime.error", fail)
+
+        with self.assertRaises(RuntimeError):
+            bus.publish(Event(type="runtime.error", source="test"))
 
     def test_handler_receives_full_event(self):
         bus = EventBus()
