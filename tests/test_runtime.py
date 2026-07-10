@@ -90,7 +90,7 @@ class RuntimeTest(unittest.TestCase):
         )
 
     def test_execute_capability_exception_returns_structured_failure_result(self):
-        bus = EventBus()
+        bus = RecordingEventBus()
         registry = CapabilityRegistry()
         registry.register("failing.capability", FailingCapability())
         context = RuntimeContext(
@@ -108,7 +108,9 @@ class RuntimeTest(unittest.TestCase):
         self.assertEqual(result.data["command"], "failing.capability")
         self.assertEqual(result.data["args"], {})
         self.assertEqual(result.data["source"], "cli")
-        self.assertEqual(result.data["details"], "boom")
+        self.assertNotIn("details", result.data)
+        self.assertEqual(bus.published[-1].type, "capability.execution.failed")
+        self.assertEqual(bus.published[-1].payload["error"], CAPABILITY_EXECUTION_ERROR)
 
     def test_execute_invalid_capability_result_returns_structured_failure(self):
         bus = EventBus()
@@ -127,7 +129,7 @@ class RuntimeTest(unittest.TestCase):
         self.assertEqual(result.message, "I could not complete that command.")
         self.assertEqual(result.error, INVALID_CAPABILITY_RESULT_ERROR)
         self.assertEqual(result.data["command"], "invalid.result")
-        self.assertEqual(result.data["details"], "Capability returned an invalid result")
+        self.assertNotIn("details", result.data)
 
     def test_clock_capability_satisfies_capability_contract(self):
         capability = ClockCapability()
@@ -162,7 +164,7 @@ class RuntimeTest(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertTrue(result.message.startswith("The current time is "))
 
-    def test_handle_adapter_input_creates_internal_user_input_event(self):
+    def test_handle_adapter_input_emits_lifecycle_events_with_correlation_id(self):
         bus = RecordingEventBus()
         registry = CapabilityRegistry()
         registry.register(ClockCapability.name, ClockCapability())
@@ -175,19 +177,76 @@ class RuntimeTest(unittest.TestCase):
 
         runtime.handle_adapter_input("what time is it?", source="cli")
 
-        self.assertEqual(len(bus.published), 1)
-        self.assertEqual(bus.published[0].type, "user.input.received")
+        self.assertEqual(
+            [event.type for event in bus.published],
+            [
+                "user.input.received",
+                "command.planned",
+                "command.execution.started",
+                "capability.execution.completed",
+            ],
+        )
+        correlation_id = bus.published[0].correlation_id
+        self.assertTrue(correlation_id)
+        self.assertTrue(
+            all(event.correlation_id == correlation_id for event in bus.published)
+        )
         self.assertEqual(bus.published[0].source, "cli")
-        self.assertEqual(bus.published[0].payload, {"text": "what time is it?"})
+        self.assertEqual(bus.published[0].payload, {"input_length": 16})
+        self.assertNotIn("text", bus.published[0].payload)
+
+    def test_handle_adapter_input_does_not_log_full_input_text(self):
+        bus = RecordingEventBus()
+        registry = CapabilityRegistry()
+        registry.register(ClockCapability.name, ClockCapability())
+        context = RuntimeContext(
+            event_bus=bus,
+            capability_registry=registry,
+            device_registry=DeviceRegistry(),
+        )
+        runtime = Runtime(Planner(), context)
+
+        with self.assertLogs("jarvis_core.runtime", level="INFO") as logs:
+            runtime.handle_adapter_input("secret token value", source="cli")
+
+        output = "\n".join(logs.output)
+        self.assertNotIn("secret token value", output)
+        self.assertEqual(bus.published[0].payload, {"input_length": 18})
+
+    def test_handle_adapter_input_controlled_failure_emits_runtime_error(self):
+        bus = RecordingEventBus()
+        registry = CapabilityRegistry()
+        context = RuntimeContext(
+            event_bus=bus,
+            capability_registry=registry,
+            device_registry=DeviceRegistry(),
+        )
+        runtime = Runtime(Planner(), context)
+
+        result = runtime.handle_adapter_input("turn on lights", source="cli")
+
+        self.assertFalse(result.success)
+        self.assertEqual(result.error, UNKNOWN_COMMAND_ERROR)
+        self.assertEqual(bus.published[-1].type, "runtime.error")
+        self.assertEqual(bus.published[-1].payload["error"], UNKNOWN_COMMAND_ERROR)
 
     def test_handle_adapter_input_rejects_non_text_input(self):
-        runtime = self.build_test_runtime()
+        bus = RecordingEventBus()
+        registry = CapabilityRegistry()
+        registry.register(ClockCapability.name, ClockCapability())
+        context = RuntimeContext(
+            event_bus=bus,
+            capability_registry=registry,
+            device_registry=DeviceRegistry(),
+        )
+        runtime = Runtime(Planner(), context)
 
         result = runtime.handle_adapter_input(None, source="cli")
 
         self.assertFalse(result.success)
         self.assertEqual(result.message, ADAPTER_INPUT_ERROR_MESSAGE)
         self.assertEqual(result.error, INVALID_ADAPTER_INPUT_ERROR)
+        self.assertEqual(bus.published[-1].type, "runtime.error")
 
     def test_handle_adapter_input_rejects_empty_source(self):
         runtime = self.build_test_runtime()
