@@ -5,6 +5,9 @@ entities, parse user intent, manage physical devices, or talk to external
 systems directly.
 """
 
+import logging
+from uuid import uuid4
+
 from jarvis_core.capabilities.clock import ClockCapability
 from jarvis_core.devices import DeviceRegistry
 from jarvis_core.domain import CapabilityResult, Event, RuntimeContext
@@ -21,6 +24,9 @@ INVALID_ADAPTER_INPUT_ERROR = "invalid_adapter_input"
 UNKNOWN_COMMAND_MESSAGE = "I do not know how to handle that yet."
 RUNTIME_ERROR_MESSAGE = "I could not complete that command."
 ADAPTER_INPUT_ERROR_MESSAGE = "I could not process that input."
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 class Runtime:
@@ -50,25 +56,86 @@ class Runtime:
         planning, and command execution flow. EventBus remains an internal
         transport and is not exposed as an adapter-facing API.
         """
+        correlation_id = self._new_correlation_id()
         if not isinstance(source, str) or not source.strip():
-            return self._adapter_input_failure(source, "Adapter source must be a non-empty string")
+            self._record_runtime_error(
+                INVALID_ADAPTER_INPUT_ERROR,
+                "invalid adapter source",
+                correlation_id,
+                source=source,
+            )
+            return self._adapter_input_failure(source)
         if not isinstance(text, str) or not text.strip():
-            return self._adapter_input_failure(source, "Adapter text input must be a non-empty string")
+            self._record_runtime_error(
+                INVALID_ADAPTER_INPUT_ERROR,
+                "invalid adapter text input",
+                correlation_id,
+                source=source,
+            )
+            return self._adapter_input_failure(source)
 
-        event = Event(
+        self._publish_event(
             type="user.input.received",
             source=source,
-            payload={"text": text},
+            payload={"input_length": len(text)},
+            correlation_id=correlation_id,
         )
-        self.context.event_bus.publish(event)
+        logger.info(
+            "adapter input received",
+            extra={
+                "correlation_id": correlation_id,
+                "source": source,
+                "input_length": len(text),
+            },
+        )
 
         command = self.planner.plan(text)
-        return self.execute(command)
+        self._publish_event(
+            type="command.planned",
+            source="runtime",
+            payload={
+                "command": command.name,
+                "command_source": command.source,
+            },
+            correlation_id=correlation_id,
+        )
+        logger.info(
+            "command planned",
+            extra={
+                "correlation_id": correlation_id,
+                "command": command.name,
+                "command_source": command.source,
+            },
+        )
+        return self.execute(command, correlation_id=correlation_id)
 
-    def execute(self, command):
+    def execute(self, command, correlation_id=None):
         """Execute a Command and always return a CapabilityResult."""
+        self._publish_event(
+            type="command.execution.started",
+            source="runtime",
+            payload={
+                "command": command.name,
+                "command_source": command.source,
+            },
+            correlation_id=correlation_id,
+        )
+        logger.info(
+            "command execution started",
+            extra={
+                "correlation_id": correlation_id,
+                "command": command.name,
+                "command_source": command.source,
+            },
+        )
+
         if command.name == "unknown":
-            return self._failure(command, UNKNOWN_COMMAND_ERROR, UNKNOWN_COMMAND_MESSAGE)
+            return self._failure(
+                command,
+                UNKNOWN_COMMAND_ERROR,
+                UNKNOWN_COMMAND_MESSAGE,
+                correlation_id=correlation_id,
+            )
 
         try:
             capability = self.context.capability_registry.resolve(command.name)
@@ -77,34 +144,98 @@ class Runtime:
                 command,
                 CAPABILITY_NOT_FOUND_ERROR,
                 UNKNOWN_COMMAND_MESSAGE,
+                correlation_id=correlation_id,
             )
 
         try:
             result = capability.run(command, self.context)
         except Exception as error:
+            logger.exception(
+                "capability execution failed",
+                extra={
+                    "correlation_id": correlation_id,
+                    "command": command.name,
+                    "capability": command.name,
+                },
+            )
             return self._failure(
                 command,
                 CAPABILITY_EXECUTION_ERROR,
                 RUNTIME_ERROR_MESSAGE,
-                details=str(error),
+                correlation_id=correlation_id,
+                event_type="capability.execution.failed",
             )
         if not isinstance(result, CapabilityResult):
+            logger.warning(
+                "capability returned invalid result",
+                extra={
+                    "correlation_id": correlation_id,
+                    "command": command.name,
+                    "capability": command.name,
+                    "result_type": type(result).__name__,
+                },
+            )
             return self._failure(
                 command,
                 INVALID_CAPABILITY_RESULT_ERROR,
                 RUNTIME_ERROR_MESSAGE,
-                details="Capability returned an invalid result",
+                correlation_id=correlation_id,
             )
+        self._publish_event(
+            type="capability.execution.completed",
+            source="runtime",
+            payload={
+                "command": command.name,
+                "capability": command.name,
+                "success": result.success,
+                "error": result.error,
+            },
+            correlation_id=correlation_id,
+        )
+        logger.info(
+            "capability execution completed",
+            extra={
+                "correlation_id": correlation_id,
+                "command": command.name,
+                "capability": command.name,
+                "success": result.success,
+                "error": result.error,
+            },
+        )
         return result
 
-    def _failure(self, command, error, message, details=None):
+    def _failure(
+        self,
+        command,
+        error,
+        message,
+        correlation_id=None,
+        event_type="runtime.error",
+    ):
         data = {
             "command": command.name,
             "args": command.args,
             "source": command.source,
         }
-        if details:
-            data["details"] = details
+        self._publish_event(
+            type=event_type,
+            source="runtime",
+            payload={
+                "command": command.name,
+                "command_source": command.source,
+                "error": error,
+            },
+            correlation_id=correlation_id,
+        )
+        logger.warning(
+            "runtime command failure",
+            extra={
+                "correlation_id": correlation_id,
+                "command": command.name,
+                "command_source": command.source,
+                "error": error,
+            },
+        )
         return CapabilityResult(
             success=False,
             message=message,
@@ -112,13 +243,47 @@ class Runtime:
             error=error,
         )
 
-    def _adapter_input_failure(self, source, details):
+    def _adapter_input_failure(self, source):
         return CapabilityResult(
             success=False,
             message=ADAPTER_INPUT_ERROR_MESSAGE,
-            data={"source": source, "details": details},
+            data={"source": source},
             error=INVALID_ADAPTER_INPUT_ERROR,
         )
+
+    def _record_runtime_error(self, error, reason, correlation_id, source=None):
+        self._publish_event(
+            type="runtime.error",
+            source="runtime",
+            payload={
+                "source": source,
+                "error": error,
+                "reason": reason,
+            },
+            correlation_id=correlation_id,
+        )
+        logger.warning(
+            "runtime adapter input failure",
+            extra={
+                "correlation_id": correlation_id,
+                "source": source,
+                "error": error,
+                "reason": reason,
+            },
+        )
+
+    def _publish_event(self, type, source, payload, correlation_id=None):
+        event = Event(
+            type=type,
+            source=source,
+            payload=payload,
+            correlation_id=correlation_id,
+        )
+        self.context.event_bus.publish(event)
+        return event
+
+    def _new_correlation_id(self):
+        return str(uuid4())
 
 
 def build_runtime():

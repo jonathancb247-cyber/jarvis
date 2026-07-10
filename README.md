@@ -62,6 +62,45 @@ Out of scope for Phase 2.3:
 - EventBus, Domain, Planner, CapabilityRegistry, or DeviceRegistry changes.
 - Security, observability, persistence, async runtime, MQTT, GPIO, ESP32, Web UI, HTTP API, or AI.
 
+## Phase 2.4 Scope
+
+Phase 2.4 adds minimal runtime operational diagnostics without changing AVP-001 visible behavior.
+
+Included in Phase 2.4:
+
+- Runtime generates a local `correlation_id` for each `handle_adapter_input(...)` flow.
+- Runtime propagates that `correlation_id` through internal lifecycle events.
+- Runtime emits internal lifecycle events for:
+  - `user.input.received`;
+  - `command.planned`;
+  - `command.execution.started`;
+  - `capability.execution.completed`;
+  - `capability.execution.failed`;
+  - `runtime.error`, where appropriate.
+- Runtime uses Python standard-library logging for local technical diagnostics.
+- Adapter-facing `CapabilityResult` values remain safe and do not expose stack traces or exception details.
+- `user.input.received` records only `source`, `correlation_id`, `input_length`, and `timestamp`.
+
+Privacy rule:
+
+- Diagnostics do not record full adapter input text by default.
+- Diagnostics do not record secrets, tokens, or full payloads.
+- Capturing raw input for debugging would require an explicit future opt-in and is outside Phase 2.4.
+
+Out of scope for Phase 2.4:
+
+- Remote telemetry.
+- Dashboards.
+- OpenTelemetry.
+- Persistence.
+- Event Sourcing.
+- Distributed tracing.
+- EventBus as a logging system.
+- New domain entities.
+- New adapters.
+- Security or permissions.
+- MQTT, GPIO, ESP32, Web UI, HTTP API, or AI.
+
 ## Phase 1.7 Scope
 
 Phase 1.7 keeps the AVP-001 behavior while introducing `Event` as an internal Domain Signal and making the in-memory Event Bus transport `Event` objects.
@@ -125,7 +164,7 @@ Minimum fields:
 
 The public `EventBus` contract accepts `Event` objects, not raw event-name strings.
 
-The CLI does not publish directly to EventBus. Runtime creates `Event(type="user.input.received", source="cli", payload={"text": ...})` internally through the Runtime-owned adapter boundary.
+The CLI does not publish directly to EventBus. Runtime creates `Event(type="user.input.received", source="cli", payload={"input_length": ...})` internally through the Runtime-owned adapter boundary.
 
 ## Capability Contracts
 
