@@ -543,6 +543,61 @@ Run the unit test suite with the Python standard library:
 python -m unittest
 ```
 
+## Phase 4.2 Scope
+
+Phase 4.2 introduces `DeviceRuntimeCapability` as the minimum Runtime Capability
+bridge from Runtime command execution to the internal Device Platform router.
+
+Included in Phase 4.2:
+
+- `DeviceRuntimeCapability` in `jarvis_core/capabilities/device.py`.
+- Stable Runtime Capability name: `device.execute`.
+- `DeviceRuntimeCapability.run(command, context) -> CapabilityResult`.
+- Constructor injection of `DeviceCommandRouter`.
+- Delegation from `DeviceRuntimeCapability` to `DeviceCommandRouter`.
+- Conversion from internal `DeviceExecutionResult` to safe `CapabilityResult`.
+- Registration of `device.execute` in `CapabilityRegistry`.
+- Bootstrap wiring that keeps Runtime, Planner, and CLI behavior unchanged.
+- Tests with manually constructed `Command(name="device.execute")` objects.
+
+Boundary rules:
+
+- Runtime does not know `SimulatedDriver`.
+- Runtime does not call `DeviceCommandRouter` directly.
+- Runtime only executes registered capabilities.
+- Driver never receives `Command`.
+- `DeviceExecutionResult` is not adapter-facing.
+- `DriverResult` never leaves Device Platform.
+- `DeviceStateCoordinator` remains the only boundary that updates `DeviceState`.
+- Planner and CLI remain outside this phase.
+- AVP-001 visible behavior remains unchanged.
+
+Privacy and safety:
+
+- `CapabilityResult` is the only safe output from the device runtime bridge.
+- Full `Command.args` are not exposed.
+- Sent parameters are not exposed.
+- Raw `DriverResult` is not exposed.
+- Technical metadata, stack traces, secrets, and raw driver payloads are not exposed.
+
+Out of scope for Phase 4.2:
+
+- Planner integration.
+- Natural language.
+- CLI device commands.
+- Dashboard.
+- New adapters.
+- DriverRegistry.
+- Real drivers.
+- MQTT, GPIO, ESP32, Zigbee, Tuya, protocols, or hardware.
+- Persistence.
+- Async runtime.
+- Advanced security.
+- Automations.
+- AI.
+- Discovery.
+- Stable real Driver API.
+
 ## Project Rule
 
 Architecture is frozen until code forces a change. Notion documents decisions; GitHub validates them.
