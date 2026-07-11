@@ -283,6 +283,80 @@ Limitations:
 - no async or real timeout behavior;
 - no `desired_state`, `reported_state`, freshness model, availability model, TTL, or state history.
 
+## Phase 3.9 Scope
+
+Phase 3.9 introduces `DeviceCommandRouter` as the minimum internal Device Platform boundary for routing approved device commands to simulated driver operations.
+
+Implemented flow:
+
+```text
+Command -> DeviceCommandRouter -> Device -> DeviceCapability -> SimulatedDriver -> DriverResult -> DeviceStateCoordinator -> DeviceState -> DeviceRegistry
+```
+
+Included in Phase 3.9:
+
+- `DeviceExecutionResult` as an internal Device Platform routing result.
+- `DeviceCommandRouter` in `jarvis_core/device_routing.py`.
+- Routing for `Command(name="device.execute")`.
+- Device lookup through `DeviceRegistry`.
+- Execution only for formal `DeviceCapability` descriptors.
+- `read` operations for capabilities with `kind == "reading"`.
+- `apply` operations for capabilities with `kind == "action"`.
+- Explicit single-driver injection for the current minimum implementation.
+- Delegation to `DeviceStateCoordinator` for official state updates.
+- Tests for successful reads, actions, routing errors, driver failures, simulated timeout, state update failure, privacy, and ownership boundaries.
+
+Minimum command contract:
+
+```python
+Command(
+    name="device.execute",
+    args={
+        "device_id": "...",
+        "capability": "...",
+        "operation": "read | apply",
+        "parameters": {}
+    },
+    source="..."
+)
+```
+
+Ownership:
+
+- `DeviceCommandRouter` coordinates routing.
+- `DeviceRegistry` remains passive and does not execute drivers.
+- `SimulatedDriver` owns simulated communication only.
+- `DriverResult` remains technical and internal to the Device Platform.
+- `DeviceStateCoordinator` remains the only boundary that transforms approved observations into `DeviceState`.
+- `DeviceState` remains the official known state.
+
+Privacy and safety:
+
+- `DeviceExecutionResult` is internal and not adapter-facing.
+- It does not replace `CapabilityResult`.
+- It does not contain user-facing messages.
+- It does not expose raw `DriverResult`.
+- It does not copy complete `Command.args`.
+- It does not copy sent parameters, technical metadata, stack traces, or internal driver payloads.
+- Legacy string descriptors in `Device.capabilities` are not executable.
+
+Out of scope for Phase 3.9:
+
+- Runtime integration.
+- Runtime Capability wrapper.
+- Planner changes.
+- CLI changes.
+- EventBus integration.
+- DriverRegistry.
+- Device-to-driver binding.
+- Driver discovery.
+- Real drivers.
+- MQTT, GPIO, ESP32, Zigbee, Tuya, protocols, or hardware.
+- Persistence or State Store.
+- Async runtime.
+- Advanced security.
+- Automation, dashboard, new adapters, natural language, or AI.
+
 ## Phase 1.7 Scope
 
 Phase 1.7 keeps the AVP-001 behavior while introducing `Event` as an internal Domain Signal and making the in-memory Event Bus transport `Event` objects.
