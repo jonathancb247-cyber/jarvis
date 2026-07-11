@@ -235,6 +235,54 @@ Out of scope for Phase 3.5:
 - `DriverResult` to `CapabilityResult` transformation.
 - Persistence, async, security, or discovery.
 
+## Phase 3.7 Scope
+
+Phase 3.7 introduces `DeviceStateCoordinator` as the minimum boundary for transforming approved `DriverResult` observations into official `DeviceState`.
+
+Purpose:
+
+- keep `DriverResult` technical and experimental;
+- keep `DeviceState` as the official known state;
+- keep `DeviceRegistry` passive and in-memory;
+- prevent drivers from mutating device state directly.
+
+Ownership:
+
+- Driver reports technical observations.
+- `DriverResult` carries technical observations.
+- `DeviceStateCoordinator` validates and transforms approved observations.
+- `DeviceState` represents the official known state.
+- `DeviceRegistry` stores that state in memory through `update_state(...)`.
+
+Responsibilities:
+
+- validate `DriverResult`;
+- validate the target `DeviceCapability`;
+- validate operation as `read` or `apply`;
+- filter technical observations;
+- build a new `DeviceState`;
+- update state only through `DeviceRegistry.update_state(...)`.
+
+`DriverResult` to `DeviceState` relationship:
+
+- `DriverResult` is not `DeviceState`.
+- Full `DriverResult` values are never copied into `DeviceState`.
+- Technical metadata, technical errors, and sent action parameters are not copied into `DeviceState`.
+- A successful action does not imply that state changed.
+- Only approved reported observations may update `DeviceState`.
+
+Limitations:
+
+- no DriverRegistry;
+- no Runtime integration;
+- no command routing;
+- no Planner or CLI changes;
+- no EventBus integration;
+- no persistence or State Store;
+- no real drivers, hardware, MQTT, GPIO, ESP32, Zigbee, or Tuya;
+- no async or real timeout behavior;
+- no `desired_state`, `reported_state`, freshness model, availability model, TTL, or state history.
+
 ## Phase 1.7 Scope
 
 Phase 1.7 keeps the AVP-001 behavior while introducing `Event` as an internal Domain Signal and making the in-memory Event Bus transport `Event` objects.
