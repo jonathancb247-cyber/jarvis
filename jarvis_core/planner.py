@@ -2,10 +2,21 @@ from jarvis_core.domain import Command
 
 
 DEVICE_NAMESPACE = "device"
+DEVICE_CATALOG_COMMAND = "device.catalog"
 DEVICE_EXECUTE_COMMAND = "device.execute"
 READ_OPERATION = "read"
 APPLY_OPERATION = "apply"
+LIST_OPERATION = "list"
+INFO_OPERATION = "info"
+CAPABILITIES_OPERATION = "capabilities"
+STATE_OPERATION = "state"
 VALID_DEVICE_OPERATIONS = {READ_OPERATION, APPLY_OPERATION}
+VALID_CATALOG_OPERATIONS = {
+    LIST_OPERATION,
+    INFO_OPERATION,
+    CAPABILITIES_OPERATION,
+    STATE_OPERATION,
+}
 INVALID_DEVICE_INPUT_REASON = "invalid_device_command_input"
 
 
@@ -22,6 +33,10 @@ class Planner:
 
     def _plan_device_command(self, text, source):
         parts = text.strip().split()
+        catalog_command = self._plan_device_catalog_command(parts, source)
+        if catalog_command is not None:
+            return catalog_command
+
         if len(parts) < 4:
             return self._invalid_device_input(source)
         namespace, operation, device_id, capability = parts[:4]
@@ -71,5 +86,36 @@ class Planner:
         return Command(
             name="unknown",
             args={"reason": INVALID_DEVICE_INPUT_REASON},
+            source=source,
+        )
+
+    def _plan_device_catalog_command(self, parts, source):
+        if not parts or parts[0].lower() != DEVICE_NAMESPACE:
+            return None
+        if len(parts) < 2:
+            return None
+
+        operation = parts[1].lower()
+        if operation not in VALID_CATALOG_OPERATIONS:
+            return None
+
+        if operation == LIST_OPERATION:
+            if len(parts) != 2:
+                return self._invalid_device_input(source)
+            return Command(
+                name=DEVICE_CATALOG_COMMAND,
+                args={"operation": operation},
+                source=source,
+            )
+
+        if len(parts) != 3:
+            return self._invalid_device_input(source)
+
+        return Command(
+            name=DEVICE_CATALOG_COMMAND,
+            args={
+                "operation": operation,
+                "device_id": parts[2],
+            },
             source=source,
         )
