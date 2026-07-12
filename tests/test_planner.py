@@ -1,7 +1,7 @@
 import unittest
 
 from jarvis_core.domain import Command
-from jarvis_core.planner import Planner
+from jarvis_core.planner import INVALID_DEVICE_INPUT_REASON, Planner
 
 
 class PlannerTest(unittest.TestCase):
@@ -15,12 +15,82 @@ class PlannerTest(unittest.TestCase):
 
         self.assertEqual(command, Command(name="time.now", args={}, source="cli"))
 
+    def test_plan_preserves_adapter_source(self):
+        command = Planner().plan("what time is it?", source="test-adapter")
+
+        self.assertEqual(
+            command,
+            Command(name="time.now", args={}, source="test-adapter"),
+        )
+
     def test_plan_returns_unknown_command_for_unknown_input(self):
         command = Planner().plan("turn on the lights")
 
         self.assertEqual(command.name, "unknown")
         self.assertEqual(command.args, {"text": "turn on the lights"})
         self.assertEqual(command.source, "cli")
+
+    def test_plan_returns_device_read_command(self):
+        command = Planner().plan("device read lamp-1 temperature", source="cli")
+
+        self.assertEqual(command.name, "device.execute")
+        self.assertEqual(
+            command.args,
+            {
+                "device_id": "lamp-1",
+                "capability": "temperature",
+                "operation": "read",
+                "parameters": {},
+            },
+        )
+        self.assertEqual(command.source, "cli")
+
+    def test_plan_returns_device_apply_command_with_parameters(self):
+        command = Planner().plan(
+            "device apply lamp-1 power value=on brightness=80",
+            source="cli",
+        )
+
+        self.assertEqual(command.name, "device.execute")
+        self.assertEqual(
+            command.args,
+            {
+                "device_id": "lamp-1",
+                "capability": "power",
+                "operation": "apply",
+                "parameters": {
+                    "value": "on",
+                    "brightness": "80",
+                },
+            },
+        )
+
+    def test_plan_rejects_device_read_with_parameters(self):
+        command = Planner().plan("device read lamp-1 power value=on")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+
+    def test_plan_rejects_invalid_device_operation_without_raw_text(self):
+        command = Planner().plan("device toggle secret-device power token=abc")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+        self.assertNotIn("secret-device", str(command.args))
+        self.assertNotIn("token=abc", str(command.args))
+
+    def test_plan_rejects_invalid_device_parameters_without_raw_text(self):
+        command = Planner().plan("device apply lamp-1 power invalid-token")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+        self.assertNotIn("invalid-token", str(command.args))
+
+    def test_plan_rejects_duplicate_device_parameters(self):
+        command = Planner().plan("device apply lamp-1 power value=on value=off")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
 
 
 if __name__ == "__main__":

@@ -598,6 +598,61 @@ Out of scope for Phase 4.2:
 - Discovery.
 - Stable real Driver API.
 
+## Phase 4.4 Scope
+
+Phase 4.4 introduces deterministic technical device command input through the
+Planner. It lets textual adapters request the existing `device.execute` Runtime
+Capability without making CLI parse commands or making Runtime interpret device
+grammar.
+
+Canonical syntax:
+
+```text
+device read <device_id> <capability>
+device apply <device_id> <capability> key=value [key=value ...]
+```
+
+Included in Phase 4.4:
+
+- Planner recognizes the canonical `device read` and `device apply` syntax.
+- Planner produces `Command(name="device.execute")` with structured args:
+  - `device_id`;
+  - `capability`;
+  - `operation`;
+  - `parameters`.
+- Runtime passes the adapter `source` into Planner so the resulting Command
+  preserves the adapter boundary source.
+- CLI remains a non-privileged adapter and continues to call only
+  `Runtime.handle_adapter_input(text, source="cli")`.
+- Runtime does not parse device grammar.
+- Device Platform does not know external text.
+- Invalid technical device input is converted to a safe unknown command without
+  copying the raw input into `Command.args`.
+
+Privacy and safety:
+
+- Full external input is not logged or persisted by default.
+- Full `Command.args` are not exposed to adapters.
+- Sent parameters are not exposed in adapter-facing results, lifecycle events,
+  or logs.
+- Parameter values parsed from text are treated as strings in this phase.
+- Full validation against `DeviceCapability.parameters` is future work.
+
+Out of scope for Phase 4.4:
+
+- CLI parsing.
+- Planner natural language for devices.
+- AI.
+- Demo device registration.
+- Device Platform changes.
+- DriverRegistry.
+- Real drivers.
+- MQTT, GPIO, ESP32, Zigbee, Tuya, protocols, or hardware.
+- Persistence.
+- Dashboard.
+- New adapters.
+- Advanced parameter typing or validation.
+
 ## Project Rule
 
 Architecture is frozen until code forces a change. Notion documents decisions; GitHub validates them.

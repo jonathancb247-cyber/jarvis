@@ -32,6 +32,16 @@ class InvalidResultCapability:
         return "not a capability result"
 
 
+class RecordingPlanner:
+    def __init__(self, command):
+        self.command = command
+        self.calls = []
+
+    def plan(self, text, source="cli"):
+        self.calls.append({"text": text, "source": source})
+        return self.command
+
+
 class RecordingEventBus(EventBus):
     def __init__(self):
         super().__init__()
@@ -165,6 +175,23 @@ class RuntimeTest(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertTrue(result.message.startswith("The current time is "))
 
+    def test_handle_adapter_input_passes_source_to_planner(self):
+        planner = RecordingPlanner(Command(name="unknown", args={}, source="api"))
+        bus = EventBus()
+        registry = CapabilityRegistry()
+        context = RuntimeContext(
+            event_bus=bus,
+            capability_registry=registry,
+            device_registry=DeviceRegistry(),
+        )
+        runtime = Runtime(planner, context)
+
+        result = runtime.handle_adapter_input("hello", source="api")
+
+        self.assertEqual(planner.calls, [{"text": "hello", "source": "api"}])
+        self.assertFalse(result.success)
+        self.assertEqual(result.data, {"command": "unknown", "source": "api"})
+
     def test_handle_adapter_input_emits_lifecycle_events_with_correlation_id(self):
         bus = RecordingEventBus()
         registry = CapabilityRegistry()
@@ -251,6 +278,32 @@ class RuntimeTest(unittest.TestCase):
         self.assertTrue(
             all("secret token value" not in str(event.payload) for event in bus.published)
         )
+
+    def test_invalid_device_input_does_not_expose_raw_text(self):
+        bus = RecordingEventBus()
+        registry = CapabilityRegistry()
+        context = RuntimeContext(
+            event_bus=bus,
+            capability_registry=registry,
+            device_registry=DeviceRegistry(),
+        )
+        runtime = Runtime(Planner(), context)
+
+        with self.assertLogs("jarvis_core.runtime", level="INFO") as logs:
+            result = runtime.handle_adapter_input(
+                "device apply secret-device power token",
+                source="cli",
+            )
+
+        self.assertFalse(result.success)
+        self.assertNotIn("secret-device", str(result.data))
+        self.assertNotIn("token", str(result.data))
+        self.assertNotIn("secret-device", "\n".join(logs.output))
+        self.assertNotIn("token", "\n".join(logs.output))
+        self.assertTrue(
+            all("secret-device" not in str(event.payload) for event in bus.published)
+        )
+        self.assertTrue(all("token" not in str(event.payload) for event in bus.published))
 
     def test_handle_adapter_input_rejects_non_text_input(self):
         bus = RecordingEventBus()
