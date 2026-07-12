@@ -99,7 +99,7 @@ class Runtime:
             },
         )
 
-        command = self.planner.plan(text)
+        command = self.planner.plan(text, source=source)
         self._publish_event(
             type=COMMAND_PLANNED_EVENT,
             source="runtime",
