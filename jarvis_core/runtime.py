@@ -11,10 +11,12 @@ from uuid import uuid4
 from jarvis_core.capabilities.clock import ClockCapability
 from jarvis_core.capabilities.catalog import DeviceCatalogCapability
 from jarvis_core.capabilities.device import DeviceRuntimeCapability
+from jarvis_core.capabilities.discovery import DeviceDiscoveryCapability
 from jarvis_core.capabilities.lifecycle import DeviceLifecycleCapability
 from jarvis_core.device_routing import DeviceCommandRouter
 from jarvis_core.device_state import DeviceStateCoordinator
 from jarvis_core.devices import DeviceRegistry
+from jarvis_core.discovery import SimulatedDiscoveryProvider
 from jarvis_core.domain import CapabilityResult, Event, RuntimeContext
 from jarvis_core.drivers import SimulatedDriver
 from jarvis_core.event_bus import EventBus
@@ -302,6 +304,7 @@ def build_runtime():
     bus = EventBus()
     registry = CapabilityRegistry()
     device_registry = DeviceRegistry()
+    discovery_provider = SimulatedDiscoveryProvider()
     simulated_driver = SimulatedDriver()
     state_coordinator = DeviceStateCoordinator()
     device_router = DeviceCommandRouter(
@@ -311,6 +314,10 @@ def build_runtime():
     )
     registry.register(ClockCapability.name, ClockCapability())
     registry.register(DeviceCatalogCapability.name, DeviceCatalogCapability())
+    registry.register(
+        DeviceDiscoveryCapability.name,
+        DeviceDiscoveryCapability(discovery_provider),
+    )
     registry.register(DeviceLifecycleCapability.name, DeviceLifecycleCapability())
     registry.register(
         DeviceRuntimeCapability.name,

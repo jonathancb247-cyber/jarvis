@@ -788,6 +788,71 @@ Out of scope for Phase 6.2:
 - Natural language or AI.
 - Users, roles, or permissions.
 
+## Phase 7.2 Scope
+
+Phase 7.2 introduces simulated, explicit device discovery as a minimal Runtime
+Capability. Discovery only detects temporary candidates. It does not register,
+pair, authenticate, trust, authorize, connect, or execute devices.
+
+Canonical syntax:
+
+```text
+device discover
+```
+
+Included in Phase 7.2:
+
+- `DiscoveryCandidate` as an immutable temporary candidate descriptor.
+- `SimulatedDiscoveryProvider` as an experimental deterministic provider.
+- `DeviceDiscoveryCapability` in `jarvis_core/capabilities/discovery.py`.
+- Stable Runtime Capability name: `device.discovery`.
+- Planner mapping from `device discover` to `Command(name="device.discovery")`.
+- Bootstrap registration of `device.discovery`.
+- Safe `CapabilityResult` output containing only sanitized candidate fields.
+
+Discovery command contract:
+
+```python
+Command(
+    name="device.discovery",
+    args={
+        "operation": "scan",
+    },
+    source="...",
+)
+```
+
+Returned candidate data is limited to:
+
+- `candidate_id`
+- `display_name`
+- `transport`
+- `manufacturer`
+- `model`
+- `capability_hints`
+
+Discovery privacy and ownership:
+
+- `candidate_id` is opaque, temporary, and not a trust identity.
+- `capability_hints` are descriptive only and not executable.
+- Candidates are not stored in `DeviceRegistry`.
+- Discovery does not call lifecycle, catalog, routing, drivers, EventBus, or
+  persistence.
+- CLI remains a non-privileged adapter and only displays
+  `CapabilityResult.message`.
+
+Out of scope for Phase 7.2:
+
+- Background scanning.
+- Pairing, trust, authentication, authorization, or registration.
+- Automatic lifecycle operations.
+- `DiscoverySession`.
+- Persistent candidates, State Store, history, or Event Sourcing.
+- Hardware discovery, BLE, Wi-Fi, USB, mDNS, SSDP, MQTT, Zigbee, or Tuya.
+- DriverRegistry or DiscoveryProviderRegistry.
+- Dashboard.
+- Natural language, AI, LLM, or scenario engine.
+
 ## Project Rule
 
 Architecture is frozen until code forces a change. Notion documents decisions; GitHub validates them.

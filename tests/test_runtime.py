@@ -182,6 +182,47 @@ class RuntimeTest(unittest.TestCase):
         self.assertEqual(result.message, "Device registered.")
         self.assertEqual(result.data, {"operation": "add", "device_id": "lamp_1"})
 
+    def test_build_runtime_registers_device_discovery_capability(self):
+        runtime = build_runtime()
+
+        result = runtime.handle_adapter_input("device discover", source="cli")
+
+        self.assertIsInstance(result, CapabilityResult)
+        self.assertTrue(result.success)
+        self.assertEqual(result.message, "Discovery completed.")
+        self.assertEqual(result.data["operation"], "scan")
+        self.assertEqual(result.data["count"], 1)
+        self.assertEqual(
+            result.data["candidates"][0],
+            {
+                "candidate_id": "simulated-light-1",
+                "display_name": "Simulated Light",
+                "transport": "simulated",
+                "manufacturer": "JarvisOS",
+                "model": "SimulatedLight",
+                "capability_hints": ["light", "power"],
+            },
+        )
+
+    def test_runtime_device_discovery_does_not_mutate_device_registry(self):
+        runtime = build_runtime()
+
+        result = runtime.handle_adapter_input("device discover")
+        list_result = runtime.handle_adapter_input("device list")
+
+        self.assertTrue(result.success)
+        self.assertEqual(list_result.data, {"count": 0, "devices": []})
+
+    def test_runtime_device_discovery_does_not_involve_lifecycle_or_routing(self):
+        runtime = build_runtime()
+
+        result = runtime.handle_adapter_input("device discover")
+
+        self.assertTrue(result.success)
+        self.assertNotIn("device_id", result.data)
+        self.assertNotIn("operation_args", result.data)
+        self.assertNotIn("state", result.data)
+
     def test_runtime_device_lifecycle_add_then_catalog_list(self):
         runtime = build_runtime()
 

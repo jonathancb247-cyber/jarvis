@@ -3,12 +3,15 @@ from jarvis_core.domain import Command
 
 DEVICE_NAMESPACE = "device"
 DEVICE_CATALOG_COMMAND = "device.catalog"
+DEVICE_DISCOVERY_COMMAND = "device.discovery"
 DEVICE_EXECUTE_COMMAND = "device.execute"
 DEVICE_LIFECYCLE_COMMAND = "device.lifecycle"
 READ_OPERATION = "read"
 APPLY_OPERATION = "apply"
 ADD_OPERATION = "add"
 REMOVE_OPERATION = "remove"
+DISCOVER_OPERATION = "discover"
+SCAN_OPERATION = "scan"
 LIST_OPERATION = "list"
 INFO_OPERATION = "info"
 CAPABILITIES_OPERATION = "capabilities"
@@ -37,6 +40,10 @@ class Planner:
 
     def _plan_device_command(self, text, source):
         parts = text.strip().split()
+        discovery_command = self._plan_device_discovery_command(parts, source)
+        if discovery_command is not None:
+            return discovery_command
+
         lifecycle_command = self._plan_device_lifecycle_command(parts, source)
         if lifecycle_command is not None:
             return lifecycle_command
@@ -131,6 +138,24 @@ class Planner:
                 return None
             parameters[key] = value
         return parameters
+
+    def _plan_device_discovery_command(self, parts, source):
+        if not parts or parts[0].lower() != DEVICE_NAMESPACE:
+            return None
+        if len(parts) < 2:
+            return None
+
+        operation = parts[1].lower()
+        if operation != DISCOVER_OPERATION:
+            return None
+        if len(parts) != 2:
+            return self._invalid_device_input(source)
+
+        return Command(
+            name=DEVICE_DISCOVERY_COMMAND,
+            args={"operation": SCAN_OPERATION},
+            source=source,
+        )
 
     def _invalid_device_input(self, source):
         return Command(
