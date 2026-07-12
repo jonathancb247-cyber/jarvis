@@ -2,6 +2,7 @@ import unittest
 
 from jarvis_core.discovery import (
     DiscoveryCandidate,
+    DiscoveryCandidateStore,
     DiscoveryProviderUnavailable,
     DiscoveryScanError,
     SimulatedDiscoveryProvider,
@@ -94,6 +95,61 @@ class SimulatedDiscoveryProviderTests(unittest.TestCase):
 
         with self.assertRaises(DiscoveryScanError):
             provider.scan()
+
+
+class DiscoveryCandidateStoreTests(unittest.TestCase):
+    def test_replace_and_get_valid_candidate(self):
+        candidate = DiscoveryCandidate("candidate-1", "Device", "simulated")
+        store = DiscoveryCandidateStore()
+
+        store.replace([candidate])
+
+        self.assertIs(store.get("candidate-1"), candidate)
+        self.assertEqual(store.list(), [candidate])
+
+    def test_missing_candidate_raises_key_error(self):
+        store = DiscoveryCandidateStore()
+
+        with self.assertRaises(KeyError):
+            store.get("missing")
+
+    def test_clear_removes_candidates(self):
+        store = DiscoveryCandidateStore()
+        store.replace([DiscoveryCandidate("candidate-1", "Device", "simulated")])
+
+        store.clear()
+
+        self.assertEqual(store.list(), [])
+
+    def test_rejects_invalid_object(self):
+        store = DiscoveryCandidateStore()
+
+        with self.assertRaises(TypeError):
+            store.replace([object()])
+
+    def test_rejects_invalid_candidate_id(self):
+        store = DiscoveryCandidateStore()
+
+        with self.assertRaises(ValueError):
+            store.get("")
+
+    def test_replace_removes_previous_candidates(self):
+        first = DiscoveryCandidate("candidate-1", "Device", "simulated")
+        second = DiscoveryCandidate("candidate-2", "Other", "simulated")
+        store = DiscoveryCandidateStore()
+
+        store.replace([first])
+        store.replace([second])
+
+        self.assertEqual(store.list(), [second])
+        with self.assertRaises(KeyError):
+            store.get("candidate-1")
+
+    def test_store_does_not_use_device_registry(self):
+        store = DiscoveryCandidateStore()
+
+        self.assertFalse(hasattr(store, "device_registry"))
+        self.assertFalse(hasattr(store, "registry"))
 
 
 if __name__ == "__main__":

@@ -16,10 +16,25 @@ DEVICE_REGISTRY_UNAVAILABLE = "device_registry_unavailable"
 DEVICE_LIFECYCLE_FAILED = "device_lifecycle_failed"
 
 
+class DeviceLifecycleRegistrar:
+    """Internal primitive that applies lifecycle registration invariants."""
+
+    def register(self, registry, device):
+        if not isinstance(registry, DeviceRegistry):
+            raise TypeError("DeviceLifecycleRegistrar expects a DeviceRegistry")
+        if not isinstance(device, Device):
+            raise TypeError("DeviceLifecycleRegistrar expects a Device")
+        registry.register(device)
+        return device
+
+
 class DeviceLifecycleCapability:
     """Runtime Capability for adding and removing in-memory devices."""
 
     name = DEVICE_LIFECYCLE_COMMAND
+
+    def __init__(self, registrar=None):
+        self.registrar = registrar if registrar is not None else DeviceLifecycleRegistrar()
 
     def run(self, command, context):
         if not isinstance(command, Command) or command.name != self.name:
@@ -72,7 +87,7 @@ class DeviceLifecycleCapability:
             metadata={},
         )
         try:
-            registry.register(device)
+            self.registrar.register(registry, device)
         except ValueError:
             return self._failure(
                 DEVICE_ALREADY_EXISTS,

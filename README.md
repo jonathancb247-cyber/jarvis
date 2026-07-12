@@ -853,6 +853,87 @@ Out of scope for Phase 7.2:
 - Dashboard.
 - Natural language, AI, LLM, or scenario engine.
 
+## Phase 7.4 Scope
+
+Phase 7.4 introduces the minimum simulated onboarding path from the latest
+explicit discovery result to a registered in-memory Device.
+
+Canonical syntax:
+
+```text
+device discover
+device onboard <candidate_id> as <device_id>
+```
+
+Included in Phase 7.4:
+
+- `DiscoveryCandidateStore` as an experimental in-memory store for candidates
+  from the latest explicit discovery call.
+- `DeviceDiscoveryCapability` can replace the store contents after a successful
+  explicit discovery request.
+- `SimulatedOnboardingProvider` as an experimental deterministic provider for
+  simulated pairing, authentication, and ephemeral trust decisions.
+- `DeviceRegistrationProposal` as an internal sanitized registration proposal.
+- `DeviceLifecycleRegistrar` as an internal lifecycle registration primitive.
+- `DeviceLifecycleCapability` uses the registration primitive for `add`.
+- `DeviceOnboardingCapability` registered as `device.onboarding`.
+- Planner mapping from `device onboard <candidate_id> as <device_id>` to
+  `Command(name="device.onboarding")`.
+- Bootstrap wiring keeps Runtime as capability executor and avoids adding
+  onboarding services to `RuntimeContext`.
+
+Onboarding command contract:
+
+```python
+Command(
+    name="device.onboarding",
+    args={
+        "operation": "approve",
+        "candidate_id": "...",
+        "device_id": "...",
+    },
+    source="...",
+)
+```
+
+Ownership and privacy:
+
+- Onboarding is explicit and uses candidates from the latest discovery result.
+- Pairing, authentication, and trust are simulated.
+- Trust is ephemeral and is not stored in `DeviceState`.
+- `candidate_id` is temporary and is not `Device.id`.
+- The resulting Device uses the user-provided `device_id`.
+- The registered Device starts with no capabilities, unknown state, and empty
+  metadata.
+- Capability hints remain descriptive and are not converted into executable
+  capabilities.
+- Device registration remains owned by the Device Lifecycle Boundary through
+  the internal lifecycle registration primitive.
+- Onboarding does not expose full `Command.args`, raw pairing/authentication
+  details, trust details, provider internals, physical identifiers, secrets, or
+  stack traces.
+
+Candidate consumption policy:
+
+- Successful onboarding removes the candidate from the in-memory store.
+- Pairing, authentication, trust, duplicate-device, and registration failures
+  keep the candidate available for deterministic retry.
+- A new `device discover` call replaces previous candidates.
+- An empty discovery result clears the store.
+
+Out of scope for Phase 7.4:
+
+- Real hardware.
+- BLE, Wi-Fi provisioning, USB enrollment, MQTT, Zigbee, or Tuya.
+- Cryptography, certificates, PKI, credentials, or persistent trust.
+- Authorization engine, users, roles, or remote administration.
+- Background onboarding, automatic prompts, automatic pairing, or automatic
+  registration.
+- Reject lists, durable sessions, TTL, or DiscoverySession.
+- DriverRegistry, provider registry, State Store, or persistence.
+- Dashboard, voice, natural language, AI, LLM, fuzzy logic, neural networks, or
+  scenario engine.
+
 ## Project Rule
 
 Architecture is frozen until code forces a change. Notion documents decisions; GitHub validates them.

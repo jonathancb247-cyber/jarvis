@@ -6,11 +6,14 @@ DEVICE_CATALOG_COMMAND = "device.catalog"
 DEVICE_DISCOVERY_COMMAND = "device.discovery"
 DEVICE_EXECUTE_COMMAND = "device.execute"
 DEVICE_LIFECYCLE_COMMAND = "device.lifecycle"
+DEVICE_ONBOARDING_COMMAND = "device.onboarding"
 READ_OPERATION = "read"
 APPLY_OPERATION = "apply"
 ADD_OPERATION = "add"
 REMOVE_OPERATION = "remove"
 DISCOVER_OPERATION = "discover"
+ONBOARD_OPERATION = "onboard"
+APPROVE_OPERATION = "approve"
 SCAN_OPERATION = "scan"
 LIST_OPERATION = "list"
 INFO_OPERATION = "info"
@@ -43,6 +46,10 @@ class Planner:
         discovery_command = self._plan_device_discovery_command(parts, source)
         if discovery_command is not None:
             return discovery_command
+
+        onboarding_command = self._plan_device_onboarding_command(parts, source)
+        if onboarding_command is not None:
+            return onboarding_command
 
         lifecycle_command = self._plan_device_lifecycle_command(parts, source)
         if lifecycle_command is not None:
@@ -154,6 +161,34 @@ class Planner:
         return Command(
             name=DEVICE_DISCOVERY_COMMAND,
             args={"operation": SCAN_OPERATION},
+            source=source,
+        )
+
+    def _plan_device_onboarding_command(self, parts, source):
+        if not parts or parts[0].lower() != DEVICE_NAMESPACE:
+            return None
+        if len(parts) < 2:
+            return None
+
+        operation = parts[1].lower()
+        if operation != ONBOARD_OPERATION:
+            return None
+        if len(parts) != 5:
+            return self._invalid_device_input(source)
+
+        candidate_id = parts[2]
+        keyword = parts[3].lower()
+        device_id = parts[4]
+        if not candidate_id or keyword != "as" or not device_id:
+            return self._invalid_device_input(source)
+
+        return Command(
+            name=DEVICE_ONBOARDING_COMMAND,
+            args={
+                "operation": APPROVE_OPERATION,
+                "candidate_id": candidate_id,
+                "device_id": device_id,
+            },
             source=source,
         )
 

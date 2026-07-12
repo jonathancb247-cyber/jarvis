@@ -80,3 +80,38 @@ class SimulatedDiscoveryProvider:
                 capability_hints=("light", "power"),
             )
         ]
+
+
+class DiscoveryCandidateStore:
+    """Experimental in-memory store for the latest explicit discovery result."""
+
+    def __init__(self):
+        self._candidates = {}
+
+    def replace(self, candidates):
+        if not isinstance(candidates, (list, tuple)):
+            raise ValueError("DiscoveryCandidateStore.replace expects a list")
+        next_candidates = {}
+        for candidate in candidates:
+            if not isinstance(candidate, DiscoveryCandidate):
+                raise TypeError(
+                    "DiscoveryCandidateStore stores only DiscoveryCandidate objects"
+                )
+            next_candidates[candidate.candidate_id] = candidate
+        self._candidates = next_candidates
+
+    def get(self, candidate_id):
+        self._validate_candidate_id(candidate_id)
+        if candidate_id not in self._candidates:
+            raise KeyError(f"Discovery candidate not found: {candidate_id}")
+        return self._candidates[candidate_id]
+
+    def list(self):
+        return list(self._candidates.values())
+
+    def clear(self):
+        self._candidates = {}
+
+    def _validate_candidate_id(self, candidate_id):
+        if not isinstance(candidate_id, str) or not candidate_id:
+            raise ValueError("DiscoveryCandidateStore candidate_id must be a non-empty string")
