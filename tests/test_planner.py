@@ -128,6 +128,25 @@ class PlannerTest(unittest.TestCase):
         )
         self.assertEqual(command.source, "api")
 
+    def test_plan_returns_device_discovery_command(self):
+        command = Planner().plan("device discover", source="cli")
+
+        self.assertEqual(command.name, "device.discovery")
+        self.assertEqual(command.args, {"operation": "scan"})
+        self.assertEqual(command.source, "cli")
+
+    def test_plan_preserves_device_discovery_source(self):
+        command = Planner().plan("device discover", source="voice")
+
+        self.assertEqual(command.name, "device.discovery")
+        self.assertEqual(command.source, "voice")
+
+    def test_plan_rejects_device_discovery_extra_tokens(self):
+        command = Planner().plan("device discover bluetooth")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+
     def test_plan_rejects_device_lifecycle_add_missing_name(self):
         command = Planner().plan("device add lamp_1 type=light")
 
