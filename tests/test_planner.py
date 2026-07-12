@@ -65,6 +65,53 @@ class PlannerTest(unittest.TestCase):
             },
         )
 
+    def test_plan_returns_device_catalog_list_command(self):
+        command = Planner().plan("device list", source="cli")
+
+        self.assertEqual(command.name, "device.catalog")
+        self.assertEqual(command.args, {"operation": "list"})
+        self.assertEqual(command.source, "cli")
+
+    def test_plan_returns_device_catalog_info_command(self):
+        command = Planner().plan("device info sensor_1", source="api")
+
+        self.assertEqual(command.name, "device.catalog")
+        self.assertEqual(
+            command.args,
+            {"operation": "info", "device_id": "sensor_1"},
+        )
+        self.assertEqual(command.source, "api")
+
+    def test_plan_returns_device_catalog_capabilities_command(self):
+        command = Planner().plan("device capabilities sensor_1")
+
+        self.assertEqual(command.name, "device.catalog")
+        self.assertEqual(
+            command.args,
+            {"operation": "capabilities", "device_id": "sensor_1"},
+        )
+
+    def test_plan_returns_device_catalog_state_command(self):
+        command = Planner().plan("device state sensor_1")
+
+        self.assertEqual(command.name, "device.catalog")
+        self.assertEqual(
+            command.args,
+            {"operation": "state", "device_id": "sensor_1"},
+        )
+
+    def test_plan_rejects_device_catalog_list_with_extra_tokens(self):
+        command = Planner().plan("device list extra")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+
+    def test_plan_rejects_device_catalog_missing_device_id(self):
+        command = Planner().plan("device info")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+
     def test_plan_rejects_device_read_with_parameters(self):
         command = Planner().plan("device read lamp-1 power value=on")
 

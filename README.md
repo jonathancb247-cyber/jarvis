@@ -653,6 +653,74 @@ Out of scope for Phase 4.4:
 - New adapters.
 - Advanced parameter typing or validation.
 
+## Phase 5.2 Scope
+
+Phase 5.2 introduces read-only device catalog inspection through a Runtime
+Capability. It lets textual adapters inspect the current in-memory
+`DeviceRegistry` without giving CLI direct access to device internals.
+
+Canonical syntax:
+
+```text
+device list
+device info <device_id>
+device capabilities <device_id>
+device state <device_id>
+```
+
+Included in Phase 5.2:
+
+- `DeviceCatalogCapability` in `jarvis_core/capabilities/catalog.py`.
+- Stable Runtime Capability name: `device.catalog`.
+- Planner mapping from catalog syntax to `Command(name="device.catalog")`.
+- Read-only queries against `RuntimeContext.device_registry`.
+- Safe `CapabilityResult` output for:
+  - catalog listing;
+  - basic device info;
+  - formal and legacy capability inspection;
+  - official known `DeviceState`.
+- Bootstrap registration of `device.catalog`.
+- Tests for catalog behavior, Planner mapping, Runtime integration, privacy, and
+  read-only behavior.
+
+Catalog command contract:
+
+```python
+Command(
+    name="device.catalog",
+    args={
+        "operation": "list | info | capabilities | state",
+        "device_id": "...",
+    },
+    source="...",
+)
+```
+
+Read-only and privacy rules:
+
+- Catalog commands do not mutate `DeviceRegistry`, `DeviceState`, drivers, or
+  Runtime state.
+- `Device.metadata` is not exposed in catalog output.
+- Formal `DeviceCapability` descriptors are separated from legacy string
+  descriptors.
+- Legacy string descriptors are not executable.
+- Output crosses to adapters only through safe `CapabilityResult` values.
+
+Out of scope for Phase 5.2:
+
+- Device registration.
+- Discovery.
+- Demo devices in production bootstrap.
+- Hardware or real drivers.
+- DriverRegistry.
+- DeviceCommandRouter changes.
+- Driver or DeviceStateCoordinator participation in catalog queries.
+- Persistence.
+- Natural language.
+- AI.
+- Dashboard.
+- CLI rendering changes.
+
 ## Project Rule
 
 Architecture is frozen until code forces a change. Notion documents decisions; GitHub validates them.

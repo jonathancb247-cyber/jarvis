@@ -159,6 +159,16 @@ class RuntimeTest(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertTrue(result.message.startswith("The current time is "))
 
+    def test_build_runtime_registers_device_catalog_capability(self):
+        runtime = build_runtime()
+
+        result = runtime.handle_adapter_input("device list", source="cli")
+
+        self.assertIsInstance(result, CapabilityResult)
+        self.assertTrue(result.success)
+        self.assertEqual(result.message, "No devices registered.")
+        self.assertEqual(result.data, {"count": 0, "devices": []})
+
     def test_handle_user_input_preserves_adapter_message_boundary(self):
         runtime = self.build_test_runtime()
 
