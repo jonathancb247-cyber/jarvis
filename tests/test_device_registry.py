@@ -84,6 +84,28 @@ class DeviceRegistryTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             registry.get("missing")
 
+    def test_unregister_removes_and_returns_device(self):
+        registry = DeviceRegistry()
+        device = Device(id="lamp_1", name="Lamp 1", type="light")
+        registry.register(device)
+
+        removed = registry.unregister("lamp_1")
+
+        self.assertIs(removed, device)
+        self.assertFalse(registry.has("lamp_1"))
+
+    def test_unregister_missing_device_raises_key_error(self):
+        registry = DeviceRegistry()
+
+        with self.assertRaises(KeyError):
+            registry.unregister("missing")
+
+    def test_unregister_rejects_empty_device_id(self):
+        registry = DeviceRegistry()
+
+        with self.assertRaises(ValueError):
+            registry.unregister("")
+
     def test_list_returns_registered_devices(self):
         registry = DeviceRegistry()
         light = Device(id="light_1", name="Light 1", type="light")

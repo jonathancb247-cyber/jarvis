@@ -721,6 +721,73 @@ Out of scope for Phase 5.2:
 - Dashboard.
 - CLI rendering changes.
 
+## Phase 6.2 Scope
+
+Phase 6.2 introduces the minimum in-memory device lifecycle boundary for
+adding and removing devices from the current `DeviceRegistry`.
+
+Canonical syntax:
+
+```text
+device add <device_id> name=<name> type=<type>
+device remove <device_id>
+```
+
+Included in Phase 6.2:
+
+- `DeviceLifecycleCapability` in `jarvis_core/capabilities/lifecycle.py`.
+- Stable Runtime Capability name: `device.lifecycle`.
+- Planner mapping from lifecycle syntax to `Command(name="device.lifecycle")`.
+- `DeviceRegistry.unregister(device_id)` as the registry primitive for removal.
+- `add` creates a minimal in-memory `Device` with empty capabilities, default
+  unknown state, and empty metadata.
+- `remove` deletes an existing in-memory device from the registry.
+- Safe `CapabilityResult` output with only minimum operation and device ID data.
+- Bootstrap registration of `device.lifecycle`.
+
+Lifecycle command contract:
+
+```python
+Command(
+    name="device.lifecycle",
+    args={
+        "operation": "add | remove",
+        "device_id": "...",
+        "name": "...",
+        "type": "...",
+    },
+    source="...",
+)
+```
+
+Ownership:
+
+- CLI remains a non-privileged adapter.
+- Runtime executes the registered lifecycle capability and does not mutate
+  `DeviceRegistry` directly.
+- Planner parses deterministic syntax and does not register or remove devices.
+- `DeviceLifecycleCapability` owns the mutation boundary.
+- `DeviceRegistry` remains passive and in-memory.
+- `DeviceCatalogCapability` remains read-only.
+- `DeviceCommandRouter`, drivers, and `DeviceStateCoordinator` do not
+  participate in lifecycle operations.
+
+Out of scope for Phase 6.2:
+
+- Rename.
+- Enable or disable.
+- Metadata updates.
+- Capability editing.
+- Reset state.
+- Import or export.
+- Persistence.
+- Discovery or auto-pairing.
+- Real drivers or DriverRegistry.
+- MQTT, GPIO, ESP32, Zigbee, Tuya, protocols, or hardware.
+- Dashboard.
+- Natural language or AI.
+- Users, roles, or permissions.
+
 ## Project Rule
 
 Architecture is frozen until code forces a change. Notion documents decisions; GitHub validates them.
