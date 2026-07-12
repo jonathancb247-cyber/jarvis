@@ -11,6 +11,7 @@ from uuid import uuid4
 from jarvis_core.capabilities.clock import ClockCapability
 from jarvis_core.capabilities.catalog import DeviceCatalogCapability
 from jarvis_core.capabilities.device import DeviceRuntimeCapability
+from jarvis_core.capabilities.lifecycle import DeviceLifecycleCapability
 from jarvis_core.device_routing import DeviceCommandRouter
 from jarvis_core.device_state import DeviceStateCoordinator
 from jarvis_core.devices import DeviceRegistry
@@ -310,6 +311,7 @@ def build_runtime():
     )
     registry.register(ClockCapability.name, ClockCapability())
     registry.register(DeviceCatalogCapability.name, DeviceCatalogCapability())
+    registry.register(DeviceLifecycleCapability.name, DeviceLifecycleCapability())
     registry.register(
         DeviceRuntimeCapability.name,
         DeviceRuntimeCapability(device_router),

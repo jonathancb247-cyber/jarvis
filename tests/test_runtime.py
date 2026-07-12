@@ -169,6 +169,75 @@ class RuntimeTest(unittest.TestCase):
         self.assertEqual(result.message, "No devices registered.")
         self.assertEqual(result.data, {"count": 0, "devices": []})
 
+    def test_build_runtime_registers_device_lifecycle_capability(self):
+        runtime = build_runtime()
+
+        result = runtime.handle_adapter_input(
+            "device add lamp_1 name=Lamp type=light",
+            source="cli",
+        )
+
+        self.assertIsInstance(result, CapabilityResult)
+        self.assertTrue(result.success)
+        self.assertEqual(result.message, "Device registered.")
+        self.assertEqual(result.data, {"operation": "add", "device_id": "lamp_1"})
+
+    def test_runtime_device_lifecycle_add_then_catalog_list(self):
+        runtime = build_runtime()
+
+        runtime.handle_adapter_input("device add lamp_1 name=Lamp type=light")
+        result = runtime.handle_adapter_input("device list")
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.data["count"], 1)
+        self.assertEqual(result.data["devices"][0]["id"], "lamp_1")
+
+    def test_runtime_device_lifecycle_add_then_catalog_info(self):
+        runtime = build_runtime()
+
+        runtime.handle_adapter_input("device add lamp_1 name=Lamp type=light")
+        result = runtime.handle_adapter_input("device info lamp_1")
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.data["device"]["id"], "lamp_1")
+        self.assertEqual(result.data["device"]["name"], "Lamp")
+        self.assertEqual(result.data["device"]["type"], "light")
+
+    def test_runtime_device_lifecycle_remove_then_catalog_list(self):
+        runtime = build_runtime()
+
+        runtime.handle_adapter_input("device add lamp_1 name=Lamp type=light")
+        remove_result = runtime.handle_adapter_input("device remove lamp_1")
+        list_result = runtime.handle_adapter_input("device list")
+
+        self.assertTrue(remove_result.success)
+        self.assertEqual(remove_result.message, "Device removed.")
+        self.assertTrue(list_result.success)
+        self.assertEqual(list_result.data, {"count": 0, "devices": []})
+
+    def test_runtime_device_lifecycle_remove_then_catalog_not_found(self):
+        runtime = build_runtime()
+
+        runtime.handle_adapter_input("device add lamp_1 name=Lamp type=light")
+        runtime.handle_adapter_input("device remove lamp_1")
+        result = runtime.handle_adapter_input("device info lamp_1")
+
+        self.assertFalse(result.success)
+        self.assertEqual(result.error, "device_not_found")
+
+    def test_runtime_device_lifecycle_does_not_expose_full_command_args(self):
+        runtime = build_runtime()
+
+        result = runtime.handle_adapter_input(
+            "device add lamp_1 name=SecretName type=secret_type",
+            source="cli",
+        )
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.data, {"operation": "add", "device_id": "lamp_1"})
+        self.assertNotIn("SecretName", str(result.data))
+        self.assertNotIn("secret_type", str(result.data))
+
     def test_handle_user_input_preserves_adapter_message_boundary(self):
         runtime = self.build_test_runtime()
 

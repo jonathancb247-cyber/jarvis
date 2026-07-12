@@ -4,13 +4,17 @@ from jarvis_core.domain import Command
 DEVICE_NAMESPACE = "device"
 DEVICE_CATALOG_COMMAND = "device.catalog"
 DEVICE_EXECUTE_COMMAND = "device.execute"
+DEVICE_LIFECYCLE_COMMAND = "device.lifecycle"
 READ_OPERATION = "read"
 APPLY_OPERATION = "apply"
+ADD_OPERATION = "add"
+REMOVE_OPERATION = "remove"
 LIST_OPERATION = "list"
 INFO_OPERATION = "info"
 CAPABILITIES_OPERATION = "capabilities"
 STATE_OPERATION = "state"
 VALID_DEVICE_OPERATIONS = {READ_OPERATION, APPLY_OPERATION}
+VALID_LIFECYCLE_OPERATIONS = {ADD_OPERATION, REMOVE_OPERATION}
 VALID_CATALOG_OPERATIONS = {
     LIST_OPERATION,
     INFO_OPERATION,
@@ -33,6 +37,10 @@ class Planner:
 
     def _plan_device_command(self, text, source):
         parts = text.strip().split()
+        lifecycle_command = self._plan_device_lifecycle_command(parts, source)
+        if lifecycle_command is not None:
+            return lifecycle_command
+
         catalog_command = self._plan_device_catalog_command(parts, source)
         if catalog_command is not None:
             return catalog_command
@@ -65,6 +73,48 @@ class Planner:
                 "capability": capability,
                 "operation": operation,
                 "parameters": parameters,
+            },
+            source=source,
+        )
+
+    def _plan_device_lifecycle_command(self, parts, source):
+        if not parts or parts[0].lower() != DEVICE_NAMESPACE:
+            return None
+        if len(parts) < 2:
+            return None
+
+        operation = parts[1].lower()
+        if operation not in VALID_LIFECYCLE_OPERATIONS:
+            return None
+
+        if operation == REMOVE_OPERATION:
+            if len(parts) != 3 or not parts[2]:
+                return self._invalid_device_input(source)
+            return Command(
+                name=DEVICE_LIFECYCLE_COMMAND,
+                args={
+                    "operation": operation,
+                    "device_id": parts[2],
+                },
+                source=source,
+            )
+
+        if len(parts) != 5 or not parts[2]:
+            return self._invalid_device_input(source)
+
+        parameters = self._parse_parameters(parts[3:])
+        if parameters is None:
+            return self._invalid_device_input(source)
+        if set(parameters.keys()) != {"name", "type"}:
+            return self._invalid_device_input(source)
+
+        return Command(
+            name=DEVICE_LIFECYCLE_COMMAND,
+            args={
+                "operation": operation,
+                "device_id": parts[2],
+                "name": parameters["name"],
+                "type": parameters["type"],
             },
             source=source,
         )

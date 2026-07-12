@@ -126,5 +126,12 @@ class DeviceRegistry:
         device.state = state
         return device
 
+    def unregister(self, device_id):
+        if not isinstance(device_id, str) or not device_id:
+            raise ValueError("DeviceRegistry.unregister expects a non-empty device_id")
+        if device_id not in self.devices:
+            raise KeyError(f"Device not found: {device_id}")
+        return self.devices.pop(device_id)
+
     def has(self, device_id):
         return device_id in self.devices

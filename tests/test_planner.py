@@ -100,6 +100,67 @@ class PlannerTest(unittest.TestCase):
             {"operation": "state", "device_id": "sensor_1"},
         )
 
+    def test_plan_returns_device_lifecycle_add_command(self):
+        command = Planner().plan(
+            "device add lamp_1 name=Lamp type=light",
+            source="cli",
+        )
+
+        self.assertEqual(command.name, "device.lifecycle")
+        self.assertEqual(
+            command.args,
+            {
+                "operation": "add",
+                "device_id": "lamp_1",
+                "name": "Lamp",
+                "type": "light",
+            },
+        )
+        self.assertEqual(command.source, "cli")
+
+    def test_plan_returns_device_lifecycle_remove_command(self):
+        command = Planner().plan("device remove lamp_1", source="api")
+
+        self.assertEqual(command.name, "device.lifecycle")
+        self.assertEqual(
+            command.args,
+            {"operation": "remove", "device_id": "lamp_1"},
+        )
+        self.assertEqual(command.source, "api")
+
+    def test_plan_rejects_device_lifecycle_add_missing_name(self):
+        command = Planner().plan("device add lamp_1 type=light")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+
+    def test_plan_rejects_device_lifecycle_add_missing_type(self):
+        command = Planner().plan("device add lamp_1 name=Lamp")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+
+    def test_plan_rejects_device_lifecycle_duplicate_parameters(self):
+        command = Planner().plan("device add lamp_1 name=Lamp name=Other type=light")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+
+    def test_plan_rejects_device_lifecycle_unknown_parameters(self):
+        command = Planner().plan(
+            "device add lamp_1 name=Lamp type=light metadata=secret"
+        )
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+        self.assertNotIn("secret", str(command.args))
+
+    def test_plan_rejects_device_lifecycle_remove_extra_tokens(self):
+        command = Planner().plan("device remove lamp_1 force=true")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+
     def test_plan_rejects_device_catalog_list_with_extra_tokens(self):
         command = Planner().plan("device list extra")
 
