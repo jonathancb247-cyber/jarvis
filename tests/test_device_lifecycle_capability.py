@@ -7,6 +7,7 @@ from jarvis_core.capabilities.lifecycle import (
     DEVICE_REGISTRY_UNAVAILABLE,
     INVALID_DEVICE_LIFECYCLE_COMMAND,
     DeviceLifecycleCapability,
+    DeviceLifecycleRegistrar,
 )
 from jarvis_core.devices import Device, DeviceRegistry
 from jarvis_core.domain import CapabilityResult, Command, RuntimeContext
@@ -144,6 +145,58 @@ class DeviceLifecycleCapabilityTest(unittest.TestCase):
         self.assertFalse(result.success)
         self.assertEqual(result.error, INVALID_DEVICE_LIFECYCLE_COMMAND)
         self.assertEqual(result.data, {"operation": "add", "device_id": "lamp_1"})
+
+    def test_lifecycle_registrar_registers_device(self):
+        registry = DeviceRegistry()
+        device = Device(id="lamp_1", name="Lamp", type="light")
+
+        result = DeviceLifecycleRegistrar().register(registry, device)
+
+        self.assertIs(result, device)
+        self.assertIs(registry.get("lamp_1"), device)
+
+    def test_lifecycle_registrar_rejects_duplicate(self):
+        registry = DeviceRegistry()
+        device = Device(id="lamp_1", name="Lamp", type="light")
+        registry.register(device)
+
+        with self.assertRaises(ValueError):
+            DeviceLifecycleRegistrar().register(registry, device)
+
+    def test_lifecycle_registrar_is_not_runtime_boundary(self):
+        registrar = DeviceLifecycleRegistrar()
+
+        self.assertFalse(hasattr(registrar, "name"))
+        self.assertFalse(hasattr(registrar, "run"))
+
+    def test_lifecycle_capability_add_uses_registrar(self):
+        class RecordingRegistrar:
+            def __init__(self):
+                self.calls = []
+
+            def register(self, registry, device):
+                self.calls.append((registry, device))
+                registry.register(device)
+                return device
+
+        registrar = RecordingRegistrar()
+        registry = DeviceRegistry()
+
+        result = DeviceLifecycleCapability(registrar).run(
+            self.lifecycle_command(
+                {
+                    "operation": "add",
+                    "device_id": "lamp_1",
+                    "name": "Lamp",
+                    "type": "light",
+                }
+            ),
+            self.build_context(registry),
+        )
+
+        self.assertTrue(result.success)
+        self.assertEqual(len(registrar.calls), 1)
+        self.assertIs(registrar.calls[0][0], registry)
 
 
 if __name__ == "__main__":

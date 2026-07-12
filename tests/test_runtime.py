@@ -204,6 +204,87 @@ class RuntimeTest(unittest.TestCase):
             },
         )
 
+    def test_build_runtime_registers_device_onboarding_capability(self):
+        runtime = build_runtime()
+
+        runtime.handle_adapter_input("device discover", source="cli")
+        result = runtime.handle_adapter_input(
+            "device onboard simulated-light-1 as lamp_1",
+            source="cli",
+        )
+
+        self.assertIsInstance(result, CapabilityResult)
+        self.assertTrue(result.success)
+        self.assertEqual(result.message, "Device onboarded.")
+        self.assertEqual(
+            result.data,
+            {"operation": "approve", "device_id": "lamp_1", "registered": True},
+        )
+
+    def test_runtime_onboarding_registers_device_for_catalog(self):
+        runtime = build_runtime()
+
+        runtime.handle_adapter_input("device discover")
+        runtime.handle_adapter_input("device onboard simulated-light-1 as lamp_1")
+        list_result = runtime.handle_adapter_input("device list")
+        info_result = runtime.handle_adapter_input("device info lamp_1")
+        capabilities_result = runtime.handle_adapter_input("device capabilities lamp_1")
+        state_result = runtime.handle_adapter_input("device state lamp_1")
+
+        self.assertTrue(list_result.success)
+        self.assertEqual(list_result.data["count"], 1)
+        self.assertEqual(list_result.data["devices"][0]["id"], "lamp_1")
+        self.assertTrue(info_result.success)
+        self.assertEqual(info_result.data["device"]["id"], "lamp_1")
+        self.assertEqual(info_result.data["device"]["name"], "Simulated Light")
+        self.assertEqual(info_result.data["device"]["type"], "generic")
+        self.assertEqual(info_result.data["device"]["status"], "unknown")
+        self.assertEqual(info_result.data["device"]["formal_capability_count"], 0)
+        self.assertEqual(info_result.data["device"]["legacy_capability_count"], 0)
+        self.assertTrue(capabilities_result.success)
+        self.assertEqual(capabilities_result.data["formal"], [])
+        self.assertEqual(capabilities_result.data["legacy"], [])
+        self.assertTrue(state_result.success)
+        self.assertEqual(state_result.data["state"]["status"], "unknown")
+
+    def test_runtime_onboarded_device_has_no_executable_capabilities(self):
+        runtime = build_runtime()
+
+        runtime.handle_adapter_input("device discover")
+        runtime.handle_adapter_input("device onboard simulated-light-1 as lamp_1")
+        read_result = runtime.handle_adapter_input("device read lamp_1 power")
+        apply_result = runtime.handle_adapter_input("device apply lamp_1 power state=true")
+
+        self.assertFalse(read_result.success)
+        self.assertEqual(read_result.error, "capability_not_found")
+        self.assertFalse(apply_result.success)
+        self.assertEqual(apply_result.error, "capability_not_found")
+
+    def test_runtime_onboarding_missing_candidate_is_safe(self):
+        runtime = build_runtime()
+
+        result = runtime.handle_adapter_input("device onboard missing as lamp_1")
+
+        self.assertFalse(result.success)
+        self.assertEqual(result.error, "candidate_not_found")
+        self.assertEqual(result.message, "Discovery candidate not found.")
+        self.assertNotIn("missing", str(result.data))
+
+    def test_runtime_new_discovery_replaces_onboarding_candidates(self):
+        runtime = build_runtime()
+
+        runtime.handle_adapter_input("device discover")
+        first = runtime.handle_adapter_input(
+            "device onboard simulated-light-1 as lamp_1"
+        )
+        second = runtime.handle_adapter_input(
+            "device onboard simulated-light-1 as lamp_2"
+        )
+
+        self.assertTrue(first.success)
+        self.assertFalse(second.success)
+        self.assertEqual(second.error, "candidate_not_found")
+
     def test_runtime_device_discovery_does_not_mutate_device_registry(self):
         runtime = build_runtime()
 

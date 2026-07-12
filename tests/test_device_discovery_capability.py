@@ -10,6 +10,7 @@ from jarvis_core.capabilities.discovery import (
 )
 from jarvis_core.discovery import (
     DiscoveryCandidate,
+    DiscoveryCandidateStore,
     DiscoveryProviderUnavailable,
     DiscoveryScanError,
 )
@@ -167,6 +168,56 @@ class DeviceDiscoveryCapabilityTests(unittest.TestCase):
 
         self.assertFalse(result.success)
         self.assertEqual(result.error, UNSUPPORTED_DEVICE_DISCOVERY_OPERATION)
+
+    def test_discovery_populates_candidate_store(self):
+        candidate = DiscoveryCandidate("candidate-1", "Device", "simulated")
+        store = DiscoveryCandidateStore()
+
+        result = DeviceDiscoveryCapability(StaticProvider([candidate]), store).run(
+            self.command(),
+            self.context(),
+        )
+
+        self.assertTrue(result.success)
+        self.assertEqual(store.list(), [candidate])
+
+    def test_empty_discovery_clears_candidate_store(self):
+        store = DiscoveryCandidateStore()
+        store.replace([DiscoveryCandidate("candidate-1", "Device", "simulated")])
+
+        result = DeviceDiscoveryCapability(StaticProvider([]), store).run(
+            self.command(),
+            self.context(),
+        )
+
+        self.assertTrue(result.success)
+        self.assertEqual(store.list(), [])
+
+    def test_new_discovery_replaces_candidate_store(self):
+        store = DiscoveryCandidateStore()
+        old = DiscoveryCandidate("candidate-1", "Old", "simulated")
+        new = DiscoveryCandidate("candidate-2", "New", "simulated")
+        store.replace([old])
+
+        result = DeviceDiscoveryCapability(StaticProvider([new]), store).run(
+            self.command(),
+            self.context(),
+        )
+
+        self.assertTrue(result.success)
+        self.assertEqual(store.list(), [new])
+
+    def test_discovery_does_not_register_devices(self):
+        context = self.context()
+        store = DiscoveryCandidateStore()
+
+        result = DeviceDiscoveryCapability(
+            StaticProvider([DiscoveryCandidate("candidate-1", "Device", "simulated")]),
+            store,
+        ).run(self.command(), context)
+
+        self.assertTrue(result.success)
+        self.assertIsNone(context.device_registry)
 
 
 if __name__ == "__main__":

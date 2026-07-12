@@ -147,6 +147,55 @@ class PlannerTest(unittest.TestCase):
         self.assertEqual(command.name, "unknown")
         self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
 
+    def test_plan_returns_device_onboarding_command(self):
+        command = Planner().plan(
+            "device onboard candidate-1 as lamp_1",
+            source="api",
+        )
+
+        self.assertEqual(command.name, "device.onboarding")
+        self.assertEqual(
+            command.args,
+            {
+                "operation": "approve",
+                "candidate_id": "candidate-1",
+                "device_id": "lamp_1",
+            },
+        )
+        self.assertEqual(command.source, "api")
+
+    def test_plan_rejects_device_onboarding_missing_candidate_id(self):
+        command = Planner().plan("device onboard as lamp_1")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+
+    def test_plan_rejects_device_onboarding_missing_as(self):
+        command = Planner().plan("device onboard candidate-1 lamp_1")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+
+    def test_plan_rejects_device_onboarding_missing_device_id(self):
+        command = Planner().plan("device onboard candidate-1 as")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+
+    def test_plan_rejects_device_onboarding_extra_tokens(self):
+        command = Planner().plan("device onboard candidate-1 as lamp_1 force=true")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+
+    def test_plan_rejects_device_onboarding_without_raw_text(self):
+        command = Planner().plan("device onboard secret-candidate as secret-device extra")
+
+        self.assertEqual(command.name, "unknown")
+        self.assertEqual(command.args, {"reason": INVALID_DEVICE_INPUT_REASON})
+        self.assertNotIn("secret-candidate", str(command.args))
+        self.assertNotIn("secret-device", str(command.args))
+
     def test_plan_rejects_device_lifecycle_add_missing_name(self):
         command = Planner().plan("device add lamp_1 type=light")
 

@@ -2,6 +2,7 @@
 
 from jarvis_core.discovery import (
     DiscoveryCandidate,
+    DiscoveryCandidateStore,
     DiscoveryProviderUnavailable,
     DiscoveryScanError,
 )
@@ -23,8 +24,9 @@ class DeviceDiscoveryCapability:
 
     name = DEVICE_DISCOVERY_COMMAND
 
-    def __init__(self, provider):
+    def __init__(self, provider, candidate_store=None):
         self.provider = provider
+        self.candidate_store = candidate_store
 
     def run(self, command, context):
         if not isinstance(command, Command) or command.name != self.name:
@@ -71,6 +73,7 @@ class DeviceDiscoveryCapability:
             )
 
         candidate_data = []
+        validated_candidates = []
         for candidate in candidates:
             if not isinstance(candidate, DiscoveryCandidate):
                 return self._failure(
@@ -78,7 +81,17 @@ class DeviceDiscoveryCapability:
                     "Discovery scan failed.",
                     self._safe_data(operation),
                 )
+            validated_candidates.append(candidate)
             candidate_data.append(self._candidate_data(candidate))
+
+        if self.candidate_store is not None:
+            if not isinstance(self.candidate_store, DiscoveryCandidateStore):
+                return self._failure(
+                    DISCOVERY_PROVIDER_UNAVAILABLE,
+                    "Discovery provider is unavailable.",
+                    self._safe_data(operation),
+                )
+            self.candidate_store.replace(validated_candidates)
 
         count = len(candidate_data)
         message = (
