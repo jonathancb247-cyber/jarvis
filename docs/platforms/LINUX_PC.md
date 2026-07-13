@@ -63,7 +63,7 @@ For explicit runtime configuration:
 python -m jarvis_core --config profiles/http-lab.local.json
 ```
 
-See [Runtime Configuration](../getting-started/CONFIGURATION.md).
+See [Runtime Configuration](../getting-started/CONFIGURATION.md) and [Device State Persistence](../getting-started/STATE_PERSISTENCE.md).
 
 ## Security
 
@@ -73,7 +73,7 @@ Use a controlled local network for HTTP devices.
 
 - No installer.
 - No package.
-- No persistent configuration.
+- State persistence is experimental and limited to semantic `DeviceState`.
 
 ## Troubleshooting
 
@@ -83,5 +83,5 @@ Check Python version, repository path, firewall, and local network reachability.
 
 - Installer or package.
 - Service mode.
-- Persistent configuration.
+- Service-managed configuration.
 

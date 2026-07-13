@@ -9,10 +9,14 @@ class FakeRuntime:
     def __init__(self, message="fake response"):
         self.message = message
         self.calls = []
+        self.shutdown_calls = 0
 
     def handle_adapter_input(self, text, source="cli"):
         self.calls.append({"text": text, "source": source})
         return CapabilityResult(success=True, message=self.message)
+
+    def shutdown(self):
+        self.shutdown_calls += 1
 
 
 class InteractiveCliTest(unittest.TestCase):
@@ -98,6 +102,50 @@ class InteractiveCliTest(unittest.TestCase):
 
         self.assertEqual(runtime.calls, [{"text": "hello", "source": "cli"}])
         self.assertEqual(output[2], "Jarvis: wrapped")
+
+    def test_cli_calls_shutdown_on_exit(self):
+        inputs = iter(["exit"])
+        output = []
+        runtime = FakeRuntime()
+
+        def input_fn(prompt):
+            output.append(prompt)
+            return next(inputs)
+
+        CliAdapter(runtime, input_fn=input_fn, output_fn=output.append).run()
+
+        self.assertEqual(runtime.shutdown_calls, 1)
+        self.assertEqual(output[-1], "Bye.")
+
+    def test_cli_calls_shutdown_on_eof(self):
+        output = []
+        runtime = FakeRuntime()
+
+        def input_fn(prompt):
+            output.append(prompt)
+            raise EOFError
+
+        CliAdapter(runtime, input_fn=input_fn, output_fn=output.append).run()
+
+        self.assertEqual(runtime.shutdown_calls, 1)
+        self.assertEqual(output[-1], "Bye.")
+
+    def test_cli_reports_safe_shutdown_error(self):
+        class FailingRuntime(FakeRuntime):
+            def shutdown(self):
+                raise RuntimeError("C:/secret/state.json")
+
+        inputs = iter(["exit"])
+        output = []
+
+        def input_fn(prompt):
+            output.append(prompt)
+            return next(inputs)
+
+        CliAdapter(FailingRuntime(), input_fn=input_fn, output_fn=output.append).run()
+
+        self.assertIn("Device state could not be saved.", output)
+        self.assertNotIn("C:/secret/state.json", str(output))
 
 
 if __name__ == "__main__":

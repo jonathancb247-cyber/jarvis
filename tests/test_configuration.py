@@ -121,9 +121,34 @@ class RuntimeConfigurationLoaderTests(unittest.TestCase):
         with self.assertConfigError(CONFIG_INVALID):
             RuntimeConfigurationLoader().load(path)
 
-    def test_runtime_options_must_be_empty_object(self):
+    def test_runtime_options_accepts_state_store_path(self):
         payload = valid_profile()
         payload["runtime_options"] = {"state_store_path": "state.json"}
+        path = self.write_profile(payload)
+
+        profile = RuntimeConfigurationLoader().load(path)
+
+        self.assertEqual(profile.runtime_options, {"state_store_path": "state.json"})
+
+    def test_runtime_options_rejects_unknown_fields(self):
+        payload = valid_profile()
+        payload["runtime_options"] = {"retry_count": 2}
+        path = self.write_profile(payload)
+
+        with self.assertConfigError(CONFIG_INVALID):
+            RuntimeConfigurationLoader().load(path)
+
+    def test_runtime_options_rejects_url_path(self):
+        payload = valid_profile()
+        payload["runtime_options"] = {"state_store_path": "http://localhost/state.json"}
+        path = self.write_profile(payload)
+
+        with self.assertConfigError(CONFIG_INVALID):
+            RuntimeConfigurationLoader().load(path)
+
+    def test_runtime_options_rejects_environment_interpolation(self):
+        payload = valid_profile()
+        payload["runtime_options"] = {"state_store_path": "%USERPROFILE%\\state.json"}
         path = self.write_profile(payload)
 
         with self.assertConfigError(CONFIG_INVALID):

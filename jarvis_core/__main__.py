@@ -10,6 +10,14 @@ from jarvis_core.configuration import (
     SCHEMA_VERSION_UNSUPPORTED,
     ConfigurationError,
 )
+from jarvis_core.state_store import (
+    SCHEMA_VERSION_UNSUPPORTED as STATE_SCHEMA_VERSION_UNSUPPORTED,
+    STATE_RESTORE_FAILED,
+    STATE_SAVE_FAILED,
+    STATE_STORE_CORRUPT,
+    STATE_STORE_UNAVAILABLE,
+    StateStoreError,
+)
 
 
 STARTUP_MESSAGES = {
@@ -20,6 +28,14 @@ STARTUP_MESSAGES = {
     INVALID_CAPABILITY: "Device capability configuration is invalid.",
     INVALID_BINDING: "HTTP device binding configuration is invalid.",
     ORPHAN_BINDING: "HTTP device binding references an unknown device.",
+}
+
+STATE_STORE_STARTUP_MESSAGES = {
+    STATE_STORE_CORRUPT: "State store is corrupt.",
+    STATE_SCHEMA_VERSION_UNSUPPORTED: "State store schema version is not supported.",
+    STATE_RESTORE_FAILED: "Device state could not be restored.",
+    STATE_SAVE_FAILED: "Device state could not be saved.",
+    STATE_STORE_UNAVAILABLE: "State store is unavailable.",
 }
 
 
@@ -33,6 +49,9 @@ def main(argv=None):
         )
     except ConfigurationError as error:
         print(STARTUP_MESSAGES.get(error.code, "Configuration is invalid."))
+        return 1
+    except StateStoreError as error:
+        print(STATE_STORE_STARTUP_MESSAGES.get(error.code, "Device state could not be restored."))
         return 1
     run_cli(runtime)
     return 0

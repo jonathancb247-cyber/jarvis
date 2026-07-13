@@ -136,7 +136,7 @@ For declarative startup configuration, copy and edit `profiles/http-lab.example.
 python -m jarvis_core --config profiles/http-lab.local.json
 ```
 
-See [Runtime Configuration](../getting-started/CONFIGURATION.md). State persistence is not implemented yet.
+See [Runtime Configuration](../getting-started/CONFIGURATION.md) and [Device State Persistence](../getting-started/STATE_PERSISTENCE.md). The State Store persists only semantic `DeviceState` and restores it as stale.
 
 ## Example Commands
 
@@ -155,7 +155,7 @@ This is an experimental local-network example. It does not implement authenticat
 
 - No authentication.
 - No TLS.
-- No persistence.
+- Experimental DeviceState persistence only.
 - Manual IP.
 - No real discovery.
 - No real onboarding.

@@ -84,7 +84,7 @@ Copy-Item profiles/http-lab.example.json profiles/http-lab.local.json
 python -m jarvis_core --config profiles/http-lab.local.json
 ```
 
-The profile recreates the Device and HTTP binding at startup. DeviceState persistence is not implemented yet.
+The profile recreates the Device and HTTP binding at startup. If `state_store_path` is enabled, JarvisOS restores the last semantic `DeviceState` as stale. See [Device State Persistence](../../docs/getting-started/STATE_PERSISTENCE.md).
 
 ## Commands
 
@@ -116,7 +116,7 @@ If the ESP32 is unavailable, JarvisOS should return a safe error without exposin
 - Local network only.
 - No authentication.
 - No TLS.
-- No persistence.
+- Experimental DeviceState persistence only.
 - Manual IP.
 - No real discovery.
 - No real onboarding.

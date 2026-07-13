@@ -102,9 +102,25 @@ python -m jarvis_core --config profiles/http-lab.local.json
 
 See [Runtime Configuration](../getting-started/CONFIGURATION.md).
 
+## State Store Problems
+
+If a configured runtime reports:
+
+```text
+State store is corrupt.
+```
+
+the JSON snapshot is invalid or unsupported. JarvisOS stops startup rather than silently operating with state the user expects to be restored.
+
+If the state file is missing, startup should continue with an empty store. State files are experimental snapshots and should not be committed.
+
+See [Device State Persistence](../getting-started/STATE_PERSISTENCE.md).
+
 ## `device state` Only Shows Status
 
 State changes only appear after successful `device read` or `device apply` operations return accepted observations.
+
+With a State Store, restored state is marked `stale` until a fresh read or apply produces new observations. `stale` means last known semantic state, not current hardware availability.
 
 ## ESP-IDF Monitor
 
