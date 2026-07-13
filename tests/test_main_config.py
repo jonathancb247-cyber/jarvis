@@ -59,14 +59,32 @@ class MainConfigTests(unittest.TestCase):
         self.assertNotIn(str(path), str(output))
         self.assertNotIn("Traceback", str(output))
 
+    def test_main_with_corrupt_state_store_returns_safe_startup_error(self):
+        state_path = self.root / "state" / "http-lab.state.json"
+        state_path.parent.mkdir()
+        state_path.write_text("{", encoding="utf-8")
+        path = self.write_profile(runtime_options={"state_store_path": "state/http-lab.state.json"})
+        output = []
+
+        with patch("builtins.print", _capture_print(output)):
+            exit_code = jarvis_main.main(["--config", str(path)])
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(output, ["State store is corrupt."])
+        self.assertNotIn(str(state_path), str(output))
+        self.assertNotIn("Traceback", str(output))
+
     def test_profile_argument_is_not_supported(self):
         with patch("sys.stderr", new_callable=_StringSink):
             with self.assertRaises(SystemExit):
                 jarvis_main.main(["--profile", "http-lab"])
 
-    def write_profile(self):
+    def write_profile(self, runtime_options=None):
         path = self.root / "profile.json"
-        path.write_text(json.dumps(valid_profile()), encoding="utf-8")
+        payload = valid_profile()
+        if runtime_options is not None:
+            payload["runtime_options"] = runtime_options
+        path.write_text(json.dumps(payload), encoding="utf-8")
         return path
 
 

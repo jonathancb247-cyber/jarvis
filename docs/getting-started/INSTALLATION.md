@@ -56,13 +56,13 @@ python -m jarvis_core
 
 The default runtime is offline-safe. It does not open network connections, does not create demo devices, and does not load hardware automatically.
 
-To start from an explicit JSON profile, read [Runtime Configuration](CONFIGURATION.md).
+To start from an explicit JSON profile, read [Runtime Configuration](CONFIGURATION.md). For experimental DeviceState snapshots, read [Device State Persistence](STATE_PERSISTENCE.md).
 
 ## Current Limitations
 
 - No official installer.
 - No official package.
-- No persistent state store.
+- State persistence is experimental and limited to semantic `DeviceState`.
 - No automatic hardware discovery.
 - No production authentication or TLS for local HTTP devices.
 - Hardware validation entry points are explicit tools, not the default runtime.

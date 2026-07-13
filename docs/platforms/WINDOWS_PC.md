@@ -57,7 +57,7 @@ Or start from an explicit JSON runtime profile:
 python -m jarvis_core --config profiles/http-lab.local.json
 ```
 
-See [Runtime Configuration](../getting-started/CONFIGURATION.md).
+See [Runtime Configuration](../getting-started/CONFIGURATION.md) and [Device State Persistence](../getting-started/STATE_PERSISTENCE.md).
 
 ## Example Commands
 
@@ -74,7 +74,7 @@ Windows firewall or hotspot isolation can block device communication. Keep ESP32
 ## Limitations
 
 - No installer.
-- No persistent profiles.
+- State persistence is experimental and limited to semantic `DeviceState`.
 - No automatic hardware discovery.
 
 ## Troubleshooting
@@ -90,6 +90,6 @@ Then test HTTP directly with `Invoke-RestMethod`.
 ## Future Work
 
 - Installer.
-- Runtime profiles.
+- Service-managed profile selection.
 - Better local diagnostics.
 

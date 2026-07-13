@@ -41,9 +41,15 @@ class Runtime:
     CapabilityResult. Adapters decide how to present the result.
     """
 
-    def __init__(self, planner, context):
+    def __init__(self, planner, context, shutdown_hook=None):
         self.planner = planner
         self.context = context
+        self._shutdown_hook = shutdown_hook
+
+    def shutdown(self):
+        """Run an injected controlled-shutdown hook, if one exists."""
+        if self._shutdown_hook is not None:
+            self._shutdown_hook()
 
     def handle_user_input(self, text):
         """Plan text input and return the user-facing message.

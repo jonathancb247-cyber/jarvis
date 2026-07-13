@@ -3,6 +3,7 @@
 
 EXIT_COMMANDS = {"exit", "quit"}
 PROMPT = "jarvis> "
+SHUTDOWN_SAVE_ERROR_MESSAGE = "Device state could not be saved."
 
 
 class CliAdapter:
@@ -21,11 +22,13 @@ class CliAdapter:
             try:
                 text = self.input_fn(PROMPT)
             except EOFError:
+                self._shutdown()
                 self.output_fn("Bye.")
                 break
 
             normalized = text.strip().lower()
             if normalized in EXIT_COMMANDS:
+                self._shutdown()
                 self.output_fn("Bye.")
                 break
             if not normalized:
@@ -33,6 +36,15 @@ class CliAdapter:
 
             result = self.runtime.handle_adapter_input(text, source="cli")
             self.output_fn("Jarvis: " + result.message)
+
+    def _shutdown(self):
+        shutdown = getattr(self.runtime, "shutdown", None)
+        if not callable(shutdown):
+            return
+        try:
+            shutdown()
+        except Exception:
+            self.output_fn(SHUTDOWN_SAVE_ERROR_MESSAGE)
 
 
 def run_cli(runtime, input_fn=input, output_fn=print):

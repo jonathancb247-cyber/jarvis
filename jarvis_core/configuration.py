@@ -42,6 +42,7 @@ BINDING_FIELDS = {
     "read_path",
     "apply_path",
 }
+RUNTIME_OPTION_FIELDS = {"state_store_path"}
 
 
 class ConfigurationError(Exception):
@@ -151,8 +152,9 @@ class RuntimeConfigurationLoader:
             raise ConfigurationError(CONFIG_INVALID)
         if not isinstance(bindings_payload, list):
             raise ConfigurationError(CONFIG_INVALID)
-        if not isinstance(runtime_options, dict) or runtime_options:
+        if not isinstance(runtime_options, dict):
             raise ConfigurationError(CONFIG_INVALID)
+        runtime_options = self._parse_runtime_options(runtime_options)
 
         devices = self._parse_devices(devices_payload)
         device_ids = {device.id for device in devices}
@@ -162,8 +164,18 @@ class RuntimeConfigurationLoader:
             name=profile_name,
             devices=tuple(devices),
             http_bindings=tuple(bindings),
-            runtime_options={},
+            runtime_options=runtime_options,
         )
+
+    def _parse_runtime_options(self, runtime_options):
+        _require_allowed_fields(runtime_options, RUNTIME_OPTION_FIELDS, CONFIG_INVALID)
+        parsed = {}
+        if "state_store_path" in runtime_options:
+            state_store_path = runtime_options["state_store_path"]
+            if not _is_valid_local_path_string(state_store_path):
+                raise ConfigurationError(CONFIG_INVALID)
+            parsed["state_store_path"] = state_store_path
+        return parsed
 
     def _parse_devices(self, devices_payload):
         devices = []
@@ -350,6 +362,20 @@ def _ensure_profile(profile):
 
 def _is_non_empty_string(value):
     return isinstance(value, str) and bool(value)
+
+
+def _is_valid_local_path_string(value):
+    if not _is_non_empty_string(value):
+        return False
+    if "\x00" in value:
+        return False
+    if value.startswith("~"):
+        return False
+    if "://" in value or value.lower().startswith("file:"):
+        return False
+    if "$" in value or "%" in value:
+        return False
+    return True
 
 
 def _require_exact_fields(payload, allowed, code):

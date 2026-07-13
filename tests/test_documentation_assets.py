@@ -11,6 +11,7 @@ REQUIRED_FILES = [
     "docs/vision/FUTURE_EXPERIENCE_IDEAS.md",
     "docs/getting-started/INSTALLATION.md",
     "docs/getting-started/CONFIGURATION.md",
+    "docs/getting-started/STATE_PERSISTENCE.md",
     "docs/getting-started/FIRST_RUN.md",
     "docs/getting-started/FIRST_DEVICE.md",
     "docs/device-integration/README.md",

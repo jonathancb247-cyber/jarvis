@@ -45,7 +45,9 @@ JarvisOS can also load Devices and HTTP bindings from an explicit JSON profile:
 python -m jarvis_core --config profiles/http-lab.local.json
 ```
 
-See [Runtime Configuration](CONFIGURATION.md). This recreates configured Devices and bindings at startup, but DeviceState persistence is not implemented yet.
+See [Runtime Configuration](CONFIGURATION.md). This recreates configured Devices and bindings at startup.
+
+If the profile enables `state_store_path`, JarvisOS also restores the last semantic `DeviceState` as stale. See [Device State Persistence](STATE_PERSISTENCE.md).
 
 ## Path 2: Hardware-Validated ESP32 LED
 

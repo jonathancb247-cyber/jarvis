@@ -39,5 +39,7 @@
       "apply_path": "/device/apply"
     }
   ],
-  "runtime_options": {}
+  "runtime_options": {
+    "state_store_path": "../state/http-lab.state.json"
+  }
 }

@@ -1,2 +1,4 @@
 profiles/*.local.json
+state/
+*.state.json
 

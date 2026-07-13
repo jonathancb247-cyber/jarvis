@@ -14,7 +14,7 @@ The default runtime remains offline-safe:
 python -m jarvis_core
 ```
 
-Without `--config`, JarvisOS does not load devices, HTTP bindings, profiles, network endpoints, hardware, or persistence.
+Without `--config`, JarvisOS does not load devices, HTTP bindings, profiles, network endpoints, hardware, or state persistence.
 
 ## Source Of Truth
 
@@ -108,13 +108,21 @@ Do not include:
 
 ## Runtime Options
 
-Phase 9.2 accepts only:
+Runtime options are strict. Phase 9.3 accepts either an empty object:
 
 ```json
 "runtime_options": {}
 ```
 
-State Store options are not implemented yet. `state_store_path` is rejected until Phase 9.3.
+or an explicit state store path:
+
+```json
+"runtime_options": {
+  "state_store_path": "../state/http-lab.state.json"
+}
+```
+
+`state_store_path` enables experimental DeviceState persistence. Relative paths resolve relative to the configuration file location. See [Device State Persistence](STATE_PERSISTENCE.md).
 
 ## Example Profile
 
@@ -133,6 +141,8 @@ profiles/*.local.json
 
 The example file is versioned. Local files are user-specific.
 
+The example profile includes a state store path. Running it may create an ignored state snapshot under `state/`.
+
 ## Startup Errors
 
 Startup errors are safe and minimal:
@@ -147,13 +157,21 @@ Startup errors are safe and minimal:
 
 Startup errors do not print full JSON, full URLs, credentials, exception reprs, or stack traces.
 
+## State Persistence
+
+Configuration recreates Devices, capabilities, and HTTP bindings. The State Store preserves only safe semantic `DeviceState`.
+
+On restart:
+
+- missing state file starts empty;
+- saved `unknown` restores as `unknown`;
+- any other saved status restores as `stale`;
+- hardware availability is not assumed.
+
 ## What Is Not Implemented
 
-Phase 9.2 does not implement:
+Phase 9.3 does not implement:
 
-- State Store
-- DeviceState persistence
-- save/restore
 - `--profile`
 - profile registry
 - hot reload
@@ -166,5 +184,5 @@ Phase 9.2 does not implement:
 - async
 - DriverRegistry
 
-Each run starts configured devices with `DeviceState(status="unknown")`.
+State history, secrets, trust, candidates, raw payloads, and technical driver results are not persisted.
 
