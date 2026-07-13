@@ -12,6 +12,13 @@ INVALID_CAPABILITY_KIND = "invalid_capability_kind"
 INVALID_PARAMETERS = "invalid_parameters"
 SIMULATED_FAILURE = "simulated_failure"
 SIMULATED_TIMEOUT = "simulated_timeout"
+CONFIGURATION_INVALID = "configuration_invalid"
+CONNECTION_FAILED = "connection_failed"
+REQUEST_TIMEOUT = "request_timeout"
+PROTOCOL_ERROR = "protocol_error"
+INVALID_RESPONSE = "invalid_response"
+AUTHENTICATION_FAILED = "authentication_failed"
+OPERATION_NOT_SUPPORTED = "operation_not_supported"
 
 
 @dataclass
