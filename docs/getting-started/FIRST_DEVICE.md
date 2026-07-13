@@ -37,6 +37,16 @@ device state lamp_1
 
 Simulated devices and candidates are in-memory. They disappear when the runtime stops.
 
+## Declarative Config Path
+
+JarvisOS can also load Devices and HTTP bindings from an explicit JSON profile:
+
+```powershell
+python -m jarvis_core --config profiles/http-lab.local.json
+```
+
+See [Runtime Configuration](CONFIGURATION.md). This recreates configured Devices and bindings at startup, but DeviceState persistence is not implemented yet.
+
 ## Path 2: Hardware-Validated ESP32 LED
 
 The first hardware-validated example uses:

@@ -10,6 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_FILES = [
     "docs/vision/FUTURE_EXPERIENCE_IDEAS.md",
     "docs/getting-started/INSTALLATION.md",
+    "docs/getting-started/CONFIGURATION.md",
     "docs/getting-started/FIRST_RUN.md",
     "docs/getting-started/FIRST_DEVICE.md",
     "docs/device-integration/README.md",
@@ -36,6 +37,7 @@ REQUIRED_FILES = [
     "examples/http-led/protocol-examples/success-on.json",
     "examples/http-led/protocol-examples/success-off.json",
     "examples/http-led/protocol-examples/error-operation-not-supported.json",
+    "profiles/http-lab.example.json",
     "examples/http-led/esp32-idf/CMakeLists.txt",
     "examples/http-led/esp32-idf/README.md",
     "examples/http-led/esp32-idf/main/CMakeLists.txt",
@@ -56,6 +58,12 @@ class DocumentationAssetsTests(unittest.TestCase):
             with self.subTest(path=path.name):
                 payload = json.loads(path.read_text(encoding="utf-8"))
                 self.assertIsInstance(payload, dict)
+
+    def test_example_profile_is_valid_json(self):
+        profile = REPO_ROOT / "profiles" / "http-lab.example.json"
+        payload = json.loads(profile.read_text(encoding="utf-8"))
+        self.assertEqual(payload["schema_version"], 1)
+        self.assertEqual(payload["profile"], "http-lab")
 
     def test_source_of_truth_policy_is_documented(self):
         guide = REPO_ROOT / "docs" / "device-integration" / "README.md"

@@ -51,6 +51,14 @@ Use the default runtime for offline-safe tests. Use the validation tool for ESP3
 python tools/run_http_led_validation.py --base-url http://<IP_DEL_ESP32>
 ```
 
+Or start from an explicit JSON runtime profile:
+
+```powershell
+python -m jarvis_core --config profiles/http-lab.local.json
+```
+
+See [Runtime Configuration](../getting-started/CONFIGURATION.md).
+
 ## Example Commands
 
 ```text

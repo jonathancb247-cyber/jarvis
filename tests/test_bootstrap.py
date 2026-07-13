@@ -1,6 +1,11 @@
 import unittest
 
-from jarvis_core.bootstrap import build_http_runtime, build_runtime
+from jarvis_core.bootstrap import (
+    build_http_runtime,
+    build_runtime,
+    build_runtime_from_profile,
+)
+from jarvis_core.configuration import RuntimeConfigurationLoader
 from jarvis_core.devices import Device, DeviceCapability
 from jarvis_core.http_driver import (
     HttpDeviceBinding,
@@ -83,6 +88,30 @@ class BootstrapTests(unittest.TestCase):
     def test_build_http_runtime_rejects_invalid_driver(self):
         with self.assertRaises(TypeError):
             build_http_runtime(object())
+
+    def test_build_runtime_from_profile_uses_fake_http_transport(self):
+        profile = RuntimeConfigurationLoader().load("profiles/http-lab.example.json")
+        transport = FakeHttpTransport()
+        runtime = build_runtime_from_profile(profile, http_transport=transport)
+
+        apply_result = runtime.handle_adapter_input(
+            "device apply lamp_1 power.switch state=true",
+            source="cli",
+        )
+        read_result = runtime.handle_adapter_input(
+            "device read lamp_1 status.read",
+            source="cli",
+        )
+        state_result = runtime.handle_adapter_input("device state lamp_1", source="cli")
+        list_result = runtime.handle_adapter_input("device list", source="cli")
+
+        self.assertTrue(apply_result.success)
+        self.assertTrue(read_result.success)
+        self.assertTrue(state_result.success)
+        self.assertEqual(state_result.data["state"]["properties"], {"power": True})
+        self.assertEqual(list_result.data["count"], 1)
+        self.assertEqual(transport.calls[0][0], "http://192.168.1.50/device/apply")
+        self.assertEqual(transport.calls[1][0], "http://192.168.1.50/device/read")
 
 
 if __name__ == "__main__":

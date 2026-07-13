@@ -49,3 +49,5 @@ Hardware validation uses explicit tools such as:
 python tools/run_http_led_validation.py --base-url http://<IP_DEL_ESP32>
 ```
 
+Declarative runtime profiles are loaded only when `--config` is provided. See [Runtime Configuration](CONFIGURATION.md).
+

@@ -94,6 +94,14 @@ python tools/run_http_led_validation.py --base-url http://<IP>
 
 The default runtime does not configure HTTP bindings. Use the validation runtime or an explicit test runtime.
 
+For declarative configuration, use:
+
+```powershell
+python -m jarvis_core --config profiles/http-lab.local.json
+```
+
+See [Runtime Configuration](../getting-started/CONFIGURATION.md).
+
 ## `device state` Only Shows Status
 
 State changes only appear after successful `device read` or `device apply` operations return accepted observations.
