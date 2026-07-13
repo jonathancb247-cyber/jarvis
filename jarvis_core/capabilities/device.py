@@ -6,6 +6,13 @@ from jarvis_core.device_routing import (
     DEVICE_NOT_FOUND,
     DRIVER_FAILURE,
     DRIVER_UNAVAILABLE_ERROR,
+    CONFIGURATION_INVALID_ERROR,
+    CONNECTION_FAILED_ERROR,
+    REQUEST_TIMEOUT_ERROR,
+    PROTOCOL_ERROR_ERROR,
+    INVALID_RESPONSE_ERROR,
+    AUTHENTICATION_FAILED_ERROR,
+    OPERATION_NOT_SUPPORTED_ERROR,
     INVALID_CAPABILITY_KIND_ERROR,
     INVALID_COMMAND,
     INVALID_COMMAND_ARGS,
@@ -82,6 +89,13 @@ class DeviceRuntimeCapability:
             INVALID_CAPABILITY_KIND_ERROR: "Device command is invalid.",
             INVALID_PARAMETERS_ERROR: "Device command is invalid.",
             DRIVER_UNAVAILABLE_ERROR: "Device is unavailable.",
+            CONFIGURATION_INVALID_ERROR: "Device command failed.",
+            CONNECTION_FAILED_ERROR: "Device command failed.",
+            REQUEST_TIMEOUT_ERROR: "Device command failed.",
+            PROTOCOL_ERROR_ERROR: "Device command failed.",
+            INVALID_RESPONSE_ERROR: "Device command failed.",
+            AUTHENTICATION_FAILED_ERROR: "Device command failed.",
+            OPERATION_NOT_SUPPORTED_ERROR: "Device command failed.",
             DEVICE_TIMEOUT: "Device command failed.",
             STATE_UPDATE_FAILED: "Device state could not be updated.",
             DEVICE_EXECUTION_FAILED: "Device command failed.",
@@ -93,6 +107,8 @@ class DeviceRuntimeCapability:
             return INVALID_DEVICE_COMMAND
         if error == SIMULATED_TIMEOUT_ERROR:
             return DEVICE_TIMEOUT
+        if error == REQUEST_TIMEOUT_ERROR:
+            return DEVICE_TIMEOUT
         if error in {
             DEVICE_NOT_FOUND,
             CAPABILITY_NOT_FOUND_ERROR,
@@ -102,6 +118,15 @@ class DeviceRuntimeCapability:
             STATE_UPDATE_FAILED,
         }:
             return error
+        if error in {
+            CONFIGURATION_INVALID_ERROR,
+            CONNECTION_FAILED_ERROR,
+            PROTOCOL_ERROR_ERROR,
+            INVALID_RESPONSE_ERROR,
+            AUTHENTICATION_FAILED_ERROR,
+            OPERATION_NOT_SUPPORTED_ERROR,
+        }:
+            return DEVICE_EXECUTION_FAILED
         if error in {DRIVER_FAILURE, INVALID_DRIVER_RESULT}:
             return DEVICE_EXECUTION_FAILED
         return DEVICE_EXECUTION_FAILED

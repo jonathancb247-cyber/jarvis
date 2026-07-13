@@ -937,3 +937,111 @@ Out of scope for Phase 7.4:
 ## Project Rule
 
 Architecture is frozen until code forces a change. Notion documents decisions; GitHub validates them.
+
+## Phase 8.3 Scope
+
+Phase 8.3 introduces the first experimental real-driver transport boundary for
+JarvisOS: synchronous HTTP local.
+
+This phase validates a real communication path while keeping the default
+AVP-001 runtime safe, in-memory, and free of production hardware assumptions.
+
+Included in Phase 8.3:
+
+- `HttpDeviceBinding` as explicit per-device HTTP reachability configuration.
+- `HttpDeviceBindingStore` as an experimental in-memory binding store.
+- `HttpDeviceDriver` as an experimental synchronous HTTP local driver.
+- An injectable HTTP JSON transport so tests can run without network or
+  hardware.
+- Fixed protocol paths:
+  - `POST /device/read`
+  - `POST /device/apply`
+- DriverResult error normalization for local HTTP configuration, connection,
+  timeout, protocol, invalid response, authentication, and unsupported
+  operation failures.
+- A small bootstrap/composition module that preserves the default runtime while
+  allowing explicit HTTP test/runtime construction.
+- Tests for bindings, HTTP transport behavior, driver behavior, routing,
+  bootstrap behavior, privacy, and regressions.
+
+Example vertical slice commands:
+
+```text
+device apply lamp_1 power.switch state=true
+device read lamp_1 status.read
+device state lamp_1
+```
+
+The default runtime does not create `lamp_1`, does not register a real HTTP
+binding, and does not contact the network. HTTP devices and bindings must be
+created explicitly by tests or by a future approved composition path.
+
+HTTP protocol shape:
+
+```text
+POST /device/read
+```
+
+```json
+{
+  "capability": "status.read"
+}
+```
+
+```text
+POST /device/apply
+```
+
+```json
+{
+  "capability": "power.switch",
+  "parameters": {
+    "state": "true"
+  }
+}
+```
+
+Successful endpoint responses use:
+
+```json
+{
+  "success": true,
+  "observations": {
+    "power": true
+  }
+}
+```
+
+Failure endpoint responses use a normalized internal error:
+
+```json
+{
+  "success": false,
+  "error": "operation_not_supported"
+}
+```
+
+Security and privacy limits:
+
+- Experimental local-network transport only.
+- Not production secure.
+- Do not expose to the public internet.
+- No authentication.
+- No TLS.
+- No credentials, tokens, certificates, or secrets store.
+- No persistence or config files.
+- No async, background loop, polling, subscriptions, reconnect manager, or
+  automatic retries.
+- No DriverRegistry.
+- No HTTP discovery, mDNS, SSDP, auto-registration, or auto-onboarding.
+- No required hardware in CI.
+- ESP32 hardware validation is optional and manual.
+- Full URLs, raw request payloads, raw responses, headers, exceptions, and stack
+  traces are not adapter-facing output.
+
+Parameter limitation:
+
+- The deterministic Planner still parses command parameters as strings.
+- `state=true` is sent to the HTTP endpoint as `"true"`.
+- General type coercion and complete validation against
+  `DeviceCapability.parameters` remain future work.

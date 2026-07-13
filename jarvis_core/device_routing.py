@@ -7,9 +7,16 @@ from jarvis_core.devices import DeviceCapability, DeviceRegistry, DeviceState
 from jarvis_core.domain import Command
 from jarvis_core.drivers import (
     CAPABILITY_NOT_FOUND,
+    AUTHENTICATION_FAILED,
+    CONFIGURATION_INVALID,
+    CONNECTION_FAILED,
     DRIVER_UNAVAILABLE,
     INVALID_CAPABILITY_KIND,
     INVALID_PARAMETERS,
+    INVALID_RESPONSE,
+    OPERATION_NOT_SUPPORTED,
+    PROTOCOL_ERROR,
+    REQUEST_TIMEOUT,
     SIMULATED_TIMEOUT,
     DriverResult,
 )
@@ -29,6 +36,13 @@ INVALID_PARAMETERS_ERROR = "invalid_parameters"
 DRIVER_UNAVAILABLE_ERROR = "driver_unavailable"
 DRIVER_FAILURE = "driver_failure"
 SIMULATED_TIMEOUT_ERROR = "simulated_timeout"
+CONFIGURATION_INVALID_ERROR = "configuration_invalid"
+CONNECTION_FAILED_ERROR = "connection_failed"
+REQUEST_TIMEOUT_ERROR = "request_timeout"
+PROTOCOL_ERROR_ERROR = "protocol_error"
+INVALID_RESPONSE_ERROR = "invalid_response"
+AUTHENTICATION_FAILED_ERROR = "authentication_failed"
+OPERATION_NOT_SUPPORTED_ERROR = "operation_not_supported"
 INVALID_DRIVER_RESULT = "invalid_driver_result"
 STATE_UPDATE_FAILED = "state_update_failed"
 
@@ -305,6 +319,20 @@ class DeviceCommandRouter:
             return INVALID_PARAMETERS_ERROR
         if error == SIMULATED_TIMEOUT:
             return SIMULATED_TIMEOUT_ERROR
+        if error == CONFIGURATION_INVALID:
+            return CONFIGURATION_INVALID_ERROR
+        if error == CONNECTION_FAILED:
+            return CONNECTION_FAILED_ERROR
+        if error == REQUEST_TIMEOUT:
+            return REQUEST_TIMEOUT_ERROR
+        if error == PROTOCOL_ERROR:
+            return PROTOCOL_ERROR_ERROR
+        if error == INVALID_RESPONSE:
+            return INVALID_RESPONSE_ERROR
+        if error == AUTHENTICATION_FAILED:
+            return AUTHENTICATION_FAILED_ERROR
+        if error == OPERATION_NOT_SUPPORTED:
+            return OPERATION_NOT_SUPPORTED_ERROR
         return DRIVER_FAILURE
 
     def _failure(self, device_id, capability, operation, error):

@@ -8,23 +8,8 @@ systems directly.
 import logging
 from uuid import uuid4
 
-from jarvis_core.capabilities.clock import ClockCapability
-from jarvis_core.capabilities.catalog import DeviceCatalogCapability
-from jarvis_core.capabilities.device import DeviceRuntimeCapability
-from jarvis_core.capabilities.discovery import DeviceDiscoveryCapability
-from jarvis_core.capabilities.lifecycle import (
-    DeviceLifecycleCapability,
-    DeviceLifecycleRegistrar,
-)
-from jarvis_core.capabilities.onboarding import DeviceOnboardingCapability
-from jarvis_core.device_routing import DeviceCommandRouter
-from jarvis_core.device_state import DeviceStateCoordinator
 from jarvis_core.devices import DeviceRegistry
-from jarvis_core.discovery import DiscoveryCandidateStore, SimulatedDiscoveryProvider
 from jarvis_core.domain import CapabilityResult, Event, RuntimeContext
-from jarvis_core.drivers import SimulatedDriver
-from jarvis_core.event_bus import EventBus
-from jarvis_core.onboarding import SimulatedOnboardingProvider
 from jarvis_core.planner import Planner
 from jarvis_core.registry import CapabilityRegistry
 
@@ -306,47 +291,6 @@ class Runtime:
 
 def build_runtime():
     """Wire the minimal AVP-001 core and return its Runtime boundary."""
-    bus = EventBus()
-    registry = CapabilityRegistry()
-    device_registry = DeviceRegistry()
-    candidate_store = DiscoveryCandidateStore()
-    discovery_provider = SimulatedDiscoveryProvider()
-    onboarding_provider = SimulatedOnboardingProvider()
-    lifecycle_registrar = DeviceLifecycleRegistrar()
-    simulated_driver = SimulatedDriver()
-    state_coordinator = DeviceStateCoordinator()
-    device_router = DeviceCommandRouter(
-        device_registry,
-        simulated_driver,
-        state_coordinator,
-    )
-    registry.register(ClockCapability.name, ClockCapability())
-    registry.register(DeviceCatalogCapability.name, DeviceCatalogCapability())
-    registry.register(
-        DeviceDiscoveryCapability.name,
-        DeviceDiscoveryCapability(discovery_provider, candidate_store),
-    )
-    registry.register(
-        DeviceLifecycleCapability.name,
-        DeviceLifecycleCapability(lifecycle_registrar),
-    )
-    registry.register(
-        DeviceOnboardingCapability.name,
-        DeviceOnboardingCapability(
-            candidate_store,
-            onboarding_provider,
-            lifecycle_registrar,
-        ),
-    )
-    registry.register(
-        DeviceRuntimeCapability.name,
-        DeviceRuntimeCapability(device_router),
-    )
-    planner = Planner()
-    context = RuntimeContext(
-        event_bus=bus,
-        capability_registry=registry,
-        device_registry=device_registry,
-    )
-    runtime = Runtime(planner, context)
-    return runtime
+    from jarvis_core.bootstrap import build_runtime as build_default_runtime
+
+    return build_default_runtime()
