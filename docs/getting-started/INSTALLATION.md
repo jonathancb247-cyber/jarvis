@@ -56,6 +56,8 @@ python -m jarvis_core
 
 The default runtime is offline-safe. It does not open network connections, does not create demo devices, and does not load hardware automatically.
 
+To start from an explicit JSON profile, read [Runtime Configuration](CONFIGURATION.md).
+
 ## Current Limitations
 
 - No official installer.

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "profile": "http-lab",
+  "devices": [
+    {
+      "id": "lamp_1",
+      "name": "ESP32 LED",
+      "type": "light",
+      "capabilities": [
+        {
+          "name": "power.switch",
+          "kind": "action",
+          "parameters": {
+            "state": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "constraints": {},
+          "availability_policy": {}
+        },
+        {
+          "name": "status.read",
+          "kind": "reading",
+          "parameters": {},
+          "constraints": {},
+          "availability_policy": {}
+        }
+      ],
+      "metadata": {}
+    }
+  ],
+  "http_bindings": [
+    {
+      "device_id": "lamp_1",
+      "base_url": "http://192.168.1.50",
+      "timeout_seconds": 2.0,
+      "read_path": "/device/read",
+      "apply_path": "/device/apply"
+    }
+  ],
+  "runtime_options": {}
+}

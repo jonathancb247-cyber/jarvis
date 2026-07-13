@@ -57,6 +57,14 @@ For ESP32 validation:
 python tools/run_http_led_validation.py --base-url http://<IP_DEL_ESP32>
 ```
 
+For explicit runtime configuration:
+
+```bash
+python -m jarvis_core --config profiles/http-lab.local.json
+```
+
+See [Runtime Configuration](../getting-started/CONFIGURATION.md).
+
 ## Security
 
 Use a controlled local network for HTTP devices.

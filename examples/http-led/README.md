@@ -77,6 +77,15 @@ python tools/run_http_led_validation.py --base-url http://<IP_DEL_ESP32>
 
 The default runtime does not create `lamp_1`, does not configure an HTTP binding, and does not open network connections.
 
+Alternatively, copy the example profile and start JarvisOS with explicit configuration:
+
+```powershell
+Copy-Item profiles/http-lab.example.json profiles/http-lab.local.json
+python -m jarvis_core --config profiles/http-lab.local.json
+```
+
+The profile recreates the Device and HTTP binding at startup. DeviceState persistence is not implemented yet.
+
 ## Commands
 
 ```text

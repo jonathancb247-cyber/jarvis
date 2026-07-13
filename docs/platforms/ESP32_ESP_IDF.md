@@ -130,6 +130,14 @@ Start the manual validation runtime:
 python tools/run_http_led_validation.py --base-url http://<IP>
 ```
 
+For declarative startup configuration, copy and edit `profiles/http-lab.example.json`, then run:
+
+```powershell
+python -m jarvis_core --config profiles/http-lab.local.json
+```
+
+See [Runtime Configuration](../getting-started/CONFIGURATION.md). State persistence is not implemented yet.
+
 ## Example Commands
 
 ```text

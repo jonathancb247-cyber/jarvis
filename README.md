@@ -7,6 +7,7 @@ JarvisOS is an agent-oriented cognitive operating system for future physical AI 
 - [Installation](docs/getting-started/INSTALLATION.md)
 - [First run](docs/getting-started/FIRST_RUN.md)
 - [First device](docs/getting-started/FIRST_DEVICE.md)
+- [Runtime Configuration](docs/getting-started/CONFIGURATION.md)
 - [Device Integration Guide](docs/device-integration/README.md)
 - [ESP32 + ESP-IDF Guide](docs/platforms/ESP32_ESP_IDF.md)
 - [HTTP LED Example](examples/http-led/README.md)
@@ -23,6 +24,18 @@ JarvisOS has been physically validated with an ESP32 + ESP-IDF local HTTP LED ex
 - Phase 8.4 hardware validation.
 
 This transport is experimental and not production secure. It does not provide authentication, TLS, persistence, automatic discovery, automatic onboarding, or public internet safety.
+
+## Runtime Configuration
+
+JarvisOS can start from an explicit declarative JSON profile:
+
+```bash
+python -m jarvis_core --config profiles/http-lab.local.json
+```
+
+The local profile file must be created by the user, usually by copying `profiles/http-lab.example.json`. The default runtime remains offline-safe, starts with no devices, and does not use the network.
+
+Configuration is declarative. Device state persistence is not implemented yet, and secrets are not allowed in configuration files.
 
 ## AVP-001 - Architecture Validation Prototype
 
