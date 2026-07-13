@@ -49,6 +49,8 @@ See [Runtime Configuration](CONFIGURATION.md). This recreates configured Devices
 
 If the profile enables `state_store_path`, JarvisOS also restores the last semantic `DeviceState` as stale. See [Device State Persistence](STATE_PERSISTENCE.md).
 
+For the full profile-based ESP32 validation and restart flow, see [HTTP Profile Validation](HTTP_PROFILE_VALIDATION.md).
+
 ## Path 2: Hardware-Validated ESP32 LED
 
 The first hardware-validated example uses:

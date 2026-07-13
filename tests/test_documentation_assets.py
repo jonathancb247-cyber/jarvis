@@ -12,6 +12,7 @@ REQUIRED_FILES = [
     "docs/getting-started/INSTALLATION.md",
     "docs/getting-started/CONFIGURATION.md",
     "docs/getting-started/STATE_PERSISTENCE.md",
+    "docs/getting-started/HTTP_PROFILE_VALIDATION.md",
     "docs/getting-started/FIRST_RUN.md",
     "docs/getting-started/FIRST_DEVICE.md",
     "docs/device-integration/README.md",
@@ -65,6 +66,15 @@ class DocumentationAssetsTests(unittest.TestCase):
         payload = json.loads(profile.read_text(encoding="utf-8"))
         self.assertEqual(payload["schema_version"], 1)
         self.assertEqual(payload["profile"], "http-lab")
+        self.assertEqual(
+            payload["runtime_options"]["state_store_path"],
+            "../state/http-lab.state.json",
+        )
+
+    def test_local_profiles_are_gitignored(self):
+        gitignore = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
+
+        self.assertIn("profiles/*.local.json", gitignore)
 
     def test_source_of_truth_policy_is_documented(self):
         guide = REPO_ROOT / "docs" / "device-integration" / "README.md"
@@ -79,6 +89,14 @@ class DocumentationAssetsTests(unittest.TestCase):
         for path in _documentation_files():
             with self.subTest(path=path.relative_to(REPO_ROOT)):
                 self.assertNotIn(forbidden, path.read_text(encoding="utf-8"))
+
+    def test_documentation_does_not_include_wifi_credentials(self):
+        forbidden = ["ssid=", "password=", "wifi_password"]
+        for path in _documentation_files():
+            text = path.read_text(encoding="utf-8").lower()
+            with self.subTest(path=path.relative_to(REPO_ROOT)):
+                for token in forbidden:
+                    self.assertNotIn(token, text)
 
     def test_markdown_relative_links_resolve(self):
         for path in _documentation_files():

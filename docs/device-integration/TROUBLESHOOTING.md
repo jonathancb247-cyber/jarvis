@@ -102,6 +102,14 @@ python -m jarvis_core --config profiles/http-lab.local.json
 
 See [Runtime Configuration](../getting-started/CONFIGURATION.md).
 
+For the ESP32 profile-based validation flow, use:
+
+```powershell
+python -m jarvis_core --config profiles/http-lab.local.json
+```
+
+See [HTTP Profile Validation](../getting-started/HTTP_PROFILE_VALIDATION.md).
+
 ## State Store Problems
 
 If a configured runtime reports:

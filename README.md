@@ -9,6 +9,7 @@ JarvisOS is an agent-oriented cognitive operating system for future physical AI 
 - [First device](docs/getting-started/FIRST_DEVICE.md)
 - [Runtime Configuration](docs/getting-started/CONFIGURATION.md)
 - [Device State Persistence](docs/getting-started/STATE_PERSISTENCE.md)
+- [HTTP Profile Validation](docs/getting-started/HTTP_PROFILE_VALIDATION.md)
 - [Device Integration Guide](docs/device-integration/README.md)
 - [ESP32 + ESP-IDF Guide](docs/platforms/ESP32_ESP_IDF.md)
 - [HTTP LED Example](examples/http-led/README.md)
@@ -39,6 +40,14 @@ The local profile file must be created by the user, usually by copying `profiles
 Configuration is declarative: it recreates devices, capabilities, and bindings. When a profile enables `state_store_path`, JarvisOS restores the last semantic `DeviceState` as stale on startup. Secrets are not allowed in configuration or state files.
 
 State persistence is experimental. It does not store bindings, raw payloads, trust, credentials, history, or hardware availability.
+
+For the profile-based ESP32 validation flow, copy `profiles/http-lab.example.json` to `profiles/http-lab.local.json`, edit the local `base_url`, then run:
+
+```bash
+python -m jarvis_core --config profiles/http-lab.local.json
+```
+
+See [HTTP Profile Validation](docs/getting-started/HTTP_PROFILE_VALIDATION.md).
 
 ## AVP-001 - Architecture Validation Prototype
 

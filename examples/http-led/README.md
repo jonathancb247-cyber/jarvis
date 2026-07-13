@@ -86,6 +86,8 @@ python -m jarvis_core --config profiles/http-lab.local.json
 
 The profile recreates the Device and HTTP binding at startup. If `state_store_path` is enabled, JarvisOS restores the last semantic `DeviceState` as stale. See [Device State Persistence](../../docs/getting-started/STATE_PERSISTENCE.md).
 
+For the full profile-based restart validation procedure, see [HTTP Profile Validation](../../docs/getting-started/HTTP_PROFILE_VALIDATION.md).
+
 ## Commands
 
 ```text
