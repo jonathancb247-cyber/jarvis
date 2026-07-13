@@ -2,6 +2,28 @@
 
 JarvisOS is an agent-oriented cognitive operating system for future physical AI agents.
 
+## Documentation
+
+- [Installation](docs/getting-started/INSTALLATION.md)
+- [First run](docs/getting-started/FIRST_RUN.md)
+- [First device](docs/getting-started/FIRST_DEVICE.md)
+- [Device Integration Guide](docs/device-integration/README.md)
+- [ESP32 + ESP-IDF Guide](docs/platforms/ESP32_ESP_IDF.md)
+- [HTTP LED Example](examples/http-led/README.md)
+- [Driver Development](docs/device-integration/DRIVER_DEVELOPMENT.md)
+- [Security Guidelines](docs/device-integration/SECURITY_GUIDELINES.md)
+
+## Hardware Validated
+
+JarvisOS has been physically validated with an ESP32 + ESP-IDF local HTTP LED example:
+
+- ESP32-WROOM-32 / DevKit-style board.
+- HTTP local experimental driver.
+- Built-in LED on GPIO2.
+- Phase 8.4 hardware validation.
+
+This transport is experimental and not production secure. It does not provide authentication, TLS, persistence, automatic discovery, automatic onboarding, or public internet safety.
+
 ## AVP-001 - Architecture Validation Prototype
 
 AVP-001 is the first executable architecture checkpoint for JarvisOS. It is intentionally small: the goal is not to build the full product yet, but to validate the smallest working loop that can grow into a modular physical AI operating system.
