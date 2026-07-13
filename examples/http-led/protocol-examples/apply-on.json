@@ -1,0 +1,6 @@
+{
+  "capability": "power.switch",
+  "parameters": {
+    "state": "true"
+  }
+}

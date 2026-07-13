@@ -1,0 +1,16 @@
+menu "JarvisOS HTTP LED Example"
+
+config JARVIS_WIFI_SSID
+    string "Wi-Fi SSID"
+    default ""
+    help
+        Local 2.4 GHz Wi-Fi SSID used by the ESP32 example.
+
+config JARVIS_WIFI_PASSWORD
+    string "Wi-Fi Password"
+    default ""
+    help
+        Local Wi-Fi password. Do not commit generated sdkconfig files with secrets.
+
+endmenu
+
