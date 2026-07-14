@@ -9,7 +9,10 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 ## Current Status
 
 - Epics 1-9 are completed.
-- Epic 10 is not open.
+- Epic 10 is in progress.
+- Phase 10.1 is completed as design: AI Adapter Boundary.
+- Phase 10.2 is completed as design: Structured Plan and Safe Context Contracts.
+- Phase 10.3 is in implementation pending merge: deterministic fake AI Adapter.
 - Current closing commit for Epic 9: `c3a6f78a72b9c08db550743cec6910934c44899d`.
 - Full test suite at Epic 9 close: 420 tests passing.
 - Default runtime remains empty, simulated, and offline-safe.
@@ -58,13 +61,15 @@ JSON config
 
 ## Current Epic
 
-No active product epic.
+Epic 10 — AI Adapter Boundary.
 
-Phase 9.6 is documentation-only project context work. It does not open Epic 10.
+Current phase pending merge:
 
-## Next Blocked Phase
+- Phase 10.3 — Deterministic Fake AI Adapter Minimal Implementation.
 
-Epic 10 remains blocked until explicitly designed and opened.
+Next blocked phase:
+
+- Phase 10.4 — First Optional AI Provider Adapter.
 
 ## Stable Boundaries
 
@@ -156,12 +161,16 @@ python -m jarvis_core --config profiles/http-lab.example.json
 - Profiles are declarative data, not live objects or plugin systems.
 - State Store persists only semantic `DeviceState`; it does not persist config, bindings, trust, candidates, diagnostics, raw payloads, or secrets.
 - Hardware availability is never inferred from restored state.
+- AI providers do not produce executable `Command` objects.
+- AI Structured Plans are normalized and validated before canonical command text reaches the Runtime-owned adapter boundary.
+- The deterministic fake AI Adapter uses no network, credentials, provider SDK, or real model.
+- The default runtime remains AI-free.
 
 ## Out Of Scope
 
 Not currently implemented:
 
-- Epic 10;
+- real AI providers;
 - `--profile`;
 - DriverRegistry;
 - retries/backoff;
@@ -173,7 +182,8 @@ Not currently implemented:
 - dashboard/API;
 - hardware discovery;
 - persistent trust;
-- AI/LLM/scenario engine behavior.
+- persistent AI memory;
+- AI/LLM scenario engine behavior.
 
 ## Key Technical Documents
 
@@ -185,6 +195,7 @@ Not currently implemented:
 - [Security Guidelines](../device-integration/SECURITY_GUIDELINES.md)
 - [ESP32 + ESP-IDF Guide](../platforms/ESP32_ESP_IDF.md)
 - [HTTP LED Example](../../examples/http-led/README.md)
+- [AI Adapter](../ai/README.md)
 
 ## Glossary
 
@@ -196,6 +207,8 @@ Not currently implemented:
 - State Store: persistence boundary for semantic `DeviceState`.
 - Binding: non-sensitive infrastructure configuration for reaching a device.
 - Stale: restored last-known state that is not proof of current availability.
+- AIActionPlan: provider-neutral structured plan normalized by the AI Adapter.
+- AISafeContext: detached semantic context snapshot for AI planning.
 
 ## Quick Onboarding For AI Agents
 
