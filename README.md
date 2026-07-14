@@ -12,6 +12,7 @@ JarvisOS is an agent-oriented cognitive operating system for future physical AI 
 - [Runtime Configuration](docs/getting-started/CONFIGURATION.md)
 - [Device State Persistence](docs/getting-started/STATE_PERSISTENCE.md)
 - [HTTP Profile Validation](docs/getting-started/HTTP_PROFILE_VALIDATION.md)
+- [AI Adapter](docs/ai/README.md)
 - [Device Integration Guide](docs/device-integration/README.md)
 - [ESP32 + ESP-IDF Guide](docs/platforms/ESP32_ESP_IDF.md)
 - [HTTP LED Example](examples/http-led/README.md)
@@ -50,6 +51,14 @@ python -m jarvis_core --config profiles/http-lab.local.json
 ```
 
 See [HTTP Profile Validation](docs/getting-started/HTTP_PROFILE_VALIDATION.md).
+
+## AI Adapter
+
+JarvisOS includes an experimental deterministic fake AI Adapter for boundary
+validation only. It does not use a real model, network, credentials, provider
+SDK, persistent memory, or default runtime wiring.
+
+See [AI Adapter](docs/ai/README.md).
 
 ## AVP-001 - Architecture Validation Prototype
 

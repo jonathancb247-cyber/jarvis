@@ -11,6 +11,10 @@ REQUIRED_FILES = [
     "AGENTS.md",
     "docs/vision/FUTURE_EXPERIENCE_IDEAS.md",
     "docs/project/PROJECT_STATE.md",
+    "docs/ai/README.md",
+    "docs/ai/STRUCTURED_PLAN.md",
+    "docs/ai/SAFE_CONTEXT.md",
+    "docs/ai/FAKE_AI_ADAPTER.md",
     "docs/getting-started/INSTALLATION.md",
     "docs/getting-started/CONFIGURATION.md",
     "docs/getting-started/STATE_PERSISTENCE.md",
@@ -103,9 +107,23 @@ class DocumentationAssetsTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         self.assertIn("Epics 1-9 are completed", project_state)
-        self.assertIn("Epic 10 is not open", project_state)
+        self.assertIn("Epic 10 is in progress", project_state)
+        self.assertIn("Phase 10.3 is in implementation pending merge", project_state)
         self.assertIn("c3a6f78a72b9c08db550743cec6910934c44899d", project_state)
         self.assertIn("Default runtime remains empty, simulated, and offline-safe", project_state)
+
+    def test_ai_documentation_states_fake_only_boundary(self):
+        ai_readme = (REPO_ROOT / "docs" / "ai" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        fake_adapter = (REPO_ROOT / "docs" / "ai" / "FAKE_AI_ADAPTER.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("Deterministic Fake Only", ai_readme)
+        self.assertIn("no network", fake_adapter)
+        self.assertIn("no credentials", fake_adapter)
+        self.assertIn("not registered in the default runtime", fake_adapter)
 
     def test_documentation_does_not_include_personal_validation_ip(self):
         forbidden = "10.255.108.33"

@@ -56,6 +56,7 @@ Do not skip directly from idea to implementation when the phase changes architec
 - Use constructor injection or composition root wiring; do not turn `RuntimeContext` into a service locator.
 - Do not introduce a `DriverRegistry` without explicit design approval.
 - Do not add retries, async/background I/O, persistence, secrets, or new transports unless the phase explicitly approves them.
+- AI work is allowed only inside explicit Epic 10 phases. Real providers, credentials, network calls, persistent AI memory, and default runtime AI wiring require explicit approval.
 
 ## Testing Policy
 
@@ -158,7 +159,6 @@ Stable rules:
 
 Do not add any of these without explicit approval:
 
-- Epic 10 work;
 - new runtime features;
 - `DriverRegistry`;
 - retries/backoff;
@@ -169,7 +169,8 @@ Do not add any of these without explicit approval:
 - new transports;
 - hardware discovery;
 - production authentication or authorization;
-- AI/LLM/scenario engine behavior.
+- real AI providers, credentials, provider SDKs, or default runtime AI behavior;
+- LLM/scenario engine behavior.
 
 ## Reporting Results
 
