@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>JarvisOS Dashboard</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">J</span>
+          <div>
+            <h1>JarvisOS</h1>
+            <p>Local Dashboard</p>
+          </div>
+        </div>
+        <nav class="nav-list" aria-label="Dashboard views">
+          <button class="nav-item is-active" type="button" data-view-target="overview">Overview</button>
+          <button class="nav-item" type="button" data-view-target="devices">Devices</button>
+          <button class="nav-item" type="button" data-view-target="detail">Device Detail</button>
+          <button class="nav-item" type="button" data-view-target="console">Command Console</button>
+        </nav>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">AVP-001</p>
+            <h2>Runtime Control Surface</h2>
+          </div>
+          <div class="topbar-actions">
+            <span id="connectionStatus" class="connection-badge" role="status" aria-live="polite">Loading</span>
+            <label class="toggle">
+              <input id="autoRefreshToggle" type="checkbox" checked>
+              <span>Auto refresh</span>
+            </label>
+            <button id="refreshButton" class="button button-secondary" type="button">Refresh</button>
+          </div>
+        </header>
+
+        <main id="main" class="content">
+          <section id="overviewView" class="view is-visible" aria-labelledby="overviewTitle">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Overview</p>
+                <h2 id="overviewTitle">Runtime Status</h2>
+              </div>
+              <p id="lastRefresh" class="muted">No refresh yet</p>
+            </div>
+            <div class="metric-grid" aria-label="Runtime summary">
+              <article class="metric-card">
+                <span class="metric-label">Runtime</span>
+                <strong id="runtimeStatus">Unknown</strong>
+                <span id="prototypeLabel" class="muted">Prototype unknown</span>
+              </article>
+              <article class="metric-card">
+                <span class="metric-label">Devices</span>
+                <strong id="deviceCount">0</strong>
+                <span id="persistenceStatus" class="muted">Persistence unknown</span>
+              </article>
+              <article class="metric-card">
+                <span class="metric-label">Known</span>
+                <strong id="knownCount">0</strong>
+                <span class="status-dot status-known" aria-hidden="true"></span>
+              </article>
+              <article class="metric-card">
+                <span class="metric-label">Stale / Unknown</span>
+                <strong><span id="staleCount">0</span> / <span id="unknownCount">0</span></strong>
+                <span class="muted">Stale is not availability</span>
+              </article>
+            </div>
+          </section>
+
+          <section id="devicesView" class="view" aria-labelledby="devicesTitle">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Devices</p>
+                <h2 id="devicesTitle">Configured Devices</h2>
+              </div>
+              <label class="search-label">
+                <span>Search devices</span>
+                <input id="deviceSearch" type="search" placeholder="Filter by id, name or type">
+              </label>
+            </div>
+            <div id="deviceList" class="device-list" role="list"></div>
+            <p id="emptyDevices" class="empty-state" hidden>No devices are configured.</p>
+          </section>
+
+          <section id="detailView" class="view" aria-labelledby="detailTitle">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Device Detail</p>
+                <h2 id="detailTitle">Select a device</h2>
+              </div>
+            </div>
+            <article id="deviceDetail" class="detail-card">
+              <p class="muted">Choose a device to inspect capabilities and state.</p>
+            </article>
+          </section>
+
+          <section id="consoleView" class="view" aria-labelledby="consoleTitle">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Command Console</p>
+                <h2 id="consoleTitle">Canonical Commands</h2>
+              </div>
+            </div>
+            <form id="commandForm" class="command-form">
+              <label for="commandInput">Command</label>
+              <div class="command-row">
+                <input id="commandInput" name="command" type="text" maxlength="512" autocomplete="off" placeholder="device read lamp_1 status.read">
+                <button id="sendCommandButton" class="button" type="submit">Send</button>
+              </div>
+            </form>
+            <div id="commandResult" class="result-panel" role="status" aria-live="polite">No command sent.</div>
+            <div class="history-panel">
+              <h3>Session Command History</h3>
+              <ol id="commandHistory"></ol>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

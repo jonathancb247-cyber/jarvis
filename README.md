@@ -14,6 +14,7 @@ JarvisOS is an agent-oriented cognitive operating system for future physical AI 
 - [HTTP Profile Validation](docs/getting-started/HTTP_PROFILE_VALIDATION.md)
 - [AI Adapter](docs/ai/README.md)
 - [Runtime API](docs/api/README.md)
+- [Dashboard](docs/dashboard/README.md)
 - [Device Integration Guide](docs/device-integration/README.md)
 - [ESP32 + ESP-IDF Guide](docs/platforms/ESP32_ESP_IDF.md)
 - [HTTP LED Example](examples/http-led/README.md)
@@ -77,6 +78,24 @@ text through the Runtime-owned adapter boundary, and exposes only safe semantic
 read projections.
 
 See [Runtime API](docs/api/README.md).
+
+## Dashboard
+
+JarvisOS includes an optional experimental local Dashboard backed by the
+localhost Runtime API. It is not started by the default CLI runtime and it does
+not include AI chat, authentication, LAN access, WebSocket or SSE.
+
+Start it explicitly with a local profile:
+
+```bash
+python -m jarvis_core.dashboard --config profiles/http-lab.local.json
+```
+
+The Dashboard uses offline HTML, CSS and vanilla JavaScript assets. It displays
+only real API data and submits canonical command text back through the Runtime
+API.
+
+See [Dashboard](docs/dashboard/README.md).
 
 ## AVP-001 - Architecture Validation Prototype
 

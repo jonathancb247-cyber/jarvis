@@ -14,6 +14,9 @@ REQUIRED_FILES = [
     "docs/api/README.md",
     "docs/api/ROUTES.md",
     "docs/api/SECURITY.md",
+    "docs/dashboard/README.md",
+    "docs/dashboard/USAGE.md",
+    "docs/dashboard/SECURITY.md",
     "docs/ai/README.md",
     "docs/ai/STRUCTURED_PLAN.md",
     "docs/ai/SAFE_CONTEXT.md",
@@ -125,7 +128,8 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Phase 11.1 is completed as design", project_state)
         self.assertIn("Phase 11.2 is completed", project_state)
         self.assertIn("Runtime API is Current / Experimental", project_state)
-        self.assertIn("No Dashboard is implemented", project_state)
+        self.assertIn("Phase 11.3 is pending merge", project_state)
+        self.assertIn("Minimal Dashboard is Experimental", project_state)
         self.assertIn("Epic 10 remains unchanged", project_state)
         self.assertNotIn("Phase 11.2 is pending merge", project_state)
 
@@ -142,6 +146,20 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Dashboard;", api_readme)
         self.assertIn("127.0.0.1", api_security)
         self.assertIn("LAN mode", api_security)
+
+    def test_dashboard_documentation_states_local_only_boundary(self):
+        dashboard_readme = (
+            REPO_ROOT / "docs" / "dashboard" / "README.md"
+        ).read_text(encoding="utf-8")
+        dashboard_security = (
+            REPO_ROOT / "docs" / "dashboard" / "SECURITY.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("python -m jarvis_core.dashboard --config", dashboard_readme)
+        self.assertIn("local browser UI", dashboard_readme)
+        self.assertIn("AI chat", dashboard_readme)
+        self.assertIn("127.0.0.1", dashboard_security)
+        self.assertIn("no external CDN", dashboard_security)
 
     def test_ai_documentation_states_fake_only_boundary(self):
         ai_readme = (REPO_ROOT / "docs" / "ai" / "README.md").read_text(
