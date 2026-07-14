@@ -61,7 +61,16 @@ The first hardware-validated example uses:
 - Built-in LED on GPIO2 for the validated board.
 - `power.switch` and `status.read`.
 
-Start the validation runtime:
+The preferred validation path uses the declarative profile and State Store:
+
+```powershell
+Copy-Item profiles/http-lab.example.json profiles/http-lab.local.json
+python -m jarvis_core --config profiles/http-lab.local.json
+```
+
+Edit `profiles/http-lab.local.json` first so `base_url` points to the ESP32.
+
+The older manual validation script remains available for direct driver checks, but it is not the profile-based restart validation path:
 
 ```powershell
 python tools/run_http_led_validation.py --base-url http://<IP_DEL_ESP32>

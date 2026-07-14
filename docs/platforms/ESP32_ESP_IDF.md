@@ -124,16 +124,19 @@ Invoke-RestMethod `
 
 ## JarvisOS Configuration
 
-Start the manual validation runtime:
+Use the profile-based runtime for configuration, HTTP binding reconstruction, and DeviceState persistence:
+
+```powershell
+Copy-Item profiles/http-lab.example.json profiles/http-lab.local.json
+python -m jarvis_core --config profiles/http-lab.local.json
+```
+
+Edit `profiles/http-lab.local.json` so `base_url` points to the ESP32.
+
+The manual validation helper remains available for direct driver checks without config/state persistence:
 
 ```powershell
 python tools/run_http_led_validation.py --base-url http://<IP>
-```
-
-For declarative startup configuration, copy and edit `profiles/http-lab.example.json`, then run:
-
-```powershell
-python -m jarvis_core --config profiles/http-lab.local.json
 ```
 
 See [Runtime Configuration](../getting-started/CONFIGURATION.md), [Device State Persistence](../getting-started/STATE_PERSISTENCE.md), and [HTTP Profile Validation](../getting-started/HTTP_PROFILE_VALIDATION.md). The State Store persists only semantic `DeviceState` and restores it as stale.

@@ -108,6 +108,32 @@ class DocumentationAssetsTests(unittest.TestCase):
                 with self.subTest(path=path.relative_to(REPO_ROOT), target=target):
                     self.assertTrue(resolved.exists(), f"Missing link target: {target}")
 
+    def test_http_led_docs_prefer_profile_based_runtime(self):
+        docs = [
+            REPO_ROOT / "docs" / "getting-started" / "FIRST_DEVICE.md",
+            REPO_ROOT / "docs" / "platforms" / "ESP32_ESP_IDF.md",
+            REPO_ROOT / "examples" / "http-led" / "README.md",
+        ]
+        profile_command = "python -m jarvis_core --config profiles/http-lab.local.json"
+        manual_command = "python tools/run_http_led_validation.py"
+
+        for path in docs:
+            text = path.read_text(encoding="utf-8")
+            with self.subTest(path=path.relative_to(REPO_ROOT)):
+                self.assertIn(profile_command, text)
+                self.assertIn(manual_command, text)
+                self.assertLess(text.index(profile_command), text.index(manual_command))
+
+    def test_http_profile_validation_documents_epic9_runtime_boundaries(self):
+        guide = REPO_ROOT / "docs" / "getting-started" / "HTTP_PROFILE_VALIDATION.md"
+        text = guide.read_text(encoding="utf-8")
+
+        self.assertIn("python -m jarvis_core --config profiles/http-lab.local.json", text)
+        self.assertIn("Hardware validation is manual", text)
+        self.assertIn("CI uses a fake HTTP transport", text)
+        self.assertIn("Restored state is last-known semantic state", text)
+        self.assertIn("No retries are implemented", text)
+
 
 def _documentation_files():
     for base in (REPO_ROOT / "docs", REPO_ROOT / "examples" / "http-led"):

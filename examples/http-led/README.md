@@ -69,22 +69,22 @@ Protocol examples:
 
 ## JarvisOS Runtime
 
-Start the explicit hardware validation runtime:
-
-```powershell
-python tools/run_http_led_validation.py --base-url http://<IP_DEL_ESP32>
-```
-
-The default runtime does not create `lamp_1`, does not configure an HTTP binding, and does not open network connections.
-
-Alternatively, copy the example profile and start JarvisOS with explicit configuration:
+Preferred profile-based runtime with configuration and State Store:
 
 ```powershell
 Copy-Item profiles/http-lab.example.json profiles/http-lab.local.json
 python -m jarvis_core --config profiles/http-lab.local.json
 ```
 
-The profile recreates the Device and HTTP binding at startup. If `state_store_path` is enabled, JarvisOS restores the last semantic `DeviceState` as stale. See [Device State Persistence](../../docs/getting-started/STATE_PERSISTENCE.md).
+Edit `profiles/http-lab.local.json` so `base_url` points to the ESP32 before starting JarvisOS. The profile recreates the Device and HTTP binding at startup. If `state_store_path` is enabled, JarvisOS restores the last semantic `DeviceState` as stale. See [Device State Persistence](../../docs/getting-started/STATE_PERSISTENCE.md).
+
+The default runtime does not create `lamp_1`, does not configure an HTTP binding, and does not open network connections.
+
+The Phase 8.4 manual validation helper remains available for direct hardware checks without configuration persistence:
+
+```powershell
+python tools/run_http_led_validation.py --base-url http://<IP_DEL_ESP32>
+```
 
 For the full profile-based restart validation procedure, see [HTTP Profile Validation](../../docs/getting-started/HTTP_PROFILE_VALIDATION.md).
 
