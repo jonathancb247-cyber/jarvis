@@ -4,6 +4,8 @@ JarvisOS is an agent-oriented cognitive operating system for future physical AI 
 
 ## Documentation
 
+- [Agent Working Guide](AGENTS.md)
+- [Project State](docs/project/PROJECT_STATE.md)
 - [Installation](docs/getting-started/INSTALLATION.md)
 - [First run](docs/getting-started/FIRST_RUN.md)
 - [First device](docs/getting-started/FIRST_DEVICE.md)
