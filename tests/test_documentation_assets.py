@@ -108,7 +108,8 @@ class DocumentationAssetsTests(unittest.TestCase):
 
         self.assertIn("Epics 1-9 are completed", project_state)
         self.assertIn("Epic 10 is in progress", project_state)
-        self.assertIn("Phase 10.3 is in implementation pending merge", project_state)
+        self.assertIn("Phase 10.3 is completed", project_state)
+        self.assertIn("e374d30f2c28865c82fcb880f7079974ea1dfca4", project_state)
         self.assertIn("c3a6f78a72b9c08db550743cec6910934c44899d", project_state)
         self.assertIn("Default runtime remains empty, simulated, and offline-safe", project_state)
 
