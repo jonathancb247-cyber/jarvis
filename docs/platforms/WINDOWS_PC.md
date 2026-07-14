@@ -57,7 +57,7 @@ Or start from an explicit JSON runtime profile:
 python -m jarvis_core --config profiles/http-lab.local.json
 ```
 
-See [Runtime Configuration](../getting-started/CONFIGURATION.md) and [Device State Persistence](../getting-started/STATE_PERSISTENCE.md).
+See [Runtime Configuration](../getting-started/CONFIGURATION.md), [Device State Persistence](../getting-started/STATE_PERSISTENCE.md), and [HTTP Profile Validation](../getting-started/HTTP_PROFILE_VALIDATION.md).
 
 ## Example Commands
 

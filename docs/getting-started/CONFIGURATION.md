@@ -143,6 +143,8 @@ The example file is versioned. Local files are user-specific.
 
 The example profile includes a state store path. Running it may create an ignored state snapshot under `state/`.
 
+For the full ESP32 profile-based validation workflow, see [HTTP Profile Validation](HTTP_PROFILE_VALIDATION.md).
+
 ## Startup Errors
 
 Startup errors are safe and minimal:

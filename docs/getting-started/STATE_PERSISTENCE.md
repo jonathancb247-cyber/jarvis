@@ -16,6 +16,8 @@ State Store
 
 The default runtime does not use a State Store, does not read or write state files, and remains offline-safe.
 
+For a hardware validation workflow that uses `--config`, HTTP local, and restart restore, see [HTTP Profile Validation](HTTP_PROFILE_VALIDATION.md).
+
 ## Enabling The State Store
 
 Add `state_store_path` to a local profile:
