@@ -8,7 +8,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 REQUIRED_FILES = [
+    "AGENTS.md",
     "docs/vision/FUTURE_EXPERIENCE_IDEAS.md",
+    "docs/project/PROJECT_STATE.md",
     "docs/getting-started/INSTALLATION.md",
     "docs/getting-started/CONFIGURATION.md",
     "docs/getting-started/STATE_PERSISTENCE.md",
@@ -83,6 +85,27 @@ class DocumentationAssetsTests(unittest.TestCase):
             "GitHub is the source of truth for implementation, protocols, examples and platform integration guides",
             text,
         )
+
+    def test_agent_context_documents_link_each_other(self):
+        agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        project_state = (
+            REPO_ROOT / "docs" / "project" / "PROJECT_STATE.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("docs/project/PROJECT_STATE.md", agents)
+        self.assertIn("../../AGENTS.md", project_state)
+        self.assertIn("GitHub is the source of truth", agents)
+        self.assertIn("Notion is the source of truth", project_state)
+
+    def test_project_state_documents_current_epic_boundary(self):
+        project_state = (
+            REPO_ROOT / "docs" / "project" / "PROJECT_STATE.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("Epics 1-9 are completed", project_state)
+        self.assertIn("Epic 10 is not open", project_state)
+        self.assertIn("c3a6f78a72b9c08db550743cec6910934c44899d", project_state)
+        self.assertIn("Default runtime remains empty, simulated, and offline-safe", project_state)
 
     def test_documentation_does_not_include_personal_validation_ip(self):
         forbidden = "10.255.108.33"
