@@ -57,6 +57,7 @@ Do not skip directly from idea to implementation when the phase changes architec
 - Do not introduce a `DriverRegistry` without explicit design approval.
 - Do not add retries, async/background I/O, persistence, secrets, or new transports unless the phase explicitly approves them.
 - AI work is allowed only inside explicit Epic 10 phases. Real providers, credentials, network calls, persistent AI memory, and default runtime AI wiring require explicit approval.
+- Runtime API work is allowed only inside explicit Epic 11 phases. The API must remain an optional adapter and must not expose Runtime internals, registries, Drivers, State Store, or live objects.
 
 ## Testing Policy
 
@@ -170,6 +171,7 @@ Do not add any of these without explicit approval:
 - hardware discovery;
 - production authentication or authorization;
 - real AI providers, credentials, provider SDKs, or default runtime AI behavior;
+- LAN/public API exposure, Dashboard UI, WebSocket, SSE, or API authentication without explicit approval;
 - LLM/scenario engine behavior.
 
 ## Reporting Results
