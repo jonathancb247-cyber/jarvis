@@ -11,6 +11,9 @@ REQUIRED_FILES = [
     "AGENTS.md",
     "docs/vision/FUTURE_EXPERIENCE_IDEAS.md",
     "docs/project/PROJECT_STATE.md",
+    "docs/api/README.md",
+    "docs/api/ROUTES.md",
+    "docs/api/SECURITY.md",
     "docs/ai/README.md",
     "docs/ai/STRUCTURED_PLAN.md",
     "docs/ai/SAFE_CONTEXT.md",
@@ -112,6 +115,32 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("e374d30f2c28865c82fcb880f7079974ea1dfca4", project_state)
         self.assertIn("c3a6f78a72b9c08db550743cec6910934c44899d", project_state)
         self.assertIn("Default runtime remains empty, simulated, and offline-safe", project_state)
+
+    def test_project_state_documents_runtime_api_boundary(self):
+        project_state = (
+            REPO_ROOT / "docs" / "project" / "PROJECT_STATE.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("Epic 11 is in progress", project_state)
+        self.assertIn("Phase 11.1 is completed as design", project_state)
+        self.assertIn("Phase 11.2 is pending merge", project_state)
+        self.assertIn("Runtime API is experimental and localhost-only", project_state)
+        self.assertIn("No Dashboard is implemented", project_state)
+        self.assertIn("Epic 10 remains unchanged", project_state)
+
+    def test_runtime_api_documentation_states_localhost_boundary(self):
+        api_readme = (REPO_ROOT / "docs" / "api" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        api_security = (REPO_ROOT / "docs" / "api" / "SECURITY.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("localhost-only", api_readme)
+        self.assertIn("python -m jarvis_core.api --config", api_readme)
+        self.assertIn("Dashboard;", api_readme)
+        self.assertIn("127.0.0.1", api_security)
+        self.assertIn("LAN mode", api_security)
 
     def test_ai_documentation_states_fake_only_boundary(self):
         ai_readme = (REPO_ROOT / "docs" / "ai" / "README.md").read_text(

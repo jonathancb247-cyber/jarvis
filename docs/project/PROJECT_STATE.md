@@ -17,6 +17,11 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
 - Full test suite after Phase 10.3: 444 tests passing.
+- Epic 11 is in progress.
+- Phase 11.1 is completed as design: Runtime API and Dashboard Adapter Boundary.
+- Phase 11.2 is pending merge: Local Runtime API Minimal Implementation.
+- Runtime API is experimental and localhost-only.
+- No Dashboard is implemented.
 - Current closing commit for Epic 9: `c3a6f78a72b9c08db550743cec6910934c44899d`.
 - Full test suite at Epic 9 close: 420 tests passing.
 - Default runtime remains empty, simulated, and offline-safe.
@@ -75,6 +80,13 @@ Next blocked phase:
 
 - Phase 10.4 — First Optional AI Provider Adapter, blocked until explicitly opened.
 
+Independent product line:
+
+- Epic 11 - Runtime API and Dashboard is in progress.
+- Phase 11.2 - Local Runtime API is pending merge.
+- Phase 11.3 - Minimal Local Dashboard remains blocked until explicitly opened.
+- Epic 10 remains unchanged and Phase 10.4 remains blocked.
+
 ## Stable Boundaries
 
 Stable project rules:
@@ -107,6 +119,9 @@ Current experimental areas:
 - Plan Validator.
 - Confirmation Gate.
 - Sequential AI Plan Executor.
+- Runtime API Adapter.
+- Localhost REST/JSON Runtime API.
+- Safe Runtime API projections.
 
 ## Current Transports
 
@@ -141,6 +156,7 @@ Future/reference only:
 - CI uses fake transports and must not require hardware.
 - ESP32 validation is manual.
 - Profile-based hardware validation uses `python -m jarvis_core --config profiles/http-lab.local.json`.
+- Runtime API validation uses `python -m jarvis_core.api --config profiles/http-lab.local.json`.
 - The older `tools/run_http_led_validation.py` script remains a direct helper, not the primary profile-based validation path.
 
 ## Testing Status
@@ -163,6 +179,12 @@ Configuration smoke:
 python -m jarvis_core --config profiles/http-lab.example.json
 ```
 
+Runtime API smoke:
+
+```bash
+python -m jarvis_core.api --config profiles/http-lab.example.json
+```
+
 ## Important Decisions
 
 - GitHub is the source of truth for implementation, protocols, examples, exact commands, and platform integration guides.
@@ -178,6 +200,9 @@ python -m jarvis_core --config profiles/http-lab.example.json
 - No provider registry exists.
 - No persistent AI memory exists.
 - Phase 10.3 did not change Runtime, Driver, Registry, Configuration, or State Store boundaries.
+- The Runtime API is optional, localhost-only, and submits canonical command text through the existing Runtime-owned adapter boundary.
+- The Runtime API exposes detached semantic projections only.
+- The Runtime API does not implement a Dashboard, LAN access, authentication, WebSocket, SSE, async Runtime, or direct internal access.
 
 ## Out Of Scope
 
@@ -192,7 +217,7 @@ Not currently implemented:
 - production authentication or authorization;
 - SQLite;
 - migrations;
-- dashboard/API;
+- Dashboard UI;
 - hardware discovery;
 - persistent trust;
 - persistent AI memory;
@@ -203,6 +228,7 @@ Not currently implemented:
 - [Runtime Configuration](../getting-started/CONFIGURATION.md)
 - [Device State Persistence](../getting-started/STATE_PERSISTENCE.md)
 - [HTTP Profile Validation](../getting-started/HTTP_PROFILE_VALIDATION.md)
+- [Runtime API](../api/README.md)
 - [Device Integration Guide](../device-integration/README.md)
 - [Driver Development](../device-integration/DRIVER_DEVELOPMENT.md)
 - [Security Guidelines](../device-integration/SECURITY_GUIDELINES.md)
@@ -222,6 +248,7 @@ Not currently implemented:
 - Stale: restored last-known state that is not proof of current availability.
 - AIActionPlan: provider-neutral structured plan normalized by the AI Adapter.
 - AISafeContext: detached semantic context snapshot for AI planning.
+- Runtime API: optional localhost adapter exposing safe REST/JSON projections and command submission.
 
 ## Quick Onboarding For AI Agents
 
