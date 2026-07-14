@@ -13,14 +13,19 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 10.1 is completed as design: AI Adapter Boundary.
 - Phase 10.2 is completed as design: Structured Plan and Safe Context Contracts.
 - Phase 10.3 is completed: deterministic fake AI Adapter.
-- Current snapshot commit: `9f7025a5e20d8d9f8cc3dbfb7cf156ad4576caed`.
+- Current snapshot commit: `28fbdc225aa1ce107359fc1e8d50936640198cad`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
 - Full test suite after Phase 10.3: 444 tests passing.
 - Epic 11 is in progress.
 - Phase 11.1 is completed as design: Runtime API and Dashboard Adapter Boundary.
-- Phase 11.2 is pending merge: Local Runtime API Minimal Implementation.
-- Runtime API is experimental and localhost-only.
+- Phase 11.2 is completed: Local Runtime API Minimal Implementation.
+- Phase 11.2 PR: #34 merged.
+- Phase 11.2 implementation commit: `04dcef842784ad333c6f83226d09fb1d04183b64`.
+- Full test suite after Phase 11.2: 461 tests passing.
+- Runtime API is Current / Experimental.
+- Runtime API is localhost-only REST/JSON with synchronous Runtime interaction.
+- Runtime API submits canonical command text through the Runtime-owned boundary and exposes safe detached projections.
 - No Dashboard is implemented.
 - Current closing commit for Epic 9: `c3a6f78a72b9c08db550743cec6910934c44899d`.
 - Full test suite at Epic 9 close: 420 tests passing.
@@ -83,7 +88,7 @@ Next blocked phase:
 Independent product line:
 
 - Epic 11 - Runtime API and Dashboard is in progress.
-- Phase 11.2 - Local Runtime API is pending merge.
+- Phase 11.2 - Local Runtime API is completed.
 - Phase 11.3 - Minimal Local Dashboard remains blocked until explicitly opened.
 - Epic 10 remains unchanged and Phase 10.4 remains blocked.
 
