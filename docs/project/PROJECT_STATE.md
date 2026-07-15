@@ -13,6 +13,14 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 10.1 is completed as design: AI Adapter Boundary.
 - Phase 10.2 is completed as design: Structured Plan and Safe Context Contracts.
 - Phase 10.3 is completed: deterministic fake AI Adapter.
+- Phase 10.4 is completed as design: First Optional Local AI Provider Boundary.
+- Phase 10.5 remains in progress / Draft: Local Ollama Provider Minimal Implementation.
+- Phase 10.5 draft PR: #38.
+- Ollama remains experimental; qwen3:1.7b and qwen3:4b were incompatible with the strict AIActionPlan contract in the tested setup.
+- Phase 10.6 is completed as design: Optional Cloud AI Provider and Secret Injection Boundary.
+- Phase 10.7 is pending merge: Groq Strict Structured Provider Minimal Implementation.
+- Groq provider is Experimental and has not completed real-key manual validation.
+- Phase 10.8 remains blocked.
 - Current snapshot commit: `82432ac7bbbbd53b533e0a57594a9579646d8883`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -85,13 +93,20 @@ JSON config
 
 Epic 10 — AI Adapter Boundary.
 
-Current completed phase:
+Current completed phases:
 
 - Phase 10.3 — Deterministic Fake AI Adapter Minimal Implementation.
+- Phase 10.4 - First Optional Local AI Provider Boundary Design.
+- Phase 10.6 - Optional Cloud AI Provider and Secret Injection Boundary Design.
+
+Current implementation phases:
+
+- Phase 10.5 - Local Ollama Provider Minimal Implementation remains in progress / Draft.
+- Phase 10.7 - Groq Strict Structured Provider Minimal Implementation is pending merge.
 
 Next blocked phase:
 
-- Phase 10.4 — First Optional AI Provider Adapter, blocked until explicitly opened.
+- Phase 10.8 - Real Provider Manual Validation and Consolidation remains blocked.
 
 Independent product line:
 
@@ -99,7 +114,7 @@ Independent product line:
 - Phase 11.2 - Local Runtime API is completed.
 - Phase 11.3 - Minimal Local Dashboard is completed.
 - Phase 11.4 - Profile-based Hardware Dashboard Validation remains blocked until explicitly opened.
-- Epic 10 remains unchanged and Phase 10.4 remains blocked.
+- Epic 10 remains in progress; Phase 10.5 is draft and Phase 10.8 remains blocked.
 - Epic 11 status: In progress - Local Runtime API and Minimal Dashboard implemented; hardware Dashboard validation pending.
 
 ## Stable Boundaries
@@ -129,6 +144,7 @@ Current experimental areas:
 - State snapshot schema v1.
 - ESP32 HTTP LED validation workflow.
 - Deterministic Fake AI Adapter.
+- Optional Groq cloud AI provider.
 - Structured Plan models.
 - Safe Context Builder.
 - Plan Validator.
@@ -222,6 +238,9 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 - The default runtime remains AI-free.
 - No provider registry exists.
 - No persistent AI memory exists.
+- PR #38 remains Draft and is not Phase 10.5 completion.
+- The Groq provider is optional, cloud-based, key-injected through `GROQ_API_KEY`, and not wired into default Runtime/API/Dashboard.
+- Provider-side strict Structured Outputs do not replace JarvisOS validation.
 - Phase 10.3 did not change Runtime, Driver, Registry, Configuration, or State Store boundaries.
 - The Runtime API is optional, localhost-only, and submits canonical command text through the existing Runtime-owned adapter boundary.
 - The Runtime API exposes detached semantic projections only.
@@ -232,7 +251,7 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 
 Not currently implemented:
 
-- real AI providers;
+- completed real-provider validation;
 - `--profile`;
 - DriverRegistry;
 - retries/backoff;
@@ -254,12 +273,14 @@ Not currently implemented:
 - [HTTP Profile Validation](../getting-started/HTTP_PROFILE_VALIDATION.md)
 - [Runtime API](../api/README.md)
 - [Dashboard](../dashboard/README.md)
+- [AI Adapter](../ai/README.md)
+- [Groq Provider](../ai/GROQ_PROVIDER.md)
+- [Cloud AI Validation](../ai/CLOUD_AI_VALIDATION.md)
 - [Device Integration Guide](../device-integration/README.md)
 - [Driver Development](../device-integration/DRIVER_DEVELOPMENT.md)
 - [Security Guidelines](../device-integration/SECURITY_GUIDELINES.md)
 - [ESP32 + ESP-IDF Guide](../platforms/ESP32_ESP_IDF.md)
 - [HTTP LED Example](../../examples/http-led/README.md)
-- [AI Adapter](../ai/README.md)
 
 ## Glossary
 
@@ -273,6 +294,7 @@ Not currently implemented:
 - Stale: restored last-known state that is not proof of current availability.
 - AIActionPlan: provider-neutral structured plan normalized by the AI Adapter.
 - AISafeContext: detached semantic context snapshot for AI planning.
+- GroqAIProvider: optional cloud AI provider using strict Structured Outputs behind the AI Adapter.
 - Runtime API: optional localhost adapter exposing safe REST/JSON projections and command submission.
 - Dashboard: optional browser UI consuming the localhost Runtime API.
 

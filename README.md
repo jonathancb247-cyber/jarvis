@@ -57,8 +57,18 @@ See [HTTP Profile Validation](docs/getting-started/HTTP_PROFILE_VALIDATION.md).
 ## AI Adapter
 
 JarvisOS includes an experimental deterministic fake AI Adapter for boundary
-validation only. It does not use a real model, network, credentials, provider
-SDK, persistent memory, or default runtime wiring.
+validation and an optional Groq cloud provider for strict Structured Output
+validation. AI remains explicitly wired and is not part of the default runtime.
+
+Start cloud AI validation only after setting `GROQ_API_KEY` in the active local
+session:
+
+```bash
+python -m jarvis_core.ai_cloud --config profiles/http-lab.local.json
+```
+
+The API key is never accepted as a CLI argument and must not be stored in
+profiles, State Store, repository files, Dashboard code, logs or diagnostics.
 
 See [AI Adapter](docs/ai/README.md).
 

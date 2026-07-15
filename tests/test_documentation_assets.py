@@ -21,6 +21,8 @@ REQUIRED_FILES = [
     "docs/ai/STRUCTURED_PLAN.md",
     "docs/ai/SAFE_CONTEXT.md",
     "docs/ai/FAKE_AI_ADAPTER.md",
+    "docs/ai/GROQ_PROVIDER.md",
+    "docs/ai/CLOUD_AI_VALIDATION.md",
     "docs/getting-started/INSTALLATION.md",
     "docs/getting-started/CONFIGURATION.md",
     "docs/getting-started/STATE_PERSISTENCE.md",
@@ -131,7 +133,8 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Phase 11.3 is completed", project_state)
         self.assertIn("Dashboard is Current / Experimental", project_state)
         self.assertIn("Phase 11.4 - Profile-based Hardware Dashboard Validation remains blocked", project_state)
-        self.assertIn("Epic 10 remains unchanged", project_state)
+        self.assertIn("Epic 10 remains in progress", project_state)
+        self.assertIn("Phase 10.7 is pending merge", project_state)
         self.assertNotIn("Phase 11.2 is pending merge", project_state)
         self.assertNotIn("Phase 11.3 is pending merge", project_state)
 
@@ -163,18 +166,23 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("127.0.0.1", dashboard_security)
         self.assertIn("no external CDN", dashboard_security)
 
-    def test_ai_documentation_states_fake_only_boundary(self):
+    def test_ai_documentation_states_provider_boundaries(self):
         ai_readme = (REPO_ROOT / "docs" / "ai" / "README.md").read_text(
             encoding="utf-8"
         )
         fake_adapter = (REPO_ROOT / "docs" / "ai" / "FAKE_AI_ADAPTER.md").read_text(
             encoding="utf-8"
         )
+        groq_provider = (REPO_ROOT / "docs" / "ai" / "GROQ_PROVIDER.md").read_text(
+            encoding="utf-8"
+        )
 
-        self.assertIn("Deterministic Fake Only", ai_readme)
+        self.assertIn("Optional Cloud Provider", ai_readme)
         self.assertIn("no network", fake_adapter)
         self.assertIn("no credentials", fake_adapter)
         self.assertIn("not registered in the default runtime", fake_adapter)
+        self.assertIn("GROQ_API_KEY", groq_provider)
+        self.assertIn("not wired into the default runtime", groq_provider)
 
     def test_documentation_does_not_include_personal_validation_ip(self):
         forbidden = "10.255.108.33"
