@@ -52,12 +52,17 @@ models, start Ollama, or pick a default provider.
 ## Request Strategy
 
 The provider sends a bounded non-streaming JSON request to Ollama. It uses
-Ollama JSON mode and sets `think` to `false` for short command-planning
-requests.
+Ollama JSON mode, sets `think` to `false` for short command-planning requests,
+sets `keep_alive` to `10m` for an active AI-local session, and caps generation
+at 192 output tokens by default.
+
+The `keep_alive` value is provider-layer behavior only. JarvisOS still does not
+start Ollama, poll Ollama, persist AI session state, or infer that a model is
+available.
 
 A concrete JSON Schema was evaluated for the Ollama `format` field, but it is
-not enabled in the initial local validation path because the validated CPU-first
-host timed out under the 30 second policy during diagnostic testing. JarvisOS
+not enabled in the initial local validation path because this Qwen/Ollama
+combination produced less reliable JSON under the approved timeout. JarvisOS
 therefore keeps schema enforcement in its own strict normalizer and validator.
 
 The prompt contains:
@@ -90,11 +95,18 @@ not bypass the existing strict normalizer, Planner validation or policy checks.
 - one provider request at a time in the local validation path;
 - non-streaming output;
 - non-thinking request mode where supported by Ollama;
+- `keep_alive` set to `10m` for active local sessions;
+- 192-token default generation cap;
 - 30 second default timeout;
 - no automatic retries;
 - bounded response size;
 - strict JSON decoding;
 - no prompt or provider response logging by default.
+
+The 30 second timeout was not increased after local characterization. On the
+validated CPU-first host, the first full request was dominated by prompt
+evaluation, while warm bounded requests completed comfortably within the
+existing timeout. Latency remains host-dependent and is not a product guarantee.
 
 ## Diagnostics
 

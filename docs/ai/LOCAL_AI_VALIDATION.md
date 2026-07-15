@@ -20,6 +20,12 @@ Recommended preparation for the validated host:
    cleanup.
 6. Do not use `qwen3:8b` on the validated laptop.
 
+The local provider keeps the model alive for an active validation session and
+uses a bounded output cap. The first request in a cold session may still be
+slower than later requests because Ollama must evaluate the full prompt and may
+need to load the model. Warm-session latency is expected to be lower, but exact
+timing depends on the host.
+
 ## Install Ollama Manually
 
 Install Ollama from the official Ollama source. JarvisOS does not install
@@ -47,6 +53,10 @@ For safe provider-stage diagnostics during manual validation, add:
 
 Diagnostic output reports stages and field names only. It does not print raw
 prompts, raw provider responses, bindings, secrets or stack traces.
+
+Safe diagnostics may include request byte length, prompt character count,
+example count, output cap and provider stage names. They must not include the
+prompt text or model response text.
 
 The AI-local path is explicit and isolated. It does not enable AI in:
 
@@ -122,3 +132,13 @@ Record:
 
 Do not commit local profiles, real snapshots, IP addresses, SSIDs, passwords,
 provider prompts or provider responses.
+
+## Performance Notes
+
+The current validated laptop uses `qwen3:1.7b` as the safe first model. Local
+characterization showed that a minimal Ollama JSON request can complete quickly,
+while the first full JarvisOS request may be dominated by prompt evaluation.
+JarvisOS therefore keeps the product timeout at 30 seconds, uses Ollama JSON
+mode, uses `keep_alive = 10m` for active AI-local sessions, and caps default
+generation at 192 output tokens. Do not raise the timeout or switch models
+without fresh evidence.

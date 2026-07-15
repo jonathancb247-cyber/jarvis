@@ -26,8 +26,11 @@ from jarvis_core.ai.contracts import (
 DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434"
 DEFAULT_OLLAMA_TIMEOUT_SECONDS = 30
 DEFAULT_MAXIMUM_RESPONSE_BYTES = 262144
+DEFAULT_OLLAMA_KEEP_ALIVE = "10m"
+DEFAULT_OLLAMA_NUM_PREDICT = 192
 MAX_OLLAMA_TIMEOUT_SECONDS = 120
 MAX_OLLAMA_RESPONSE_BYTES = 1048576
+MAX_OLLAMA_NUM_PREDICT = 512
 OLLAMA_GENERATE_PATH = "/api/generate"
 
 
@@ -47,10 +50,13 @@ class OllamaProviderConfig:
     base_url: str = DEFAULT_OLLAMA_BASE_URL
     timeout_seconds: int = DEFAULT_OLLAMA_TIMEOUT_SECONDS
     maximum_response_bytes: int = DEFAULT_MAXIMUM_RESPONSE_BYTES
+    keep_alive: str = DEFAULT_OLLAMA_KEEP_ALIVE
+    num_predict: int = DEFAULT_OLLAMA_NUM_PREDICT
 
     def __post_init__(self):
         object.__setattr__(self, "model", _validate_model(self.model))
         object.__setattr__(self, "base_url", _normalize_localhost_base_url(self.base_url))
+        object.__setattr__(self, "keep_alive", _validate_keep_alive(self.keep_alive))
         if (
             not isinstance(self.timeout_seconds, int)
             or self.timeout_seconds <= 0
@@ -63,6 +69,12 @@ class OllamaProviderConfig:
             or self.maximum_response_bytes > MAX_OLLAMA_RESPONSE_BYTES
         ):
             raise ValueError("Ollama response size must be a positive bounded integer")
+        if (
+            not isinstance(self.num_predict, int)
+            or self.num_predict <= 0
+            or self.num_predict > MAX_OLLAMA_NUM_PREDICT
+        ):
+            raise ValueError("Ollama output token cap must be a positive bounded integer")
 
 
 class OllamaHttpJsonTransport:
@@ -112,7 +124,14 @@ class OllamaAIProvider:
     def generate_plan(self, context):
         self._diagnostics = []
         request = build_ollama_request(self.config, context)
-        self._record_diagnostic("provider_request_built")
+        self._record_diagnostic(
+            "provider_request_built",
+            request_bytes=_json_size(request),
+            prompt_char_count=len(request["prompt"]),
+            example_count=_example_count(request["prompt"]),
+            keep_alive_present="keep_alive" in request,
+            output_token_cap=request.get("options", {}).get("num_predict"),
+        )
         envelope = self.transport.post_json(
             self.config.base_url,
             OLLAMA_GENERATE_PATH,
@@ -163,7 +182,9 @@ def build_ollama_request(config, context):
         "stream": False,
         "think": False,
         "format": "json",
+        "keep_alive": config.keep_alive,
         "options": {
+            "num_predict": config.num_predict,
             "temperature": 0,
         },
     }
@@ -307,101 +328,73 @@ def _build_prompt(context):
     context_payload = _safe_context_payload(context)
     examples = [
         {
-            "user_request": "Enciende la lampara.",
-            "plan": {
-                "schema_version": 1,
-                "kind": "execute",
-                "steps": [
-                    {
-                        "index": 0,
-                        "canonical_command_text": "device apply lamp_1 power.switch state=true",
-                        "safe_description": "Turn lamp on.",
-                        "target_device_id": "lamp_1",
-                        "capability_name": "power.switch",
-                        "action_kind": "mutate",
-                        "requires_confirmation": False,
-                        "policy_flags": [],
-                    }
-                ],
-                "safe_summary": "Turn lamp on.",
-                "clarification": None,
-                "refusal": None,
-                "confirmation_required": False,
-                "policy_flags": [],
-            },
-        },
-        {
             "user_request": "Lee el estado de la lampara.",
-            "plan": {
-                "schema_version": 1,
-                "kind": "execute",
-                "steps": [
-                    {
-                        "index": 0,
-                        "canonical_command_text": "device read lamp_1 status.read",
-                        "safe_description": "Read lamp status.",
-                        "target_device_id": "lamp_1",
-                        "capability_name": "status.read",
-                        "action_kind": "read",
-                        "requires_confirmation": False,
-                        "policy_flags": [],
-                    }
-                ],
-                "safe_summary": "Read lamp status.",
-                "clarification": None,
-                "refusal": None,
-                "confirmation_required": False,
-                "policy_flags": [],
-            },
+            "kind": "execute",
+            "canonical_command_text": "device read lamp_1 status.read",
+            "action_kind": "read",
         },
         {
-            "user_request": "No se que lampara usar.",
-            "plan": {
-                "schema_version": 1,
-                "kind": "clarify",
-                "steps": [],
-                "safe_summary": "Need a target device.",
-                "clarification": {
-                    "question": "Which device should I use?",
-                    "reason_code": "ambiguous_device",
-                    "missing_fields": ["device_id"],
-                    "candidate_options": ["lamp_1"],
-                },
-                "refusal": None,
-                "confirmation_required": False,
-                "policy_flags": [],
-            },
+            "user_request": "Enciende la lampara.",
+            "kind": "execute",
+            "canonical_command_text": "device apply lamp_1 power.switch state=true",
+            "action_kind": "mutate",
+        },
+        {
+            "user_request": "Borra archivos.",
+            "kind": "refuse",
+            "reason_code": "forbidden_operation",
         },
     ]
     payload = {
         "instructions": [
             "Return JSON only.",
-            "Return the AIActionPlan object directly at the JSON root.",
-            "Do not wrap the plan in actionPlan, plan, result, response, or Markdown.",
-            "Do not output reasoning or explanatory text.",
-            "Include every required field exactly once.",
-            "Use JSON null where a clarification or refusal is absent.",
-            "Use empty arrays where required.",
-            "Do not add unknown fields.",
-            "Return an AIActionPlan schema_version 1.",
-            "Allowed kind values are execute, clarify, refuse.",
-            "One step equals one canonical JarvisOS command.",
-            "Canonical JarvisOS command text must stay in technical English.",
-            "Use Spanish only for safe summaries and clarification text.",
-            "Mutations may be proposed; JarvisOS recomputes confirmation.",
-            "Do not include URLs, IP addresses, bindings, credentials, diagnostics, or runtime internals.",
-            "Do not create more than five steps.",
+            "Plan only for safe_context.user_request; examples show intent mapping only.",
+            "Return the plan object at root; first key schema_version.",
+            "Forbidden wrappers: AIActionPlan, actionPlan, plan, result, response, Markdown.",
+            "No reasoning text.",
+            "Required fields once; null for absent clarification/refusal; [] for empty lists.",
+            "No unknown fields; schema_version=1; kind=execute|clarify|refuse.",
+            "steps items are objects, indexed 0..n-1; one step equals one canonical command.",
+            "Canonical commands stay technical English; summaries/questions use Spanish.",
+            "JarvisOS validates commands and confirmation.",
+            "Refuse filesystem, shell, destructive computer, credential, or unsafe requests.",
+            "Exclude infrastructure, bindings, credentials, diagnostics, and internals.",
+            "Max five steps.",
         ],
         "schema": {
             "schema_version": PLAN_SCHEMA_VERSION,
             "kinds": ["execute", "clarify", "refuse"],
             "max_steps": MAX_PLAN_STEPS,
             "max_command_length": MAX_COMMAND_LENGTH,
+            "step_index_rule": "0..n-1",
+            "step_fields": [
+                "index",
+                "canonical_command_text",
+                "safe_description",
+                "target_device_id",
+                "capability_name",
+                "action_kind",
+                "requires_confirmation",
+                "policy_flags",
+            ],
         },
         "safe_context": context_payload,
         "examples": examples,
     }
     return json.dumps(payload, ensure_ascii=True, sort_keys=True)
+
+
+def _json_size(payload):
+    return len(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+
+
+def _example_count(prompt):
+    try:
+        payload = json.loads(prompt)
+    except json.JSONDecodeError:
+        return None
+    examples = payload.get("examples")
+    return len(examples) if isinstance(examples, list) else None
 
 
 def _normalize_provider_payload(payload, diagnostic_recorder=None):
@@ -496,6 +489,18 @@ def _validate_model(model):
     allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._:-")
     if normalized[0] in ".:-" or any(ch not in allowed for ch in normalized):
         raise ValueError("Ollama model is invalid")
+    return normalized
+
+
+def _validate_keep_alive(keep_alive):
+    if not isinstance(keep_alive, str):
+        raise ValueError("Ollama keep_alive must be a string")
+    normalized = keep_alive.strip()
+    if not normalized or len(normalized) > 16:
+        raise ValueError("Ollama keep_alive is invalid")
+    allowed = set("0123456789smh")
+    if any(ch not in allowed for ch in normalized):
+        raise ValueError("Ollama keep_alive is invalid")
     return normalized
 
 

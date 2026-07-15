@@ -119,6 +119,8 @@ def validate_plan_shape(plan):
     if plan.kind == PLAN_KIND_EXECUTE:
         if not 1 <= len(plan.steps) <= MAX_PLAN_STEPS:
             raise AIValidationError(AI_PLAN_REJECTED, "contract_validation_failed")
+        if not isinstance(plan.safe_summary, str) or not plan.safe_summary.strip():
+            raise AIValidationError(AI_RESPONSE_INVALID, "contract_validation_failed")
         expected = list(range(len(plan.steps)))
         actual = [step.index for step in plan.steps]
         if actual != expected:

@@ -15,6 +15,8 @@ from jarvis_core.ai.contracts import (
 from jarvis_core.ai.context import SafeContextBuilder
 from jarvis_core.ai.fake_provider import execute_plan, step
 from jarvis_core.ai.ollama import (
+    DEFAULT_OLLAMA_KEEP_ALIVE,
+    DEFAULT_OLLAMA_NUM_PREDICT,
     OLLAMA_GENERATE_PATH,
     OllamaAIProvider,
     OllamaProviderConfig,
@@ -35,6 +37,8 @@ class OllamaProviderConfigTests(unittest.TestCase):
         self.assertEqual(config.model, "qwen3:1.7b")
         self.assertEqual(config.base_url, "http://127.0.0.1:11434")
         self.assertEqual(config.timeout_seconds, 30)
+        self.assertEqual(config.keep_alive, DEFAULT_OLLAMA_KEEP_ALIVE)
+        self.assertEqual(config.num_predict, DEFAULT_OLLAMA_NUM_PREDICT)
 
     def test_localhost_is_normalized(self):
         config = OllamaProviderConfig(
@@ -68,6 +72,10 @@ class OllamaProviderConfigTests(unittest.TestCase):
             OllamaProviderConfig(model="qwen3:1.7b", timeout_seconds=0)
         with self.assertRaises(ValueError):
             OllamaProviderConfig(model="qwen3:1.7b", maximum_response_bytes=0)
+        with self.assertRaises(ValueError):
+            OllamaProviderConfig(model="qwen3:1.7b", keep_alive="../10m")
+        with self.assertRaises(ValueError):
+            OllamaProviderConfig(model="qwen3:1.7b", num_predict=0)
 
 
 class OllamaProviderRequestTests(unittest.TestCase):
@@ -75,19 +83,47 @@ class OllamaProviderRequestTests(unittest.TestCase):
         context = SafeContextBuilder().build("Enciende la lampara.", test_runtime().context.device_registry)
         request = build_ollama_request(OllamaProviderConfig(model="qwen3:1.7b"), context)
         prompt = request["prompt"]
+        prompt_payload = json.loads(prompt)
 
         self.assertEqual(request["model"], "qwen3:1.7b")
         self.assertFalse(request["stream"])
         self.assertFalse(request["think"])
         self.assertEqual(request["format"], "json")
+        self.assertEqual(request["keep_alive"], "10m")
+        self.assertEqual(request["options"]["num_predict"], 192)
         self.assertEqual(ai_action_plan_json_schema()["type"], "object")
         self.assertIn("Enciende la lampara.", prompt)
+        self.assertEqual(prompt_payload["safe_context"]["user_request"], "Enciende la lampara.")
+        self.assertIn("Plan only for safe_context.user_request", prompt)
         self.assertIn("device apply lamp_1 power.switch state=true", prompt)
-        self.assertIn("directly at the JSON root", prompt)
-        self.assertIn("Do not output reasoning", prompt)
+        self.assertIn("device read lamp_1 status.read", prompt)
+        self.assertIn("plan object at root", prompt)
+        self.assertIn("Forbidden wrappers: AIActionPlan", prompt)
+        self.assertIn("first key schema_version", prompt)
+        self.assertIn("steps items are objects", prompt)
+        self.assertIn("indexed 0..n-1", prompt)
+        self.assertIn("No reasoning text", prompt)
+        self.assertIn("Canonical commands stay technical English", prompt)
+        self.assertIn("summaries/questions use Spanish", prompt)
         self.assertNotIn("http://", prompt)
         self.assertNotIn("RuntimeContext", prompt)
         self.assertNotIn("DriverResult", prompt)
+
+    def test_prompt_is_bounded_and_uses_reduced_examples(self):
+        context = SafeContextBuilder().build("Enciende la lampara.", test_runtime().context.device_registry)
+        request = build_ollama_request(OllamaProviderConfig(model="qwen3:1.7b"), context)
+        prompt = json.loads(request["prompt"])
+
+        self.assertLess(len(request["prompt"]), 3000)
+        self.assertEqual(len(prompt["examples"]), 3)
+        self.assertEqual(prompt["examples"][0]["canonical_command_text"], "device read lamp_1 status.read")
+        self.assertEqual(prompt["examples"][1]["canonical_command_text"], "device apply lamp_1 power.switch state=true")
+        self.assertEqual(prompt["examples"][2]["kind"], "refuse")
+        self.assertEqual(prompt["examples"][2]["reason_code"], "forbidden_operation")
+        self.assertEqual(prompt["schema"]["schema_version"], 1)
+        self.assertEqual(prompt["schema"]["max_steps"], 5)
+        self.assertEqual(prompt["schema"]["step_index_rule"], "0..n-1")
+        self.assertIn("canonical_command_text", prompt["schema"]["step_fields"])
 
     def test_provider_returns_raw_plan_payload(self):
         raw_plan = execute_plan(
@@ -183,6 +219,33 @@ class OllamaProviderRequestTests(unittest.TestCase):
         self.assertFalse(result.success)
         self.assertEqual(result.error, AI_PROVIDER_TIMEOUT)
         self.assertNotIn("127.0.0.1", result.message)
+
+    def test_empty_execute_summary_is_rejected_before_confirmation(self):
+        raw_plan = execute_plan(
+            "",
+            [
+                step(
+                    0,
+                    "device apply lamp_1 power.switch state=true",
+                    "Turn lamp on.",
+                    "lamp_1",
+                    "power.switch",
+                    "mutate",
+                )
+            ],
+        )
+        adapter = FakeAIAdapter(
+            test_runtime(),
+            provider=OllamaAIProvider(
+                OllamaProviderConfig(model="qwen3:1.7b"),
+                FakeOllamaTransport(raw_plan),
+            ),
+        )
+
+        result = adapter.propose("Enciende la lampara.")
+
+        self.assertFalse(result.success)
+        self.assertEqual(result.error, AI_RESPONSE_INVALID)
 
 
 class OllamaEnvelopeTests(unittest.TestCase):
@@ -325,6 +388,10 @@ class OllamaBoundaryRegressionTests(unittest.TestCase):
         diagnostics = provider.consume_diagnostics()
         rendered = str(diagnostics)
 
+        self.assertIn("request_bytes", rendered)
+        self.assertIn("prompt_char_count", rendered)
+        self.assertIn("example_count", rendered)
+        self.assertIn("output_token_cap", rendered)
         self.assertIn("provider_call_completed", rendered)
         self.assertIn("provider_wrapper_unwrapped", rendered)
         self.assertNotIn("device read lamp_1", rendered)
