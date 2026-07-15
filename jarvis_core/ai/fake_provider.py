@@ -12,6 +12,9 @@ class DeterministicFakeAIProvider:
         self.calls.append({"user_request": user_request, "safe_context": safe_context})
         return self.responses.get(user_request, default_refusal())
 
+    def generate_plan(self, safe_context):
+        return self.generate(safe_context.user_request, safe_context)
+
 
 def default_responses():
     return {

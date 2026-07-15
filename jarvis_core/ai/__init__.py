@@ -20,6 +20,13 @@ from jarvis_core.ai.contracts import (
     AISafeResult,
 )
 from jarvis_core.ai.fake_provider import DeterministicFakeAIProvider
+from jarvis_core.ai.groq import (
+    DEFAULT_GROQ_MODEL,
+    GroqAIProvider,
+    GroqProviderConfig,
+    groq_ai_action_plan_schema,
+)
+from jarvis_core.ai.provider import AIProvider, AIProviderError
 
 __all__ = [
     "AIActionPlan",
@@ -35,6 +42,12 @@ __all__ = [
     "AISafeDeviceState",
     "AISafePolicyContext",
     "AISafeResult",
+    "AIProvider",
+    "AIProviderError",
+    "DEFAULT_GROQ_MODEL",
     "DeterministicFakeAIProvider",
     "FakeAIAdapter",
+    "GroqAIProvider",
+    "GroqProviderConfig",
+    "groq_ai_action_plan_schema",
 ]

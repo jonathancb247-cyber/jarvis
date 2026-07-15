@@ -17,6 +17,7 @@ from jarvis_core.ai.contracts import (
     AISafeResult,
 )
 from jarvis_core.ai.fake_provider import DeterministicFakeAIProvider
+from jarvis_core.ai.provider import AIProviderError
 from jarvis_core.ai.validation import (
     AIValidationError,
     classify_command,
@@ -53,9 +54,9 @@ class FakeAIAdapter:
                 self.runtime.context.device_registry,
                 session_context=session_context,
             )
-            raw_plan = self.provider.generate(user_request, safe_context)
+            raw_plan = self._generate_provider_plan(user_request, safe_context)
             plan = self._validated_plan(raw_plan, safe_context)
-        except AIValidationError as error:
+        except (AIValidationError, AIProviderError) as error:
             return self._error(error.code)
 
         if plan.kind == PLAN_KIND_CLARIFY:
@@ -123,6 +124,11 @@ class FakeAIAdapter:
                 raise AIValidationError(AI_PLAN_REJECTED)
             recomputed_steps.append(recompute_step(step, action_kind))
         return recompute_plan(plan, recomputed_steps)
+
+    def _generate_provider_plan(self, user_request, safe_context):
+        if callable(getattr(self.provider, "generate_plan", None)):
+            return self.provider.generate_plan(safe_context)
+        return self.provider.generate(user_request, safe_context)
 
     def _execute_plan(self, plan):
         safe_results = []
