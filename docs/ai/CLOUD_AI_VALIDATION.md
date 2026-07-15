@@ -74,6 +74,17 @@ tier limits as permanent architecture.
 JarvisOS does not retry automatically and does not fall back to another
 provider.
 
+## Windows TLS
+
+On Windows, JarvisOS may use native trust-store integration for the Groq
+transport. This preserves TLS certificate verification and hostname validation
+while using the same OS certificate policy that Windows-native HTTPS uses.
+
+The tested host exposed an AVG Web/Mail Shield TLS inspection certificate that
+Windows trusted but Python/OpenSSL rejected through the default OpenSSL path.
+JarvisOS does not disable antivirus, bypass TLS, export certificates, bundle
+AVG certificates, or provide an unverified TLS mode.
+
 ## Cleanup
 
 After validation, clear the session key:

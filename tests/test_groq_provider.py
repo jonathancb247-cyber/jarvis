@@ -1,5 +1,7 @@
 import json
+import ssl
 import unittest
+from unittest import mock
 
 from jarvis_core.ai.adapter import FakeAIAdapter
 from jarvis_core.ai.contracts import (
@@ -13,8 +15,10 @@ from jarvis_core.ai.groq import (
     DEFAULT_GROQ_MODEL,
     GROQ_API_URL,
     GroqAIProvider,
+    GroqHttpJsonTransport,
     GroqProviderConfig,
     build_groq_request,
+    create_provider_ssl_context,
     decode_groq_response,
     groq_ai_action_plan_schema,
 )
@@ -44,6 +48,31 @@ class GroqProviderConfigTests(unittest.TestCase):
             with self.subTest(kwargs=kwargs):
                 with self.assertRaises(ValueError):
                     GroqProviderConfig(**kwargs)
+
+
+class GroqTransportSecurityTests(unittest.TestCase):
+    def test_transport_accepts_injected_secure_context(self):
+        context = ssl.create_default_context()
+        transport = GroqHttpJsonTransport(ssl_context=context)
+
+        self.assertIs(transport.ssl_context, context)
+        self.assertTrue(transport.ssl_context.check_hostname)
+        self.assertEqual(transport.ssl_context.verify_mode, ssl.CERT_REQUIRED)
+
+    def test_provider_context_preserves_verification(self):
+        context = create_provider_ssl_context()
+
+        self.assertTrue(context.check_hostname)
+        self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
+
+    def test_windows_path_uses_truststore_without_global_injection(self):
+        with mock.patch("platform.system", return_value="Windows"):
+            with mock.patch("truststore.inject_into_ssl") as inject:
+                context = create_provider_ssl_context()
+
+        self.assertTrue(context.check_hostname)
+        self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
+        inject.assert_not_called()
 
 
 class GroqStrictSchemaTests(unittest.TestCase):

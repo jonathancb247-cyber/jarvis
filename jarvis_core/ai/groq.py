@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 import json
+import platform
+import ssl
 import socket
 import urllib.error
 import urllib.request
@@ -109,6 +111,9 @@ class GroqAIProvider:
 class GroqHttpJsonTransport:
     """Synchronous standard-library HTTPS transport for Groq."""
 
+    def __init__(self, ssl_context=None):
+        self.ssl_context = ssl_context or create_provider_ssl_context()
+
     def post_json(
         self,
         payload,
@@ -126,7 +131,10 @@ class GroqHttpJsonTransport:
                 "Content-Type": "application/json",
             },
         )
-        opener = urllib.request.build_opener(_NoRedirectHandler())
+        opener = urllib.request.build_opener(
+            urllib.request.HTTPSHandler(context=self.ssl_context),
+            _NoRedirectHandler(),
+        )
         try:
             with opener.open(request, timeout=timeout_seconds) as response:
                 if response.status != 200:
@@ -151,6 +159,17 @@ class GroqHttpJsonTransport:
 class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise AIProviderError(AI_PROVIDER_PROTOCOL_ERROR)
+
+
+def create_provider_ssl_context():
+    """Create a secure provider TLS context without global SSL monkey-patching."""
+    if platform.system() == "Windows":
+        try:
+            import truststore
+        except ImportError as error:
+            raise AIProviderError(AI_PROVIDER_UNAVAILABLE) from error
+        return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    return ssl.create_default_context()
 
 
 def build_groq_request(context, config):

@@ -62,6 +62,15 @@ fixed API path, strict timeouts and bounded responses. It does not use
 streaming, retries, redirects, fallback providers, arbitrary endpoints, or
 provider SDKs.
 
+On Windows, the provider creates an explicit native trust-store TLS context for
+Groq transport using `truststore`. This allows Python to honor the Windows
+certificate policy without disabling verification. Hostname verification and
+certificate verification remain mandatory.
+
+The transport does not use global SSL monkey-patching, does not call
+`truststore.inject_into_ssl()`, does not bundle certificates, and does not
+special-case AVG or any other security product.
+
 CI uses fake injected transports only. No Groq account, Internet access or real
 API key is required for tests.
 
