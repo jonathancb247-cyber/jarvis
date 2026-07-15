@@ -128,10 +128,12 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Phase 11.1 is completed as design", project_state)
         self.assertIn("Phase 11.2 is completed", project_state)
         self.assertIn("Runtime API is Current / Experimental", project_state)
-        self.assertIn("Phase 11.3 is pending merge", project_state)
-        self.assertIn("Minimal Dashboard is Experimental", project_state)
+        self.assertIn("Phase 11.3 is completed", project_state)
+        self.assertIn("Dashboard is Current / Experimental", project_state)
+        self.assertIn("Phase 11.4 - Profile-based Hardware Dashboard Validation remains blocked", project_state)
         self.assertIn("Epic 10 remains unchanged", project_state)
         self.assertNotIn("Phase 11.2 is pending merge", project_state)
+        self.assertNotIn("Phase 11.3 is pending merge", project_state)
 
     def test_runtime_api_documentation_states_localhost_boundary(self):
         api_readme = (REPO_ROOT / "docs" / "api" / "README.md").read_text(
