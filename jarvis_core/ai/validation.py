@@ -74,7 +74,7 @@ class AIValidationError(Exception):
 
 def normalize_plan(payload):
     if not isinstance(payload, dict):
-        raise AIValidationError(AI_RESPONSE_INVALID)
+        raise AIValidationError(AI_RESPONSE_INVALID, "plan_normalization_failed")
     _reject_unknown(payload, PLAN_FIELDS)
     try:
         steps = tuple(normalize_step(item) for item in payload.get("steps", []))
@@ -91,12 +91,12 @@ def normalize_plan(payload):
             policy_flags=tuple(payload.get("policy_flags", [])),
         )
     except (KeyError, TypeError, ValueError) as error:
-        raise AIValidationError(AI_RESPONSE_INVALID) from error
+        raise AIValidationError(AI_RESPONSE_INVALID, "plan_normalization_failed") from error
 
 
 def normalize_step(payload):
     if not isinstance(payload, dict):
-        raise AIValidationError(AI_RESPONSE_INVALID)
+        raise AIValidationError(AI_RESPONSE_INVALID, "plan_normalization_failed")
     _reject_unknown(payload, STEP_FIELDS)
     try:
         return AIActionStep(
@@ -110,7 +110,7 @@ def normalize_step(payload):
             policy_flags=tuple(payload.get("policy_flags", [])),
         )
     except (KeyError, TypeError, ValueError) as error:
-        raise AIValidationError(AI_RESPONSE_INVALID) from error
+        raise AIValidationError(AI_RESPONSE_INVALID, "plan_normalization_failed") from error
 
 
 def validate_plan_shape(plan):
@@ -118,37 +118,37 @@ def validate_plan_shape(plan):
         raise AIValidationError(AI_RESPONSE_INVALID)
     if plan.kind == PLAN_KIND_EXECUTE:
         if not 1 <= len(plan.steps) <= MAX_PLAN_STEPS:
-            raise AIValidationError(AI_PLAN_REJECTED)
+            raise AIValidationError(AI_PLAN_REJECTED, "contract_validation_failed")
         expected = list(range(len(plan.steps)))
         actual = [step.index for step in plan.steps]
         if actual != expected:
-            raise AIValidationError(AI_PLAN_REJECTED)
+            raise AIValidationError(AI_PLAN_REJECTED, "contract_validation_failed")
     return plan
 
 
 def validate_command_text_safety(command_text):
     if not isinstance(command_text, str) or not command_text.strip():
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "command_safety_validation_failed")
     if len(command_text) > MAX_COMMAND_LENGTH:
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "command_safety_validation_failed")
     if "\n" in command_text or "\r" in command_text:
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "command_safety_validation_failed")
     forbidden_tokens = [";", "&&", "||", "|", ">", "<", "#", "`", "$("]
     if any(token in command_text for token in forbidden_tokens):
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "command_safety_validation_failed")
     if URL_PATTERN.search(command_text):
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "command_safety_validation_failed")
     if WINDOWS_PATH_PATTERN.search(command_text) or UNIX_PATH_PATTERN.search(command_text):
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "command_safety_validation_failed")
     if PYTHON_PATTERN.search(command_text) or BACKGROUND_PATTERN.search(command_text):
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "command_safety_validation_failed")
     return command_text
 
 
 def validate_with_planner(planner, command_text):
     command = planner.plan(command_text, source="ai.adapter")
     if command.name == "unknown":
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "planner_validation_failed")
     return command
 
 
@@ -157,7 +157,7 @@ def validate_against_context(step, command, safe_context):
         return _validate_device_execute(step, command, safe_context)
     if command.name == DEVICE_CATALOG_COMMAND:
         return command
-    raise AIValidationError(AI_PLAN_REJECTED)
+    raise AIValidationError(AI_PLAN_REJECTED, "semantic_validation_failed")
 
 
 def classify_command(command, safe_context):
@@ -223,18 +223,18 @@ def _validate_device_execute(step, command, safe_context):
     parameters = command.args.get("parameters", {})
     device = _find_device(safe_context, device_id)
     if device is None:
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "semantic_validation_failed")
     capability = _find_capability(device, capability_name)
     if capability is None:
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "semantic_validation_failed")
     if step.target_device_id is not None and step.target_device_id != device_id:
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "semantic_validation_failed")
     if step.capability_name is not None and step.capability_name != capability_name:
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "semantic_validation_failed")
     if operation == READ_OPERATION and capability.kind != "reading":
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "semantic_validation_failed")
     if operation == APPLY_OPERATION and capability.kind != "action":
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "semantic_validation_failed")
     if operation == APPLY_OPERATION:
         _validate_required_parameters(parameters, capability)
     return command
@@ -248,7 +248,7 @@ def _validate_required_parameters(parameters, capability):
     }
     missing = [name for name in required if name not in parameters]
     if missing:
-        raise AIValidationError(AI_PLAN_REJECTED)
+        raise AIValidationError(AI_PLAN_REJECTED, "semantic_validation_failed")
 
 
 def _find_device(safe_context, device_id):
@@ -271,7 +271,7 @@ def _normalize_clarification(payload):
     if payload is None:
         return None
     if not isinstance(payload, dict):
-        raise AIValidationError(AI_RESPONSE_INVALID)
+        raise AIValidationError(AI_RESPONSE_INVALID, "plan_normalization_failed")
     _reject_unknown(payload, CLARIFICATION_FIELDS)
     return AIClarification(
         question=payload["question"],
@@ -285,7 +285,7 @@ def _normalize_refusal(payload):
     if payload is None:
         return None
     if not isinstance(payload, dict):
-        raise AIValidationError(AI_RESPONSE_INVALID)
+        raise AIValidationError(AI_RESPONSE_INVALID, "plan_normalization_failed")
     _reject_unknown(payload, REFUSAL_FIELDS)
     return AIRefusal(
         safe_message=payload["safe_message"],
@@ -296,4 +296,4 @@ def _normalize_refusal(payload):
 def _reject_unknown(payload, allowed):
     unknown = set(payload) - allowed
     if unknown:
-        raise AIValidationError(AI_RESPONSE_INVALID)
+        raise AIValidationError(AI_RESPONSE_INVALID, "plan_normalization_failed")

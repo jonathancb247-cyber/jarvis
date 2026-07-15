@@ -39,6 +39,15 @@ Use a local profile that already works with JarvisOS:
 python -m jarvis_core.ai_local --config profiles/http-lab.local.json --model qwen3:1.7b
 ```
 
+For safe provider-stage diagnostics during manual validation, add:
+
+```bash
+--diagnostic
+```
+
+Diagnostic output reports stages and field names only. It does not print raw
+prompts, raw provider responses, bindings, secrets or stack traces.
+
 The AI-local path is explicit and isolated. It does not enable AI in:
 
 - `python -m jarvis_core`
@@ -69,7 +78,7 @@ Expected behavior:
 
 - mutation requires confirmation;
 - the exact generated plan is shown;
-- execution happens only after `confirm <plan_id>`.
+- execution happens only after `confirm <REAL_PLAN_ID>`.
 
 Cancellation:
 
@@ -113,4 +122,3 @@ Record:
 
 Do not commit local profiles, real snapshots, IP addresses, SSIDs, passwords,
 provider prompts or provider responses.
-

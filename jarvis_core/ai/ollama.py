@@ -101,14 +101,18 @@ class OllamaHttpJsonTransport:
 class OllamaAIProvider:
     """Generate raw Structured Plan payloads through a local Ollama server."""
 
-    def __init__(self, config, transport=None):
+    def __init__(self, config, transport=None, diagnostic_enabled=False):
         if not isinstance(config, OllamaProviderConfig):
             raise TypeError("OllamaAIProvider requires OllamaProviderConfig")
         self.config = config
         self.transport = transport or OllamaHttpJsonTransport()
+        self.diagnostic_enabled = bool(diagnostic_enabled)
+        self._diagnostics = []
 
     def generate_plan(self, context):
+        self._diagnostics = []
         request = build_ollama_request(self.config, context)
+        self._record_diagnostic("provider_request_built")
         envelope = self.transport.post_json(
             self.config.base_url,
             OLLAMA_GENERATE_PATH,
@@ -116,7 +120,38 @@ class OllamaAIProvider:
             self.config.timeout_seconds,
             self.config.maximum_response_bytes,
         )
-        return decode_ollama_envelope(envelope, self.config.maximum_response_bytes)
+        self._record_diagnostic(
+            "provider_call_completed",
+            envelope_keys=_safe_keys(envelope),
+        )
+        return decode_ollama_envelope(
+            envelope,
+            self.config.maximum_response_bytes,
+            diagnostic_recorder=self._record_diagnostic,
+        )
+
+    def record_adapter_error(self, code, reason):
+        self._record_diagnostic(
+            "adapter_validation_failed",
+            error_code=code,
+            reason=reason,
+        )
+
+    def consume_diagnostics(self):
+        diagnostics = tuple(self._diagnostics)
+        self._diagnostics = []
+        return diagnostics
+
+    def _record_diagnostic(self, stage, **fields):
+        if not self.diagnostic_enabled:
+            return
+        safe_fields = {"stage": stage}
+        for key, value in fields.items():
+            if isinstance(value, (str, int, bool)) or value is None:
+                safe_fields[key] = value
+            elif isinstance(value, (tuple, list)):
+                safe_fields[key] = ",".join(str(item) for item in value[:16])
+        self._diagnostics.append(safe_fields)
 
 
 def build_ollama_request(config, context):
@@ -126,6 +161,7 @@ def build_ollama_request(config, context):
         "model": config.model,
         "prompt": prompt,
         "stream": False,
+        "think": False,
         "format": "json",
         "options": {
             "temperature": 0,
@@ -133,7 +169,11 @@ def build_ollama_request(config, context):
     }
 
 
-def decode_ollama_envelope(envelope, maximum_response_bytes=DEFAULT_MAXIMUM_RESPONSE_BYTES):
+def decode_ollama_envelope(
+    envelope,
+    maximum_response_bytes=DEFAULT_MAXIMUM_RESPONSE_BYTES,
+    diagnostic_recorder=None,
+):
     if not isinstance(envelope, dict):
         raise OllamaProviderError(AI_PROVIDER_PROTOCOL_ERROR)
     if "error" in envelope:
@@ -143,15 +183,124 @@ def decode_ollama_envelope(envelope, maximum_response_bytes=DEFAULT_MAXIMUM_RESP
         response = envelope["message"].get("content")
     if not isinstance(response, str) or not response.strip():
         raise OllamaProviderError(AI_RESPONSE_INVALID)
-    if len(response.encode("utf-8")) > maximum_response_bytes:
+    response_bytes = len(response.encode("utf-8"))
+    _record_optional(
+        diagnostic_recorder,
+        "provider_response_received",
+        response_bytes=response_bytes,
+    )
+    if response_bytes > maximum_response_bytes:
         raise OllamaProviderError(AI_RESPONSE_TOO_LARGE)
+    content = _strip_single_json_code_fence(response)
     try:
-        payload = json.loads(response)
+        payload = json.loads(content)
     except json.JSONDecodeError:
+        _record_optional(diagnostic_recorder, "provider_response_not_json")
         raise OllamaProviderError(AI_RESPONSE_INVALID)
     if not isinstance(payload, dict):
+        _record_optional(
+            diagnostic_recorder,
+            "provider_response_json_decoded",
+            top_level_type=type(payload).__name__,
+        )
         raise OllamaProviderError(AI_RESPONSE_INVALID)
-    return payload
+    _record_optional(
+        diagnostic_recorder,
+        "provider_response_json_decoded",
+        top_level_type="dict",
+        top_level_fields=_safe_keys(payload),
+    )
+    return _normalize_provider_payload(payload, diagnostic_recorder)
+
+
+def ai_action_plan_json_schema():
+    step_schema = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "index",
+            "canonical_command_text",
+            "safe_description",
+            "target_device_id",
+            "capability_name",
+            "action_kind",
+            "requires_confirmation",
+            "policy_flags",
+        ],
+        "properties": {
+            "index": {"type": "integer", "minimum": 0},
+            "canonical_command_text": {"type": "string", "minLength": 1, "maxLength": MAX_COMMAND_LENGTH},
+            "safe_description": {"type": "string", "minLength": 1, "maxLength": MAX_SAFE_TEXT_LENGTH},
+            "target_device_id": {"type": ["string", "null"], "maxLength": MAX_SAFE_TEXT_LENGTH},
+            "capability_name": {"type": ["string", "null"], "maxLength": MAX_SAFE_TEXT_LENGTH},
+            "action_kind": {"type": "string", "enum": ["read", "mutate", "unknown"]},
+            "requires_confirmation": {"type": "boolean"},
+            "policy_flags": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
+        },
+    }
+    clarification_schema = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["question", "reason_code", "missing_fields", "candidate_options"],
+        "properties": {
+            "question": {"type": "string", "minLength": 1, "maxLength": MAX_SAFE_TEXT_LENGTH},
+            "reason_code": {
+                "type": "string",
+                "enum": [
+                    "ambiguous_device",
+                    "missing_parameter",
+                    "unsupported_request",
+                    "multiple_possible_actions",
+                    "safety_uncertainty",
+                    "insufficient_context",
+                ],
+            },
+            "missing_fields": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
+            "candidate_options": {"type": "array", "items": {"type": "string"}, "maxItems": 5},
+        },
+    }
+    refusal_schema = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["safe_message", "reason_code"],
+        "properties": {
+            "safe_message": {"type": "string", "minLength": 1, "maxLength": MAX_SAFE_TEXT_LENGTH},
+            "reason_code": {
+                "type": "string",
+                "enum": [
+                    "forbidden_operation",
+                    "policy_violation",
+                    "unsafe_request",
+                    "unsupported_operation",
+                    "invalid_provider_output",
+                ],
+            },
+        },
+    }
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "schema_version",
+            "kind",
+            "steps",
+            "safe_summary",
+            "clarification",
+            "refusal",
+            "confirmation_required",
+            "policy_flags",
+        ],
+        "properties": {
+            "schema_version": {"type": "integer", "const": PLAN_SCHEMA_VERSION},
+            "kind": {"type": "string", "enum": ["execute", "clarify", "refuse"]},
+            "steps": {"type": "array", "items": step_schema, "maxItems": MAX_PLAN_STEPS},
+            "safe_summary": {"type": "string", "maxLength": MAX_SAFE_TEXT_LENGTH},
+            "clarification": {"anyOf": [clarification_schema, {"type": "null"}]},
+            "refusal": {"anyOf": [refusal_schema, {"type": "null"}]},
+            "confirmation_required": {"type": "boolean"},
+            "policy_flags": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
+        },
+    }
 
 
 def _build_prompt(context):
@@ -227,9 +376,19 @@ def _build_prompt(context):
     payload = {
         "instructions": [
             "Return JSON only.",
+            "Return the AIActionPlan object directly at the JSON root.",
+            "Do not wrap the plan in actionPlan, plan, result, response, or Markdown.",
+            "Do not output reasoning or explanatory text.",
+            "Include every required field exactly once.",
+            "Use JSON null where a clarification or refusal is absent.",
+            "Use empty arrays where required.",
+            "Do not add unknown fields.",
             "Return an AIActionPlan schema_version 1.",
             "Allowed kind values are execute, clarify, refuse.",
+            "One step equals one canonical JarvisOS command.",
             "Canonical JarvisOS command text must stay in technical English.",
+            "Use Spanish only for safe summaries and clarification text.",
+            "Mutations may be proposed; JarvisOS recomputes confirmation.",
             "Do not include URLs, IP addresses, bindings, credentials, diagnostics, or runtime internals.",
             "Do not create more than five steps.",
         ],
@@ -243,6 +402,37 @@ def _build_prompt(context):
         "examples": examples,
     }
     return json.dumps(payload, ensure_ascii=True, sort_keys=True)
+
+
+def _normalize_provider_payload(payload, diagnostic_recorder=None):
+    if set(payload) == {"actionPlan"} and isinstance(payload["actionPlan"], dict):
+        _record_optional(diagnostic_recorder, "provider_wrapper_unwrapped", wrapper="actionPlan")
+        return payload["actionPlan"]
+    return payload
+
+
+def _strip_single_json_code_fence(response):
+    stripped = response.strip()
+    if not stripped.startswith("```") or not stripped.endswith("```"):
+        return response
+    lines = stripped.splitlines()
+    if len(lines) < 3:
+        return response
+    first = lines[0].strip().lower()
+    if first not in {"```", "```json"}:
+        return response
+    return "\n".join(lines[1:-1]).strip()
+
+
+def _record_optional(recorder, stage, **fields):
+    if callable(recorder):
+        recorder(stage, **fields)
+
+
+def _safe_keys(value):
+    if not isinstance(value, dict):
+        return ()
+    return tuple(sorted(str(key)[:64] for key in value.keys()))
 
 
 def _safe_context_payload(context):
@@ -382,4 +572,3 @@ def _raise_ollama_error(error):
 class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise urllib.error.HTTPError(req.full_url, code, msg, headers, fp)
-

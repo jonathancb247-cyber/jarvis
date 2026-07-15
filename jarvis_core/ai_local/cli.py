@@ -27,7 +27,8 @@ def main(argv=None):
                 base_url=args.base_url,
                 timeout_seconds=args.timeout,
                 maximum_response_bytes=args.maximum_response_bytes,
-            )
+            ),
+            diagnostic_enabled=args.diagnostic,
         )
         adapter = FakeAIAdapter(runtime, provider=provider)
     except ConfigurationError:
@@ -43,7 +44,7 @@ def main(argv=None):
     print("JarvisOS AI-local adapter listening for local requests.")
     print("Type a Spanish request, 'confirm <plan_id>', 'cancel <plan_id>', or 'exit'.")
     try:
-        _interaction_loop(adapter)
+        _interaction_loop(adapter, provider)
     except KeyboardInterrupt:
         pass
     finally:
@@ -51,7 +52,7 @@ def main(argv=None):
     return 0
 
 
-def _interaction_loop(adapter):
+def _interaction_loop(adapter, provider):
     while True:
         user_input = input("ai> ").strip()
         if not user_input:
@@ -62,11 +63,14 @@ def _interaction_loop(adapter):
             return
         if lowered.startswith("confirm "):
             _print_result(adapter.confirm(user_input.split(maxsplit=1)[1].strip()))
+            _print_diagnostics(provider)
             continue
         if lowered.startswith("cancel "):
             _print_result(adapter.cancel(user_input.split(maxsplit=1)[1].strip()))
+            _print_diagnostics(provider)
             continue
         _print_result(adapter.propose(user_input))
+        _print_diagnostics(provider)
 
 
 def _print_result(result):
@@ -88,6 +92,21 @@ def _print_result(result):
         print(f"question: {result.clarification.question}")
     if result.refusal is not None:
         print(f"refusal: {result.refusal.safe_message}")
+
+
+def _print_diagnostics(provider):
+    consume = getattr(provider, "consume_diagnostics", None)
+    if not callable(consume):
+        return
+    diagnostics = consume()
+    if not diagnostics:
+        return
+    print("diagnostic:")
+    for item in diagnostics:
+        parts = []
+        for key in sorted(item):
+            parts.append(f"{key}={item[key]}")
+        print("  " + " ".join(parts))
 
 
 def _parse_args(argv=None):
@@ -119,6 +138,11 @@ def _parse_args(argv=None):
         default=262144,
         help="Maximum Ollama response size.",
     )
+    parser.add_argument(
+        "--diagnostic",
+        action="store_true",
+        help="Print safe provider stage diagnostics without raw prompts or responses.",
+    )
     return parser.parse_args(argv)
 
 
@@ -128,4 +152,3 @@ def _install_signal_handlers():
 
     if hasattr(signal, "SIGBREAK"):
         signal.signal(signal.SIGBREAK, interrupt)
-

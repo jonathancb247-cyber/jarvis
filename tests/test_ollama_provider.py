@@ -19,6 +19,7 @@ from jarvis_core.ai.ollama import (
     OllamaAIProvider,
     OllamaProviderConfig,
     OllamaProviderError,
+    ai_action_plan_json_schema,
     build_ollama_request,
     decode_ollama_envelope,
 )
@@ -77,9 +78,13 @@ class OllamaProviderRequestTests(unittest.TestCase):
 
         self.assertEqual(request["model"], "qwen3:1.7b")
         self.assertFalse(request["stream"])
+        self.assertFalse(request["think"])
         self.assertEqual(request["format"], "json")
+        self.assertEqual(ai_action_plan_json_schema()["type"], "object")
         self.assertIn("Enciende la lampara.", prompt)
         self.assertIn("device apply lamp_1 power.switch state=true", prompt)
+        self.assertIn("directly at the JSON root", prompt)
+        self.assertIn("Do not output reasoning", prompt)
         self.assertNotIn("http://", prompt)
         self.assertNotIn("RuntimeContext", prompt)
         self.assertNotIn("DriverResult", prompt)
@@ -193,6 +198,49 @@ class OllamaEnvelopeTests(unittest.TestCase):
             plan,
         )
 
+    def test_decode_unwraps_real_qwen_action_plan_wrapper(self):
+        plan = execute_plan(
+            "Read lamp.",
+            [step(0, "device read lamp_1 status.read", "Read lamp.")],
+        )
+
+        result = decode_ollama_envelope({"response": json.dumps({"actionPlan": plan})})
+
+        self.assertEqual(result, plan)
+
+    def test_decode_accepts_single_markdown_json_fence(self):
+        plan = execute_plan(
+            "Read lamp.",
+            [step(0, "device read lamp_1 status.read", "Read lamp.")],
+        )
+        response = "```json\n" + json.dumps(plan) + "\n```"
+
+        result = decode_ollama_envelope({"response": response})
+
+        self.assertEqual(result, plan)
+
+    def test_decode_does_not_unwrap_unapproved_plan_wrapper(self):
+        plan = execute_plan(
+            "Read lamp.",
+            [step(0, "device read lamp_1 status.read", "Read lamp.")],
+        )
+
+        result = decode_ollama_envelope({"response": json.dumps({"plan": plan})})
+
+        self.assertEqual(result, {"plan": plan})
+
+    def test_decode_ignores_separate_envelope_thinking_field(self):
+        plan = execute_plan(
+            "Read lamp.",
+            [step(0, "device read lamp_1 status.read", "Read lamp.")],
+        )
+
+        result = decode_ollama_envelope(
+            {"response": json.dumps(plan), "thinking": "not forwarded"}
+        )
+
+        self.assertEqual(result, plan)
+
     def test_decode_rejects_malformed_or_empty_output(self):
         invalid = [
             {},
@@ -261,6 +309,27 @@ class OllamaBoundaryRegressionTests(unittest.TestCase):
 
                 self.assertEqual(error.exception.code, code)
 
+    def test_safe_diagnostics_report_stages_without_raw_response(self):
+        raw_plan = {"actionPlan": execute_plan(
+            "Read lamp status.",
+            [step(0, "device read lamp_1 status.read", "Read lamp status.")],
+        )}
+        provider = OllamaAIProvider(
+            OllamaProviderConfig(model="qwen3:1.7b"),
+            FakeOllamaTransport(raw_plan),
+            diagnostic_enabled=True,
+        )
+        context = SafeContextBuilder().build("Lee el estado.", test_runtime().context.device_registry)
+
+        provider.generate_plan(context)
+        diagnostics = provider.consume_diagnostics()
+        rendered = str(diagnostics)
+
+        self.assertIn("provider_call_completed", rendered)
+        self.assertIn("provider_wrapper_unwrapped", rendered)
+        self.assertNotIn("device read lamp_1", rendered)
+        self.assertNotIn("Read lamp status.", rendered)
+
 
 class FakeOllamaTransport:
     def __init__(self, plan):
@@ -325,4 +394,3 @@ def lamp():
 
 if __name__ == "__main__":
     unittest.main()
-

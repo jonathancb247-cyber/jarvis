@@ -59,6 +59,9 @@ class FakeAIAdapter:
         except OllamaProviderError as error:
             return self._error(error.code)
         except AIValidationError as error:
+            record_adapter_error = getattr(self.provider, "record_adapter_error", None)
+            if callable(record_adapter_error):
+                record_adapter_error(error.code, error.reason)
             return self._error(error.code)
 
         if plan.kind == PLAN_KIND_CLARIFY:
