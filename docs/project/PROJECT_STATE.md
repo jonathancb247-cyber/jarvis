@@ -13,7 +13,7 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 10.1 is completed as design: AI Adapter Boundary.
 - Phase 10.2 is completed as design: Structured Plan and Safe Context Contracts.
 - Phase 10.3 is completed: deterministic fake AI Adapter.
-- Current snapshot commit: `ecca671503a7c25a301386f7b180fc56f47de4c1`.
+- Current snapshot commit: `82432ac7bbbbd53b533e0a57594a9579646d8883`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
 - Full test suite after Phase 10.3: 444 tests passing.
@@ -26,10 +26,15 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Runtime API is Current / Experimental.
 - Runtime API is localhost-only REST/JSON with synchronous Runtime interaction.
 - Runtime API submits canonical command text through the Runtime-owned boundary and exposes safe detached projections.
-- Phase 11.3 is pending merge: Minimal Local Dashboard.
-- Minimal Dashboard is Experimental.
-- Dashboard uses vanilla HTML/CSS/JavaScript and consumes the localhost Runtime API.
-- Dashboard has no AI chat, auth, LAN access, WebSocket, SSE or external frontend dependency.
+- Phase 11.3 is completed: Minimal Local Dashboard.
+- Phase 11.3 PR: #36 merged.
+- Phase 11.3 implementation commit: `575387a028586a7d51d0d46727b4d792ec95464d`.
+- Phase 11.3 visual refinement commit: `1136bc89cba39a7ee09f3cd9b9f7c2156d76f5d3`.
+- Full test suite after Phase 11.3: 471 tests passing.
+- Dashboard is Current / Experimental.
+- Dashboard is localhost-only, API-backed, responsive, and built with vanilla HTML/CSS/JavaScript.
+- Dashboard uses capability-driven controls from formal API capabilities.
+- Dashboard has no external frontend dependencies, AI chat, auth, LAN access, WebSocket, SSE or async Runtime.
 - Current closing commit for Epic 9: `c3a6f78a72b9c08db550743cec6910934c44899d`.
 - Full test suite at Epic 9 close: 420 tests passing.
 - Default runtime remains empty, simulated, and offline-safe.
@@ -92,9 +97,10 @@ Independent product line:
 
 - Epic 11 - Runtime API and Dashboard is in progress.
 - Phase 11.2 - Local Runtime API is completed.
-- Phase 11.3 - Minimal Local Dashboard is pending merge.
+- Phase 11.3 - Minimal Local Dashboard is completed.
 - Phase 11.4 - Profile-based Hardware Dashboard Validation remains blocked until explicitly opened.
 - Epic 10 remains unchanged and Phase 10.4 remains blocked.
+- Epic 11 status: In progress - Local Runtime API and Minimal Dashboard implemented; hardware Dashboard validation pending.
 
 ## Stable Boundaries
 
