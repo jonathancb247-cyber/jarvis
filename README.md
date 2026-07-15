@@ -57,8 +57,9 @@ See [HTTP Profile Validation](docs/getting-started/HTTP_PROFILE_VALIDATION.md).
 ## AI Adapter
 
 JarvisOS includes an experimental deterministic fake AI Adapter for boundary
-validation only. It does not use a real model, network, credentials, provider
-SDK, persistent memory, or default runtime wiring.
+validation and an optional localhost Ollama provider boundary for manual local
+validation. The default runtime still uses no AI, provider, credentials,
+network, SDK, persistent memory, or AI wiring.
 
 See [AI Adapter](docs/ai/README.md).
 
