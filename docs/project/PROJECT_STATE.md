@@ -13,6 +13,12 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 10.1 is completed as design: AI Adapter Boundary.
 - Phase 10.2 is completed as design: Structured Plan and Safe Context Contracts.
 - Phase 10.3 is completed: deterministic fake AI Adapter.
+- Phase 10.4 is completed as design: First Optional Local AI Provider Boundary.
+- Phase 10.5 is pending merge: Local Ollama Provider Minimal Implementation.
+- Ollama provider is Experimental and not manually validated yet.
+- First local validation model is planned as `qwen3:1.7b`.
+- `qwen3:4b` is conditional on enough RAM after cleanup; `qwen3:8b` is not recommended for the validated laptop.
+- Phase 10.6 remains blocked until explicitly opened.
 - Current snapshot commit: `82432ac7bbbbd53b533e0a57594a9579646d8883`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -83,15 +89,15 @@ JSON config
 
 ## Current Epic
 
-Epic 10 — AI Adapter Boundary.
+Epic 10 - AI Adapter Boundary.
 
-Current completed phase:
+Current implementation phase:
 
-- Phase 10.3 — Deterministic Fake AI Adapter Minimal Implementation.
+- Phase 10.5 - Local Ollama Provider Minimal Implementation, pending merge.
 
 Next blocked phase:
 
-- Phase 10.4 — First Optional AI Provider Adapter, blocked until explicitly opened.
+- Phase 10.6 - blocked until explicitly opened.
 
 Independent product line:
 
@@ -99,7 +105,7 @@ Independent product line:
 - Phase 11.2 - Local Runtime API is completed.
 - Phase 11.3 - Minimal Local Dashboard is completed.
 - Phase 11.4 - Profile-based Hardware Dashboard Validation remains blocked until explicitly opened.
-- Epic 10 remains unchanged and Phase 10.4 remains blocked.
+- Epic 10 remains in progress and Phase 10.5 is pending merge.
 - Epic 11 status: In progress - Local Runtime API and Minimal Dashboard implemented; hardware Dashboard validation pending.
 
 ## Stable Boundaries
@@ -134,6 +140,8 @@ Current experimental areas:
 - Plan Validator.
 - Confirmation Gate.
 - Sequential AI Plan Executor.
+- Localhost Ollama AI Provider.
+- AI-local validation entry point.
 - Runtime API Adapter.
 - Localhost REST/JSON Runtime API.
 - Safe Runtime API projections.
@@ -219,6 +227,8 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 - AI providers do not produce executable `Command` objects.
 - AI Structured Plans are normalized and validated before canonical command text reaches the Runtime-owned adapter boundary.
 - The deterministic fake AI Adapter uses no network, credentials, provider SDK, or real model.
+- The optional Ollama provider is localhost-only, explicitly wired, model-neutral, and not part of the default runtime.
+- The first planned local validation model is `qwen3:1.7b`; `qwen3:4b` is conditional, and `qwen3:8b` is not recommended for the validated laptop.
 - The default runtime remains AI-free.
 - No provider registry exists.
 - No persistent AI memory exists.
@@ -232,7 +242,7 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 
 Not currently implemented:
 
-- real AI providers;
+- remote AI providers;
 - `--profile`;
 - DriverRegistry;
 - retries/backoff;
@@ -260,6 +270,8 @@ Not currently implemented:
 - [ESP32 + ESP-IDF Guide](../platforms/ESP32_ESP_IDF.md)
 - [HTTP LED Example](../../examples/http-led/README.md)
 - [AI Adapter](../ai/README.md)
+- [Local Ollama Provider](../ai/OLLAMA_PROVIDER.md)
+- [Local AI Validation](../ai/LOCAL_AI_VALIDATION.md)
 
 ## Glossary
 
@@ -273,6 +285,7 @@ Not currently implemented:
 - Stale: restored last-known state that is not proof of current availability.
 - AIActionPlan: provider-neutral structured plan normalized by the AI Adapter.
 - AISafeContext: detached semantic context snapshot for AI planning.
+- OllamaAIProvider: optional localhost provider boundary for manual local validation.
 - Runtime API: optional localhost adapter exposing safe REST/JSON projections and command submission.
 - Dashboard: optional browser UI consuming the localhost Runtime API.
 

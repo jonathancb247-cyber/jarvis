@@ -25,7 +25,12 @@ MAX_PREVIOUS_RESULTS = 5
 MAX_PROPERTIES_PER_DEVICE = 32
 
 AI_PROVIDER_UNAVAILABLE = "ai_provider_unavailable"
+AI_PROVIDER_TIMEOUT = "ai_provider_timeout"
+AI_MODEL_NOT_FOUND = "ai_model_not_found"
+AI_MODEL_UNAVAILABLE = "ai_model_unavailable"
 AI_RESPONSE_INVALID = "ai_response_invalid"
+AI_RESPONSE_TOO_LARGE = "ai_response_too_large"
+AI_PROVIDER_PROTOCOL_ERROR = "ai_provider_protocol_error"
 AI_PLAN_REJECTED = "ai_plan_rejected"
 AI_POLICY_VIOLATION = "ai_policy_violation"
 AI_CLARIFICATION_REQUIRED = "ai_clarification_required"

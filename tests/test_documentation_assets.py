@@ -21,6 +21,8 @@ REQUIRED_FILES = [
     "docs/ai/STRUCTURED_PLAN.md",
     "docs/ai/SAFE_CONTEXT.md",
     "docs/ai/FAKE_AI_ADAPTER.md",
+    "docs/ai/OLLAMA_PROVIDER.md",
+    "docs/ai/LOCAL_AI_VALIDATION.md",
     "docs/getting-started/INSTALLATION.md",
     "docs/getting-started/CONFIGURATION.md",
     "docs/getting-started/STATE_PERSISTENCE.md",
@@ -115,8 +117,11 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Epics 1-9 are completed", project_state)
         self.assertIn("Epic 10 is in progress", project_state)
         self.assertIn("Phase 10.3 is completed", project_state)
+        self.assertIn("Phase 10.4 is completed as design", project_state)
+        self.assertIn("Phase 10.5 is pending merge", project_state)
         self.assertIn("e374d30f2c28865c82fcb880f7079974ea1dfca4", project_state)
         self.assertIn("c3a6f78a72b9c08db550743cec6910934c44899d", project_state)
+        self.assertIn("Ollama provider is Experimental", project_state)
         self.assertIn("Default runtime remains empty, simulated, and offline-safe", project_state)
 
     def test_project_state_documents_runtime_api_boundary(self):
@@ -131,7 +136,7 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Phase 11.3 is completed", project_state)
         self.assertIn("Dashboard is Current / Experimental", project_state)
         self.assertIn("Phase 11.4 - Profile-based Hardware Dashboard Validation remains blocked", project_state)
-        self.assertIn("Epic 10 remains unchanged", project_state)
+        self.assertIn("Epic 10 remains in progress", project_state)
         self.assertNotIn("Phase 11.2 is pending merge", project_state)
         self.assertNotIn("Phase 11.3 is pending merge", project_state)
 
@@ -171,10 +176,22 @@ class DocumentationAssetsTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn("Deterministic Fake Only", ai_readme)
+        ollama_provider = (
+            REPO_ROOT / "docs" / "ai" / "OLLAMA_PROVIDER.md"
+        ).read_text(encoding="utf-8")
+        local_validation = (
+            REPO_ROOT / "docs" / "ai" / "LOCAL_AI_VALIDATION.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("Optional Local Provider", ollama_provider)
         self.assertIn("no network", fake_adapter)
         self.assertIn("no credentials", fake_adapter)
         self.assertIn("not registered in the default runtime", fake_adapter)
+        self.assertIn("localhost Ollama provider", ai_readme)
+        self.assertIn("qwen3:1.7b", ollama_provider)
+        self.assertIn("qwen3:1.7b", local_validation)
+        self.assertIn("does not install", local_validation)
+        self.assertIn("does not download models", local_validation)
 
     def test_documentation_does_not_include_personal_validation_ip(self):
         forbidden = "10.255.108.33"

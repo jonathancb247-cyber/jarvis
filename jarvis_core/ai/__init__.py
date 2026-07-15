@@ -20,6 +20,12 @@ from jarvis_core.ai.contracts import (
     AISafeResult,
 )
 from jarvis_core.ai.fake_provider import DeterministicFakeAIProvider
+from jarvis_core.ai.ollama import (
+    OllamaAIProvider,
+    OllamaProviderConfig,
+    OllamaProviderError,
+)
+from jarvis_core.ai.provider import AIProvider
 
 __all__ = [
     "AIActionPlan",
@@ -28,6 +34,7 @@ __all__ = [
     "AIClarification",
     "AIConfirmationState",
     "AIPlanExecutionSummary",
+    "AIProvider",
     "AIRefusal",
     "AISafeCapability",
     "AISafeContext",
@@ -37,4 +44,7 @@ __all__ = [
     "AISafeResult",
     "DeterministicFakeAIProvider",
     "FakeAIAdapter",
+    "OllamaAIProvider",
+    "OllamaProviderConfig",
+    "OllamaProviderError",
 ]
