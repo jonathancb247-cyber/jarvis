@@ -14,6 +14,7 @@ from jarvis_core.ai.contracts import (
 from jarvis_core.ai.groq import (
     DEFAULT_GROQ_MODEL,
     GROQ_API_URL,
+    GROQ_USER_AGENT,
     GroqAIProvider,
     GroqHttpJsonTransport,
     GroqProviderConfig,
@@ -21,6 +22,7 @@ from jarvis_core.ai.groq import (
     create_provider_ssl_context,
     decode_groq_response,
     groq_ai_action_plan_schema,
+    groq_request_headers,
 )
 from jarvis_core.ai.provider import AIProviderError
 from jarvis_core.bootstrap import build_http_runtime
@@ -109,6 +111,21 @@ class GroqStrictSchemaTests(unittest.TestCase):
         self.assertEqual(refusal["anyOf"][1], {"type": "null"})
         self.assertFalse(clarification["anyOf"][0]["additionalProperties"])
         self.assertFalse(refusal["anyOf"][0]["additionalProperties"])
+
+    def test_user_agent_is_static_and_non_secret(self):
+        self.assertEqual(GROQ_USER_AGENT, "JarvisOS/experimental")
+        self.assertNotIn("{", GROQ_USER_AGENT)
+        self.assertNotIn("}", GROQ_USER_AGENT)
+        self.assertNotIn("gsk_", GROQ_USER_AGENT)
+
+    def test_request_headers_are_fixed_and_safe(self):
+        headers = groq_request_headers("fake-test-key")
+
+        self.assertEqual(headers["User-Agent"], "JarvisOS/experimental")
+        self.assertEqual(headers["Authorization"], "Bearer fake-test-key")
+        self.assertEqual(headers["Accept"], "application/json")
+        self.assertEqual(headers["Content-Type"], "application/json")
+        self.assertEqual(set(headers), {"Accept", "Authorization", "Content-Type", "User-Agent"})
 
 
 class GroqProviderRequestTests(unittest.TestCase):

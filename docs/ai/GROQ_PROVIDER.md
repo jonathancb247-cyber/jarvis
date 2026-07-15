@@ -71,6 +71,10 @@ The transport does not use global SSL monkey-patching, does not call
 `truststore.inject_into_ssl()`, does not bundle certificates, and does not
 special-case AVG or any other security product.
 
+The Groq transport sends a static non-secret `User-Agent` value:
+`JarvisOS/experimental`. It does not include user, host, OS, Python version,
+commit, key, or runtime details.
+
 CI uses fake injected transports only. No Groq account, Internet access or real
 API key is required for tests.
 

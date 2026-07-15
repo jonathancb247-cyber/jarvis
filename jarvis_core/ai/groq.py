@@ -36,6 +36,7 @@ from jarvis_core.ai.provider import AIProviderError
 
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_USER_AGENT = "JarvisOS/experimental"
 SUPPORTED_GROQ_MODELS = {"openai/gpt-oss-20b"}
 DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b"
 DEFAULT_TIMEOUT_SECONDS = 30
@@ -125,11 +126,7 @@ class GroqHttpJsonTransport:
             GROQ_API_URL,
             data=_json_bytes(payload),
             method="POST",
-            headers={
-                "Accept": "application/json",
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
+            headers=groq_request_headers(api_key),
         )
         opener = urllib.request.build_opener(
             urllib.request.HTTPSHandler(context=self.ssl_context),
@@ -170,6 +167,15 @@ def create_provider_ssl_context():
             raise AIProviderError(AI_PROVIDER_UNAVAILABLE) from error
         return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     return ssl.create_default_context()
+
+
+def groq_request_headers(api_key):
+    return {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "User-Agent": GROQ_USER_AGENT,
+    }
 
 
 def build_groq_request(context, config):
