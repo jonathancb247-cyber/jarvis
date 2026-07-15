@@ -13,7 +13,7 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 10.1 is completed as design: AI Adapter Boundary.
 - Phase 10.2 is completed as design: Structured Plan and Safe Context Contracts.
 - Phase 10.3 is completed: deterministic fake AI Adapter.
-- Current snapshot commit: `28fbdc225aa1ce107359fc1e8d50936640198cad`.
+- Current snapshot commit: `ecca671503a7c25a301386f7b180fc56f47de4c1`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
 - Full test suite after Phase 10.3: 444 tests passing.
@@ -26,7 +26,10 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Runtime API is Current / Experimental.
 - Runtime API is localhost-only REST/JSON with synchronous Runtime interaction.
 - Runtime API submits canonical command text through the Runtime-owned boundary and exposes safe detached projections.
-- No Dashboard is implemented.
+- Phase 11.3 is pending merge: Minimal Local Dashboard.
+- Minimal Dashboard is Experimental.
+- Dashboard uses vanilla HTML/CSS/JavaScript and consumes the localhost Runtime API.
+- Dashboard has no AI chat, auth, LAN access, WebSocket, SSE or external frontend dependency.
 - Current closing commit for Epic 9: `c3a6f78a72b9c08db550743cec6910934c44899d`.
 - Full test suite at Epic 9 close: 420 tests passing.
 - Default runtime remains empty, simulated, and offline-safe.
@@ -89,7 +92,8 @@ Independent product line:
 
 - Epic 11 - Runtime API and Dashboard is in progress.
 - Phase 11.2 - Local Runtime API is completed.
-- Phase 11.3 - Minimal Local Dashboard remains blocked until explicitly opened.
+- Phase 11.3 - Minimal Local Dashboard is pending merge.
+- Phase 11.4 - Profile-based Hardware Dashboard Validation remains blocked until explicitly opened.
 - Epic 10 remains unchanged and Phase 10.4 remains blocked.
 
 ## Stable Boundaries
@@ -127,6 +131,8 @@ Current experimental areas:
 - Runtime API Adapter.
 - Localhost REST/JSON Runtime API.
 - Safe Runtime API projections.
+- Minimal Local Dashboard.
+- Vanilla Dashboard static assets.
 
 ## Current Transports
 
@@ -190,6 +196,12 @@ Runtime API smoke:
 python -m jarvis_core.api --config profiles/http-lab.example.json
 ```
 
+Dashboard smoke:
+
+```bash
+python -m jarvis_core.dashboard --config profiles/http-lab.example.json
+```
+
 ## Important Decisions
 
 - GitHub is the source of truth for implementation, protocols, examples, exact commands, and platform integration guides.
@@ -207,7 +219,8 @@ python -m jarvis_core.api --config profiles/http-lab.example.json
 - Phase 10.3 did not change Runtime, Driver, Registry, Configuration, or State Store boundaries.
 - The Runtime API is optional, localhost-only, and submits canonical command text through the existing Runtime-owned adapter boundary.
 - The Runtime API exposes detached semantic projections only.
-- The Runtime API does not implement a Dashboard, LAN access, authentication, WebSocket, SSE, async Runtime, or direct internal access.
+- The Runtime API remains the boundary consumed by the Dashboard and still does not implement LAN access, authentication, WebSocket, SSE, async Runtime, or direct internal access.
+- The Dashboard is optional, local-only, API-backed, and does not import Runtime internals.
 
 ## Out Of Scope
 
@@ -222,7 +235,7 @@ Not currently implemented:
 - production authentication or authorization;
 - SQLite;
 - migrations;
-- Dashboard UI;
+- Dashboard validation beyond the minimal local UI;
 - hardware discovery;
 - persistent trust;
 - persistent AI memory;
@@ -234,6 +247,7 @@ Not currently implemented:
 - [Device State Persistence](../getting-started/STATE_PERSISTENCE.md)
 - [HTTP Profile Validation](../getting-started/HTTP_PROFILE_VALIDATION.md)
 - [Runtime API](../api/README.md)
+- [Dashboard](../dashboard/README.md)
 - [Device Integration Guide](../device-integration/README.md)
 - [Driver Development](../device-integration/DRIVER_DEVELOPMENT.md)
 - [Security Guidelines](../device-integration/SECURITY_GUIDELINES.md)
@@ -254,6 +268,7 @@ Not currently implemented:
 - AIActionPlan: provider-neutral structured plan normalized by the AI Adapter.
 - AISafeContext: detached semantic context snapshot for AI planning.
 - Runtime API: optional localhost adapter exposing safe REST/JSON projections and command submission.
+- Dashboard: optional browser UI consuming the localhost Runtime API.
 
 ## Quick Onboarding For AI Agents
 
