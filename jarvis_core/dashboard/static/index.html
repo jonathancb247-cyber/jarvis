@@ -18,11 +18,30 @@
           </div>
         </div>
         <nav class="nav-list" aria-label="Dashboard views">
-          <button class="nav-item is-active" type="button" data-view-target="overview">Overview</button>
-          <button class="nav-item" type="button" data-view-target="devices">Devices</button>
-          <button class="nav-item" type="button" data-view-target="detail">Device Detail</button>
-          <button class="nav-item" type="button" data-view-target="console">Command Console</button>
+          <button class="nav-item is-active" type="button" data-view-target="overview">
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 13h6v7H4zM14 4h6v16h-6zM4 4h6v5H4z"/></svg></span>
+            <span>Overview</span>
+          </button>
+          <button class="nav-item" type="button" data-view-target="devices">
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v4H3V6a2 2 0 0 1 2-2zm-2 8h18v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm5 2v2h8v-2z"/></svg></span>
+            <span>Devices</span>
+          </button>
+          <button class="nav-item" type="button" data-view-target="detail">
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 4 7v10l8 4 8-4V7zm0 3.2 4.4 2.2L12 10.6 7.6 8.4zm-5 4.4 4 2v5.2l-4-2zm6 7.2v-5.2l4-2v5.2z"/></svg></span>
+            <span>Device Detail</span>
+          </button>
+          <button class="nav-item" type="button" data-view-target="console">
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 7 5 5-5 5-1.4-1.4L7.2 12 3.6 8.4zm7 9h8v2h-8z"/></svg></span>
+            <span>Command Console</span>
+          </button>
         </nav>
+        <div class="sidebar-status" aria-label="Local API status">
+          <span class="status-dot status-unknown" aria-hidden="true"></span>
+          <div>
+            <strong id="sidebarConnection">Loading</strong>
+            <span>Local API</span>
+          </div>
+        </div>
       </aside>
 
       <div class="workspace">
@@ -50,27 +69,38 @@
               </div>
               <p id="lastRefresh" class="muted">No refresh yet</p>
             </div>
-            <div class="metric-grid" aria-label="Runtime summary">
-              <article class="metric-card">
-                <span class="metric-label">Runtime</span>
-                <strong id="runtimeStatus">Unknown</strong>
-                <span id="prototypeLabel" class="muted">Prototype unknown</span>
-              </article>
-              <article class="metric-card">
-                <span class="metric-label">Devices</span>
-                <strong id="deviceCount">0</strong>
-                <span id="persistenceStatus" class="muted">Persistence unknown</span>
-              </article>
-              <article class="metric-card">
-                <span class="metric-label">Known</span>
-                <strong id="knownCount">0</strong>
-                <span class="status-dot status-known" aria-hidden="true"></span>
-              </article>
-              <article class="metric-card">
-                <span class="metric-label">Stale / Unknown</span>
-                <strong><span id="staleCount">0</span> / <span id="unknownCount">0</span></strong>
-                <span class="muted">Stale is not availability</span>
-              </article>
+            <div class="overview-layout">
+              <div class="metric-grid" aria-label="Runtime summary">
+                <article class="metric-card metric-card-primary">
+                  <span class="metric-label">Runtime</span>
+                  <strong id="runtimeStatus">Unknown</strong>
+                  <span id="prototypeLabel" class="muted">Prototype unknown</span>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Devices</span>
+                  <strong id="deviceCount">0</strong>
+                  <span id="persistenceStatus" class="muted">Persistence unknown</span>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Known</span>
+                  <strong id="knownCount">0</strong>
+                  <span class="metric-status"><span class="status-dot status-known" aria-hidden="true"></span>Current</span>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Stale / Unknown</span>
+                  <strong><span id="staleCount">0</span> / <span id="unknownCount">0</span></strong>
+                  <span class="muted">Stale is not availability</span>
+                </article>
+              </div>
+              <aside class="overview-panel" aria-label="Device state distribution">
+                <div class="panel-heading">
+                  <span class="eyebrow">Live Snapshot</span>
+                  <strong>Device State Mix</strong>
+                </div>
+                <div id="stateDistribution" class="state-distribution" aria-label="Device state distribution"></div>
+                <div id="overviewDevicePreview" class="preview-list"></div>
+                <p id="overviewEmptyDevices" class="empty-state compact" hidden>No devices are configured.</p>
+              </aside>
             </div>
           </section>
 
@@ -115,6 +145,7 @@
                 <button id="sendCommandButton" class="button" type="submit">Send</button>
               </div>
             </form>
+            <p id="generatedCommand" class="generated-command">No generated command.</p>
             <div id="commandResult" class="result-panel" role="status" aria-live="polite">No command sent.</div>
             <div class="history-panel">
               <h3>Session Command History</h3>

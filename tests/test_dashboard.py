@@ -98,9 +98,13 @@ class DashboardAssetTests(unittest.TestCase):
             "Device Detail",
             "Command Console",
             "connectionStatus",
+            "sidebarConnection",
+            "stateDistribution",
+            "overviewDevicePreview",
             "aria-live",
             "viewport",
             "commandInput",
+            "generatedCommand",
         ):
             self.assertIn(token, html)
 
@@ -152,6 +156,9 @@ class DashboardAssetTests(unittest.TestCase):
         self.assertIn(":focus-visible", styles)
         self.assertIn("--success", styles)
         self.assertIn("--stale", styles)
+        self.assertIn(".overview-layout", styles)
+        self.assertIn(".nav-icon", styles)
+        self.assertIn(".generated-command", styles)
 
 
 class Response:
