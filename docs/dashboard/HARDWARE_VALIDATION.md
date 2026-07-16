@@ -145,6 +145,72 @@ PHYSICAL_LED_ON_CONFIRMATION_PENDING
 PHYSICAL_LED_OFF_CONFIRMATION_PENDING
 ```
 
+## Final Manual Validation Evidence
+
+Phase 11.4 final hardware validation was completed manually against the real
+ESP32 Dashboard workflow.
+
+Confirmed software path:
+
+```text
+Dashboard
+-> Runtime API
+-> Runtime.handle_adapter_input(...)
+-> Planner
+-> Runtime
+-> HttpDeviceDriver
+-> ESP32
+-> DeviceState
+-> JsonDeviceStateStore
+-> Dashboard projection
+```
+
+Confirmed manual evidence:
+
+- Dashboard loaded at `http://127.0.0.1:8765/`.
+- Runtime API status showed Connected.
+- `lamp_1` appeared as type `light`.
+- Formal capabilities appeared: `power.switch` and `status.read`.
+- Real `status.read` succeeded.
+- Device state became `known` and current.
+- A real semantic `power` value was displayed when returned by the device.
+- `power.switch state=true` succeeded through Dashboard/API/Runtime/HTTP Driver.
+- LED on: confirmed manually.
+- `power.switch state=false` succeeded through Dashboard/API/Runtime/HTTP Driver.
+- LED off: confirmed manually.
+- Clean shutdown saved the semantic state snapshot.
+- Restart restored the prior semantic state as `stale` and not current.
+- A new real read changed `stale` to `known` and not current to current.
+- Disconnect: confirmed manually.
+- While the ESP32 was disconnected, the Dashboard, Runtime API and Runtime
+  remained alive.
+- During the unreachable period the Dashboard may display `Loading`; this was
+  observed as a temporary, recoverable state.
+- Reconnect: confirmed manually.
+- After reconnecting the ESP32, polling recovered automatically, status returned
+  to Connected and no page reload was required.
+
+Recorded state transitions:
+
+```text
+no snapshot -> unknown
+real read -> known/current
+clean restart -> stale/not current
+real read -> known/current
+ESP32 disconnected -> safe temporary failure/loading
+ESP32 reconnected -> automatic recovery/Connected
+```
+
+Loading-state classification:
+
+```text
+UX observation - non-blocking
+```
+
+This observation is not a Phase 11.4 product defect because the Dashboard did
+not crash, did not expose technical data, and recovered automatically after the
+ESP32 reconnected. Do not add a new `Unavailable` state as part of Phase 11.4.
+
 ## Persistence And Restart
 
 Validation sequence:

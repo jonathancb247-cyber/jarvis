@@ -40,8 +40,9 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Dashboard is localhost-only, API-backed, responsive, and built with vanilla HTML/CSS/JavaScript.
 - Dashboard uses capability-driven controls from formal API capabilities.
 - Dashboard has no external frontend dependencies, AI chat, auth, LAN access, WebSocket, SSE or async Runtime.
-- Phase 11.4 - Profile-based Hardware Dashboard Validation is pending merge and manual hardware acceptance.
-- Phase 11.4 PR snapshot: automated fake-transport validation is covered by tests; physical LED, disconnect/reconnect and final visual evidence remain pending.
+- Phase 11.4 - Profile-based Hardware Dashboard Validation is completed for the PR validation scope and pending merge.
+- Phase 11.4 PR snapshot: automated fake-transport validation is covered by tests; real hardware Dashboard validation passed; physical LED on/off, disconnect/reconnect, persistence/restart, stale-to-known recovery and visual desktop acceptance were confirmed manually.
+- Phase 11.4 observed a temporary Dashboard `Loading` state while the ESP32 was unreachable; recovery after reconnect occurred automatically without Runtime/API/Dashboard crash. This is recorded as a non-blocking UX observation.
 - Full test suite for the Phase 11.4 PR snapshot: 473 tests passing.
 - Phase 11.5 remains blocked.
 - Current closing commit for Epic 9: `c3a6f78a72b9c08db550743cec6910934c44899d`.
@@ -106,10 +107,10 @@ Independent product line:
 - Epic 11 - Runtime API and Dashboard is in progress.
 - Phase 11.2 - Local Runtime API is completed.
 - Phase 11.3 - Minimal Local Dashboard is completed.
-- Phase 11.4 - Profile-based Hardware Dashboard Validation is pending merge and manual hardware acceptance.
+- Phase 11.4 - Profile-based Hardware Dashboard Validation is completed for PR validation scope and pending merge.
 - Phase 11.5 remains blocked.
 - Epic 10 remains unchanged.
-- Epic 11 status: In progress - Local Runtime API and Minimal Dashboard implemented; hardware Dashboard validation in progress.
+- Epic 11 status: In progress - Local Runtime API and Minimal Dashboard implemented; hardware Dashboard validation completed for PR scope and pending merge.
 
 ## Stable Boundaries
 
@@ -251,7 +252,7 @@ Not currently implemented:
 - production authentication or authorization;
 - SQLite;
 - migrations;
-- Dashboard validation beyond the minimal local UI;
+- Dashboard validation beyond the Phase 11.4 profile-based hardware Dashboard validation;
 - hardware discovery;
 - persistent trust;
 - persistent AI memory;
