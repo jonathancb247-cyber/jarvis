@@ -59,3 +59,8 @@ The Dashboard must not display:
 - RuntimeContext;
 - EventBus;
 - AI provider prompts or responses.
+
+During hardware validation, local profile bindings and the real State Store
+snapshot remain local-only and gitignored. Evidence must summarize semantic
+state and route status without recording personal IP addresses, raw HTTP
+traffic, headers, payloads, exceptions or stack traces.

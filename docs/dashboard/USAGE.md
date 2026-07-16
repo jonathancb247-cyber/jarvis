@@ -65,3 +65,10 @@ For the HTTP LED profile:
 
 Unsupported capability shapes are displayed as details instead of invented controls.
 
+## Hardware Validation
+
+The profile-based ESP32 Dashboard validation workflow is documented in
+[Hardware Validation](HARDWARE_VALIDATION.md). It uses the existing local
+profile, Runtime API, Dashboard controls and State Store behavior without adding
+Dashboard features or AI wiring.
+
