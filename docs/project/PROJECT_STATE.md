@@ -13,6 +13,11 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 10.1 is completed as design: AI Adapter Boundary.
 - Phase 10.2 is completed as design: Structured Plan and Safe Context Contracts.
 - Phase 10.3 is completed: deterministic fake AI Adapter.
+- Phase 10.4 is completed as design: First Optional Local AI Provider Boundary.
+- Phase 10.5 is in progress / Draft: Ollama provider exists in PR #38, but no compatible local model has passed strict `AIActionPlan` validation.
+- Phase 10.6 is completed as design: Optional Cloud AI Provider and Secret Injection Boundary.
+- Phase 10.7 is in progress / Draft: Groq provider exists in PR #39, but real strict Structured Output validation is blocked by provider constrained generation.
+- No real AI provider is approved for merge or production use.
 - Current snapshot commit: `82432ac7bbbbd53b533e0a57594a9579646d8883`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -35,6 +40,10 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Dashboard is localhost-only, API-backed, responsive, and built with vanilla HTML/CSS/JavaScript.
 - Dashboard uses capability-driven controls from formal API capabilities.
 - Dashboard has no external frontend dependencies, AI chat, auth, LAN access, WebSocket, SSE or async Runtime.
+- Phase 11.4 - Profile-based Hardware Dashboard Validation is pending merge and manual hardware acceptance.
+- Phase 11.4 PR snapshot: automated fake-transport validation is covered by tests; physical LED, disconnect/reconnect and final visual evidence remain pending.
+- Full test suite for the Phase 11.4 PR snapshot: 473 tests passing.
+- Phase 11.5 remains blocked.
 - Current closing commit for Epic 9: `c3a6f78a72b9c08db550743cec6910934c44899d`.
 - Full test suite at Epic 9 close: 420 tests passing.
 - Default runtime remains empty, simulated, and offline-safe.
@@ -85,22 +94,22 @@ JSON config
 
 Epic 10 — AI Adapter Boundary.
 
-Current completed phase:
+Current status:
 
-- Phase 10.3 — Deterministic Fake AI Adapter Minimal Implementation.
-
-Next blocked phase:
-
-- Phase 10.4 — First Optional AI Provider Adapter, blocked until explicitly opened.
+- Phase 10.3 - Deterministic Fake AI Adapter Minimal Implementation is completed.
+- Phase 10.5 - Local Ollama Provider Minimal Implementation remains in progress / Draft in PR #38.
+- Phase 10.7 - Groq Strict Structured Provider Minimal Implementation remains in progress / Draft in PR #39.
+- Epic 10 provider work is paused operationally; no real provider is validated.
 
 Independent product line:
 
 - Epic 11 - Runtime API and Dashboard is in progress.
 - Phase 11.2 - Local Runtime API is completed.
 - Phase 11.3 - Minimal Local Dashboard is completed.
-- Phase 11.4 - Profile-based Hardware Dashboard Validation remains blocked until explicitly opened.
-- Epic 10 remains unchanged and Phase 10.4 remains blocked.
-- Epic 11 status: In progress - Local Runtime API and Minimal Dashboard implemented; hardware Dashboard validation pending.
+- Phase 11.4 - Profile-based Hardware Dashboard Validation is pending merge and manual hardware acceptance.
+- Phase 11.5 remains blocked.
+- Epic 10 remains unchanged.
+- Epic 11 status: In progress - Local Runtime API and Minimal Dashboard implemented; hardware Dashboard validation in progress.
 
 ## Stable Boundaries
 
@@ -139,6 +148,7 @@ Current experimental areas:
 - Safe Runtime API projections.
 - Minimal Local Dashboard.
 - Vanilla Dashboard static assets.
+- Profile-based Hardware Dashboard validation workflow.
 
 ## Current Transports
 

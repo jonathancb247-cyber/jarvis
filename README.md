@@ -97,6 +97,9 @@ API.
 
 See [Dashboard](docs/dashboard/README.md).
 
+For the ESP32 profile-based Dashboard validation procedure, see
+[Dashboard Hardware Validation](docs/dashboard/HARDWARE_VALIDATION.md).
+
 ## AVP-001 - Architecture Validation Prototype
 
 AVP-001 is the first executable architecture checkpoint for JarvisOS. It is intentionally small: the goal is not to build the full product yet, but to validate the smallest working loop that can grow into a modular physical AI operating system.

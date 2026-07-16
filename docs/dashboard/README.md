@@ -25,6 +25,7 @@ See:
 
 - [Usage](USAGE.md)
 - [Security](SECURITY.md)
+- [Hardware Validation](HARDWARE_VALIDATION.md)
 - [Runtime API](../api/README.md)
 
 Not implemented:

@@ -17,6 +17,7 @@ REQUIRED_FILES = [
     "docs/dashboard/README.md",
     "docs/dashboard/USAGE.md",
     "docs/dashboard/SECURITY.md",
+    "docs/dashboard/HARDWARE_VALIDATION.md",
     "docs/ai/README.md",
     "docs/ai/STRUCTURED_PLAN.md",
     "docs/ai/SAFE_CONTEXT.md",
@@ -130,7 +131,7 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Runtime API is Current / Experimental", project_state)
         self.assertIn("Phase 11.3 is completed", project_state)
         self.assertIn("Dashboard is Current / Experimental", project_state)
-        self.assertIn("Phase 11.4 - Profile-based Hardware Dashboard Validation remains blocked", project_state)
+        self.assertIn("Phase 11.4 - Profile-based Hardware Dashboard Validation is pending merge and manual hardware acceptance", project_state)
         self.assertIn("Epic 10 remains unchanged", project_state)
         self.assertNotIn("Phase 11.2 is pending merge", project_state)
         self.assertNotIn("Phase 11.3 is pending merge", project_state)
@@ -160,6 +161,7 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("python -m jarvis_core.dashboard --config", dashboard_readme)
         self.assertIn("local browser UI", dashboard_readme)
         self.assertIn("AI chat", dashboard_readme)
+        self.assertIn("Hardware Validation", dashboard_readme)
         self.assertIn("127.0.0.1", dashboard_security)
         self.assertIn("no external CDN", dashboard_security)
 
@@ -225,6 +227,19 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("CI uses a fake HTTP transport", text)
         self.assertIn("Restored state is last-known semantic state", text)
         self.assertIn("No retries are implemented", text)
+
+    def test_dashboard_hardware_validation_documents_manual_gate(self):
+        guide = REPO_ROOT / "docs" / "dashboard" / "HARDWARE_VALIDATION.md"
+        text = guide.read_text(encoding="utf-8")
+
+        self.assertIn("python -m jarvis_core.dashboard", text)
+        self.assertIn("profiles/http-lab.local.json", text)
+        self.assertIn("device read lamp_1 status.read", text)
+        self.assertIn("device apply lamp_1 power.switch state=true", text)
+        self.assertIn("state/http-lab.state.json", text)
+        self.assertIn("HARDWARE_DASHBOARD_VALIDATION_REQUIRED", text)
+        self.assertIn("PHYSICAL_LED_ON_CONFIRMATION_PENDING", text)
+        self.assertIn("No AI provider is required", text)
 
 
 def _documentation_files():
