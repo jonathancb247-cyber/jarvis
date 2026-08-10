@@ -1,1 +1,4 @@
-# AVP-001 intentionally uses only the Python standard library.
+# AVP-001 intentionally keeps Runtime, API, Dashboard, Drivers, and State Store
+# on the Python standard library. Optional cloud AI provider transports may use
+# reviewed provider-layer dependencies.
+truststore==0.10.4

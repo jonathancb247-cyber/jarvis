@@ -43,6 +43,10 @@ python -m jarvis_core.ai_cloud `
   --model gemini-3.6-flash
 ```
 
+On Windows, Gemini provider HTTPS may use the native OS trust store for TLS
+verification. Certificate and hostname validation remain mandatory; no
+certificate bypass or antivirus bypass mode exists.
+
 ## Requests
 
 Run each request individually:

@@ -1,6 +1,8 @@
 import json
 import os
+import ssl
 import unittest
+from unittest.mock import patch
 
 from jarvis_core.ai.adapter import FakeAIAdapter
 from jarvis_core.ai.contracts import (
@@ -23,6 +25,7 @@ from jarvis_core.ai.gemini import (
     GeminiProviderError,
     ai_action_plan_schema,
 )
+from jarvis_core.ai.transport_security import create_provider_ssl_context
 from tests.test_ai_adapter import RecordingDriver, test_runtime
 
 
@@ -242,6 +245,44 @@ class GeminiProviderFailureTests(unittest.TestCase):
                 timeout_seconds=1,
                 max_response_bytes=1024,
             )
+
+
+class GeminiTransportSecurityTests(unittest.TestCase):
+    def test_windows_provider_context_uses_truststore_without_global_injection(self):
+        class FakeTruststore:
+            called = []
+
+            @staticmethod
+            def SSLContext(protocol):
+                FakeTruststore.called.append(protocol)
+                return ssl.SSLContext(protocol)
+
+        with patch("platform.system", return_value="Windows"):
+            with patch.dict("sys.modules", {"truststore": FakeTruststore}):
+                context = create_provider_ssl_context()
+
+        self.assertEqual(FakeTruststore.called, [ssl.PROTOCOL_TLS_CLIENT])
+        self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
+        self.assertTrue(context.check_hostname)
+        self.assertFalse(hasattr(FakeTruststore, "inject_into_ssl"))
+
+    def test_non_windows_provider_context_uses_stdlib_secure_default(self):
+        sentinel = object()
+
+        with patch("platform.system", return_value="Linux"):
+            with patch("ssl.create_default_context", return_value=sentinel) as created:
+                context = create_provider_ssl_context()
+
+        self.assertIs(context, sentinel)
+        created.assert_called_once_with()
+
+    def test_transport_accepts_injected_secure_context(self):
+        context = ssl.create_default_context()
+        transport = GeminiHttpsTransport(ssl_context=context)
+
+        self.assertIs(transport.ssl_context, context)
+        self.assertEqual(transport.ssl_context.verify_mode, ssl.CERT_REQUIRED)
+        self.assertTrue(transport.ssl_context.check_hostname)
 
 
 def safe_context(request):

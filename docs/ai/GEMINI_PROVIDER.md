@@ -81,6 +81,12 @@ certificate and hostname verification enabled. It has:
 - no streaming;
 - no retry.
 
+On Windows, the provider transport may create its TLS context through the
+native OS certificate store via `truststore`. This keeps certificate and
+hostname verification enabled while respecting the host's Windows trust policy.
+JarvisOS does not disable antivirus HTTPS inspection, bypass TLS verification,
+use `verify=False`, bundle certificates, or mutate Python's global SSL module.
+
 Device HTTP drivers are not reused for provider traffic.
 
 ## Schema Strategy

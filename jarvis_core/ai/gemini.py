@@ -7,6 +7,7 @@ import socket
 import ssl
 from dataclasses import dataclass
 
+from jarvis_core.ai.transport_security import create_provider_ssl_context
 from jarvis_core.ai.contracts import (
     ACTION_KIND_MUTATE,
     ACTION_KIND_READ,
@@ -99,7 +100,7 @@ class GeminiHttpsTransport:
     """Synchronous HTTPS JSON transport for the fixed Gemini Interactions API."""
 
     def __init__(self, ssl_context=None):
-        self.ssl_context = ssl_context or ssl.create_default_context()
+        self.ssl_context = ssl_context or create_provider_ssl_context()
 
     def post_json(self, path, payload, headers, timeout_seconds, max_response_bytes):
         if path != GEMINI_INTERACTIONS_PATH:
