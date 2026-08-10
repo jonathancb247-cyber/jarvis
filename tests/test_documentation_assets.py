@@ -22,6 +22,8 @@ REQUIRED_FILES = [
     "docs/ai/STRUCTURED_PLAN.md",
     "docs/ai/SAFE_CONTEXT.md",
     "docs/ai/FAKE_AI_ADAPTER.md",
+    "docs/ai/GEMINI_PROVIDER.md",
+    "docs/ai/GEMINI_VALIDATION.md",
     "docs/getting-started/INSTALLATION.md",
     "docs/getting-started/CONFIGURATION.md",
     "docs/getting-started/STATE_PERSISTENCE.md",
@@ -174,10 +176,19 @@ class DocumentationAssetsTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn("Deterministic Fake Only", ai_readme)
+        self.assertIn("Fake Adapter plus Unvalidated Gemini Provider", ai_readme)
         self.assertIn("no network", fake_adapter)
         self.assertIn("no credentials", fake_adapter)
         self.assertIn("not registered in the default runtime", fake_adapter)
+        gemini_provider = (
+            REPO_ROOT / "docs" / "ai" / "GEMINI_PROVIDER.md"
+        ).read_text(encoding="utf-8")
+        gemini_validation = (
+            REPO_ROOT / "docs" / "ai" / "GEMINI_VALIDATION.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("GEMINI_API_KEY", gemini_provider)
+        self.assertIn("GEMINI_AI_VALIDATION_REQUIRED", gemini_validation)
+        self.assertIn("No Gemini-specific DTO exists", gemini_provider)
 
     def test_documentation_does_not_include_personal_validation_ip(self):
         forbidden = "10.255.108.33"

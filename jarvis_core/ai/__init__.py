@@ -20,6 +20,8 @@ from jarvis_core.ai.contracts import (
     AISafeResult,
 )
 from jarvis_core.ai.fake_provider import DeterministicFakeAIProvider
+from jarvis_core.ai.gemini import GeminiAIProvider, GeminiProviderConfig
+from jarvis_core.ai.provider import AIProvider
 
 __all__ = [
     "AIActionPlan",
@@ -28,6 +30,7 @@ __all__ = [
     "AIClarification",
     "AIConfirmationState",
     "AIPlanExecutionSummary",
+    "AIProvider",
     "AIRefusal",
     "AISafeCapability",
     "AISafeContext",
@@ -37,4 +40,6 @@ __all__ = [
     "AISafeResult",
     "DeterministicFakeAIProvider",
     "FakeAIAdapter",
+    "GeminiAIProvider",
+    "GeminiProviderConfig",
 ]
