@@ -60,6 +60,11 @@ JarvisOS includes an experimental deterministic fake AI Adapter for boundary
 validation only. It does not use a real model, network, credentials, provider
 SDK, persistent memory, or default runtime wiring.
 
+JarvisOS also includes an optional experimental Gemini provider boundary for
+future manual validation. It is explicit cloud-only, requires `GEMINI_API_KEY`
+in the active environment, is not wired into the default Runtime/API/Dashboard,
+and has not made a real Gemini validation call yet.
+
 See [AI Adapter](docs/ai/README.md).
 
 ## Runtime API

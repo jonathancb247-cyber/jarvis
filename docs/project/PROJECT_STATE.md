@@ -17,6 +17,9 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 10.5 is in progress / Draft: Ollama provider exists in PR #38, but no compatible local model has passed strict `AIActionPlan` validation.
 - Phase 10.6 is completed as design: Optional Cloud AI Provider and Secret Injection Boundary.
 - Phase 10.7 is in progress / Draft: Groq provider exists in PR #39, but real strict Structured Output validation is blocked by provider constrained generation.
+- Phase 10.8 is completed as design: Gemini Structured Provider Boundary.
+- Phase 10.9 is pending merge/manual validation: Gemini provider exists in the active implementation PR, but no real Gemini call has been made.
+- Phase 10.10 is blocked.
 - No real AI provider is approved for merge or production use.
 - Current snapshot commit: `82432ac7bbbbd53b533e0a57594a9579646d8883`.
 - Phase 10.3 PR: #32 merged.
@@ -100,7 +103,11 @@ Current status:
 - Phase 10.3 - Deterministic Fake AI Adapter Minimal Implementation is completed.
 - Phase 10.5 - Local Ollama Provider Minimal Implementation remains in progress / Draft in PR #38.
 - Phase 10.7 - Groq Strict Structured Provider Minimal Implementation remains in progress / Draft in PR #39.
-- Epic 10 provider work is paused operationally; no real provider is validated.
+- Phase 10.8 - Gemini Structured Provider Boundary is completed as architectural design.
+- Phase 10.9 - Gemini Structured Provider Minimal Implementation is pending merge/manual Gemini validation.
+- Phase 10.10 - Real Provider Validation and Consolidation is blocked.
+- Gemini provider work is Experimental and not real-validated. No real Gemini API call has occurred.
+- Epic 10 provider work remains unvalidated; no real provider is approved.
 
 Independent product line:
 
@@ -139,6 +146,8 @@ Current experimental areas:
 - State snapshot schema v1.
 - ESP32 HTTP LED validation workflow.
 - Deterministic Fake AI Adapter.
+- Optional Gemini Provider.
+- Gemini AI-cloud entry point.
 - Structured Plan models.
 - Safe Context Builder.
 - Plan Validator.
@@ -234,6 +243,9 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 - No provider registry exists.
 - No persistent AI memory exists.
 - Phase 10.3 did not change Runtime, Driver, Registry, Configuration, or State Store boundaries.
+- Phase 10.9 does not wire Gemini into the default Runtime, Runtime API, or Dashboard.
+- Gemini requires explicit `python -m jarvis_core.ai_cloud --provider gemini` usage and `GEMINI_API_KEY` in the active environment.
+- Gemini real-provider validation remains gated by `GEMINI_AI_VALIDATION_REQUIRED`.
 - The Runtime API is optional, localhost-only, and submits canonical command text through the existing Runtime-owned adapter boundary.
 - The Runtime API exposes detached semantic projections only.
 - The Runtime API remains the boundary consumed by the Dashboard and still does not implement LAN access, authentication, WebSocket, SSE, async Runtime, or direct internal access.
@@ -244,6 +256,7 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 Not currently implemented:
 
 - real AI providers;
+- real AI provider validation;
 - `--profile`;
 - DriverRegistry;
 - retries/backoff;

@@ -53,7 +53,7 @@ class FakeAIAdapter:
                 self.runtime.context.device_registry,
                 session_context=session_context,
             )
-            raw_plan = self.provider.generate(user_request, safe_context)
+            raw_plan = self.provider.generate_plan(safe_context)
             plan = self._validated_plan(raw_plan, safe_context)
         except AIValidationError as error:
             return self._error(error.code)

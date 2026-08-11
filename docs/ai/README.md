@@ -1,9 +1,10 @@
 # JarvisOS AI Adapter
 
-Status: Experimental / Deterministic Fake Only
+Status: Experimental / Fake Adapter plus Unvalidated Gemini Provider
 
 JarvisOS currently includes a deterministic fake AI Adapter for validating the
-AI boundary without a real model.
+AI boundary without a real model. It also includes an optional experimental
+Gemini provider implementation for future manual validation.
 
 The adapter is not wired into the default runtime. `python -m jarvis_core`
 remains AI-free, offline-safe, and deterministic.
@@ -23,12 +24,20 @@ Implemented for Phase 10.3:
 - clarification and refusal handling;
 - bounded sequential execution through the Runtime-owned adapter boundary.
 
+Implemented for Phase 10.9:
+
+- optional Gemini provider boundary;
+- fixed official Gemini HTTPS transport;
+- full `AIActionPlan` structured-output schema mapping;
+- explicit `GEMINI_API_KEY` injection at the AI-cloud composition root;
+- fake-transport tests only.
+
 Not implemented:
 
-- real AI providers;
+- validated real AI providers;
 - OpenAI, Ollama, Claude, Mistral, Llama, Gemma, or other provider adapters;
-- provider credentials;
-- provider network calls;
+- provider credentials in repository/config/state;
+- real provider calls in CI;
 - streaming;
 - persistent AI memory;
 - embeddings, RAG, or vector databases;
@@ -58,3 +67,5 @@ mutates `DeviceRegistry`, writes State Store, or bypasses Runtime.
 - [Structured Plan](STRUCTURED_PLAN.md)
 - [Safe Context](SAFE_CONTEXT.md)
 - [Fake AI Adapter](FAKE_AI_ADAPTER.md)
+- [Gemini Provider](GEMINI_PROVIDER.md)
+- [Gemini Validation](GEMINI_VALIDATION.md)
