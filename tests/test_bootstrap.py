@@ -4,6 +4,8 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
+from jarvis_core.api.adapter import RuntimeApiAdapter
+from jarvis_core.api.projections import ApiProjectionBuilder
 from jarvis_core.bootstrap import (
     build_http_runtime,
     build_runtime,
@@ -33,6 +35,46 @@ class FakeHttpTransport:
             "application/json",
             {"success": True, "observations": {"power": True}},
         )
+
+
+class FakeMQTTClient:
+    def __init__(self, close_events=None, close_error=None):
+        self.published = []
+        self.waits = []
+        self.close_count = 0
+        self.close_events = close_events
+        self.close_error = close_error
+
+    def publish(self, topic, payload):
+        self.published.append((topic, json.loads(payload.decode("utf-8"))))
+
+    def wait_for_response(self, topic, correlation_id, timeout_seconds):
+        self.waits.append((topic, correlation_id, timeout_seconds))
+        return {
+            "request_id": correlation_id,
+            "ok": True,
+            "semantic": {"temperature": 22.5},
+            "error": None,
+        }
+
+    def close(self):
+        self.close_count += 1
+        if self.close_events is not None:
+            self.close_events.append("close")
+        if self.close_error is not None:
+            raise self.close_error
+        return None
+
+
+class RecordingStateStore(JsonDeviceStateStore):
+    def __init__(self, events):
+        self.events = events
+
+    def load(self):
+        return {}
+
+    def save(self, states):
+        self.events.append("save")
 
 
 class BootstrapTests(unittest.TestCase):
@@ -119,6 +161,162 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(list_result.data["count"], 1)
         self.assertEqual(transport.calls[0][0], "http://192.168.1.50/device/apply")
         self.assertEqual(transport.calls[1][0], "http://192.168.1.50/device/read")
+
+    def test_build_runtime_from_profile_supports_http_and_mqtt_devices(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            config_path = write_mixed_transport_profile(root)
+            profile = RuntimeConfigurationLoader().load(config_path)
+            http_transport = FakeHttpTransport()
+            mqtt_client = FakeMQTTClient()
+
+            runtime = build_runtime_from_profile(
+                profile,
+                http_transport=http_transport,
+                mqtt_client=mqtt_client,
+                base_directory=root,
+            )
+
+            http_result = runtime.handle_adapter_input(
+                "device read lamp_1 status.read",
+                source="test",
+            )
+            mqtt_result = runtime.handle_adapter_input(
+                "device read temperature_room temperature.read",
+                source="test",
+            )
+            mqtt_state = runtime.handle_adapter_input(
+                "device state temperature_room",
+                source="test",
+            )
+
+            self.assertTrue(http_result.success)
+            self.assertTrue(mqtt_result.success)
+            self.assertEqual(1, len(http_transport.calls))
+            self.assertEqual("http://192.168.1.50/device/read", http_transport.calls[0][0])
+            self.assertEqual(1, len(mqtt_client.published))
+            self.assertEqual(
+                "jarvis/devices/temperature_room/request",
+                mqtt_client.published[0][0],
+            )
+            self.assertEqual(
+                "temperature.read",
+                mqtt_client.published[0][1]["capability"],
+            )
+            self.assertEqual(
+                {"temperature": 22.5},
+                mqtt_state.data["state"]["properties"],
+            )
+
+    def test_http_only_runtime_shutdown_remains_safe_and_idempotent(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            config_path = write_profile(root, "state/http-lab.state.json")
+            profile = RuntimeConfigurationLoader().load(config_path)
+            events = []
+            runtime = build_runtime_from_profile(
+                profile,
+                http_transport=FakeHttpTransport(),
+                state_store=RecordingStateStore(events),
+                base_directory=root,
+            )
+
+            runtime.shutdown()
+            runtime.shutdown()
+
+            self.assertEqual(events, ["save"])
+
+    def test_runtime_shutdown_closes_mqtt_client_once(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            profile = RuntimeConfigurationLoader().load(
+                write_mixed_transport_profile(root)
+            )
+            mqtt_client = FakeMQTTClient()
+            runtime = build_runtime_from_profile(
+                profile,
+                http_transport=FakeHttpTransport(),
+                mqtt_client=mqtt_client,
+                base_directory=root,
+            )
+
+            runtime.shutdown()
+            runtime.shutdown()
+
+            self.assertEqual(1, mqtt_client.close_count)
+
+    def test_runtime_shutdown_saves_state_before_closing_driver(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            profile = RuntimeConfigurationLoader().load(
+                write_mixed_transport_profile(root)
+            )
+            events = []
+            mqtt_client = FakeMQTTClient(close_events=events)
+            runtime = build_runtime_from_profile(
+                profile,
+                http_transport=FakeHttpTransport(),
+                mqtt_client=mqtt_client,
+                state_store=RecordingStateStore(events),
+                base_directory=root,
+            )
+
+            runtime.shutdown()
+
+            self.assertEqual(events, ["save", "close"])
+            self.assertEqual(1, mqtt_client.close_count)
+
+    def test_driver_close_failure_does_not_corrupt_runtime_shutdown(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            profile = RuntimeConfigurationLoader().load(
+                write_mixed_transport_profile(root)
+            )
+            events = []
+            mqtt_client = FakeMQTTClient(
+                close_events=events,
+                close_error=RuntimeError("raw broker close failure"),
+            )
+            runtime = build_runtime_from_profile(
+                profile,
+                http_transport=FakeHttpTransport(),
+                mqtt_client=mqtt_client,
+                state_store=RecordingStateStore(events),
+                base_directory=root,
+            )
+
+            runtime.shutdown()
+            runtime.shutdown()
+
+            self.assertEqual(events, ["save", "close"])
+            self.assertEqual(1, mqtt_client.close_count)
+
+    def test_runtime_api_shutdown_closes_composed_mqtt_driver_once(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            profile = RuntimeConfigurationLoader().load(
+                write_mixed_transport_profile(root)
+            )
+            mqtt_client = FakeMQTTClient()
+            runtime = build_runtime_from_profile(
+                profile,
+                http_transport=FakeHttpTransport(),
+                mqtt_client=mqtt_client,
+                base_directory=root,
+            )
+            adapter = RuntimeApiAdapter(
+                runtime,
+                ApiProjectionBuilder(
+                    runtime.context.device_registry,
+                    profile_name=profile.name,
+                    persistence_enabled=False,
+                ),
+            )
+
+            adapter.shutdown()
+            adapter.shutdown()
+
+            self.assertEqual(1, mqtt_client.close_count)
 
     def test_build_runtime_from_config_restores_state_as_stale(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -307,6 +505,73 @@ def write_profile(root, state_store_path):
                     }
                 ],
                 "runtime_options": {"state_store_path": state_store_path},
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def write_mixed_transport_profile(root):
+    path = root / "mixed-profile.json"
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "profile": "mixed-lab",
+                "devices": [
+                    {
+                        "id": "lamp_1",
+                        "name": "ESP32 LED",
+                        "type": "light",
+                        "capabilities": [
+                            {
+                                "name": "status.read",
+                                "kind": "reading",
+                                "parameters": {},
+                                "constraints": {},
+                                "availability_policy": {},
+                            }
+                        ],
+                        "metadata": {},
+                    },
+                    {
+                        "id": "temperature_room",
+                        "name": "Room Temperature",
+                        "type": "sensor",
+                        "capabilities": [
+                            {
+                                "name": "temperature.read",
+                                "kind": "reading",
+                                "parameters": {},
+                                "constraints": {},
+                                "availability_policy": {},
+                            }
+                        ],
+                        "metadata": {},
+                    },
+                ],
+                "http_bindings": [
+                    {
+                        "device_id": "lamp_1",
+                        "base_url": "http://192.168.1.50",
+                        "timeout_seconds": 2.0,
+                        "read_path": "/device/read",
+                        "apply_path": "/device/apply",
+                    }
+                ],
+                "mqtt_bindings": [
+                    {
+                        "transport": "mqtt",
+                        "device_id": "temperature_room",
+                        "request_topic": "jarvis/devices/temperature_room/request",
+                        "response_topic": "jarvis/devices/temperature_room/response",
+                        "timeout_seconds": 2.0,
+                        "allowed_capabilities": ["temperature.read"],
+                        "allowed_response_keys": ["temperature"],
+                    }
+                ],
+                "runtime_options": {},
             }
         ),
         encoding="utf-8",

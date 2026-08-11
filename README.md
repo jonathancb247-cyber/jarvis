@@ -12,6 +12,7 @@ JarvisOS is an agent-oriented cognitive operating system for future physical AI 
 - [Runtime Configuration](docs/getting-started/CONFIGURATION.md)
 - [Device State Persistence](docs/getting-started/STATE_PERSISTENCE.md)
 - [HTTP Profile Validation](docs/getting-started/HTTP_PROFILE_VALIDATION.md)
+- [MQTT Driver](docs/drivers/MQTT_DRIVER.md)
 - [AI Adapter](docs/ai/README.md)
 - [Runtime API](docs/api/README.md)
 - [Dashboard](docs/dashboard/README.md)
@@ -46,6 +47,8 @@ Configuration is declarative: it recreates devices, capabilities, and bindings. 
 
 State persistence is experimental. It does not store bindings, raw payloads, trust, credentials, history, or hardware availability.
 
+JarvisOS also includes an experimental MQTT request/response driver boundary for fake-client validation. It is not wired into the default runtime, does not require a broker in CI, and does not implement subscriptions, retained state, credentials or asynchronous state events.
+
 For the profile-based ESP32 validation flow, copy `profiles/http-lab.example.json` to `profiles/http-lab.local.json`, edit the local `base_url`, then run:
 
 ```bash
@@ -60,10 +63,10 @@ JarvisOS includes an experimental deterministic fake AI Adapter for boundary
 validation only. It does not use a real model, network, credentials, provider
 SDK, persistent memory, or default runtime wiring.
 
-JarvisOS also includes an optional experimental Gemini provider boundary for
-future manual validation. It is explicit cloud-only, requires `GEMINI_API_KEY`
-in the active environment, is not wired into the default Runtime/API/Dashboard,
-and has not made a real Gemini validation call yet.
+JarvisOS also includes an optional experimental Gemini provider boundary. It is
+explicit cloud-only, requires `GEMINI_API_KEY` in the active environment, is
+not wired into the default Runtime/API/Dashboard, and passed real provider
+validation in Phase 10.9.
 
 See [AI Adapter](docs/ai/README.md).
 

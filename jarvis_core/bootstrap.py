@@ -15,7 +15,9 @@ from jarvis_core.configuration import (
     RuntimeConfigurationLoader,
     build_devices,
     build_http_bindings,
+    build_mqtt_bindings,
 )
+from jarvis_core.driver_selection import DeviceTransportDriver
 from jarvis_core.device_routing import DeviceCommandRouter
 from jarvis_core.device_state import DeviceStateCoordinator
 from jarvis_core.devices import DeviceRegistry
@@ -27,6 +29,11 @@ from jarvis_core.http_driver import (
     HttpDeviceBindingStore,
     HttpDeviceDriver,
     UrllibHttpJsonTransport,
+)
+from jarvis_core.mqtt_driver import (
+    MQTTDeviceBindingStore,
+    MQTTDeviceDriver,
+    UnavailableMQTTClient,
 )
 from jarvis_core.onboarding import SimulatedOnboardingProvider
 from jarvis_core.planner import Planner
@@ -58,13 +65,14 @@ def build_http_runtime(driver, devices=None):
     return _build_runtime_with_driver(driver, devices=devices)
 
 
-def build_runtime_from_config(path, http_transport=None):
+def build_runtime_from_config(path, http_transport=None, mqtt_client=None):
     """Build a Runtime from an explicit declarative configuration file."""
     config_path = Path(path)
     profile = RuntimeConfigurationLoader().load(config_path)
     return build_runtime_from_profile(
         profile,
         http_transport=http_transport,
+        mqtt_client=mqtt_client,
         base_directory=config_path.parent,
     )
 
@@ -72,18 +80,48 @@ def build_runtime_from_config(path, http_transport=None):
 def build_runtime_from_profile(
     profile,
     http_transport=None,
+    mqtt_client=None,
     state_store=None,
     base_directory=None,
 ):
     """Build a Runtime from a validated RuntimeProfile."""
     devices = build_devices(profile)
-    binding_store = HttpDeviceBindingStore()
-    for binding in build_http_bindings(profile):
-        binding_store.register(binding)
-    transport = http_transport or UrllibHttpJsonTransport()
-    driver = HttpDeviceDriver(binding_store, transport=transport)
+    driver = _driver_from_profile(
+        profile,
+        http_transport=http_transport,
+        mqtt_client=mqtt_client,
+    )
     state_store = state_store or _state_store_from_profile(profile, base_directory)
     return _build_runtime_with_driver(driver, devices=devices, state_store=state_store)
+
+
+def _driver_from_profile(profile, http_transport=None, mqtt_client=None):
+    http_binding_store = HttpDeviceBindingStore()
+    for binding in build_http_bindings(profile):
+        http_binding_store.register(binding)
+    http_driver = HttpDeviceDriver(
+        http_binding_store,
+        transport=http_transport or UrllibHttpJsonTransport(),
+    )
+
+    mqtt_bindings = build_mqtt_bindings(profile)
+    if not mqtt_bindings:
+        return http_driver
+
+    mqtt_binding_store = MQTTDeviceBindingStore()
+    for binding in mqtt_bindings:
+        mqtt_binding_store.register(binding)
+    mqtt_driver = MQTTDeviceDriver(
+        mqtt_binding_store,
+        client=mqtt_client or UnavailableMQTTClient(),
+    )
+
+    driver = DeviceTransportDriver()
+    for binding in http_binding_store.list():
+        driver.register(binding.device_id, http_driver)
+    for binding in mqtt_binding_store.list():
+        driver.register(binding.device_id, mqtt_driver)
+    return driver
 
 
 def _build_runtime_with_driver(driver, devices=None, state_store=None):
@@ -94,11 +132,9 @@ def _build_runtime_with_driver(driver, devices=None, state_store=None):
         device_registry.register(device)
 
     persistence = None
-    shutdown_hook = None
     if state_store is not None:
         persistence = DeviceStatePersistence(device_registry, state_store)
         persistence.restore()
-        shutdown_hook = persistence.save_snapshot
 
     candidate_store = DiscoveryCandidateStore()
     discovery_provider = SimulatedDiscoveryProvider()
@@ -147,7 +183,29 @@ def _build_runtime_with_driver(driver, devices=None, state_store=None):
         capability_registry=capability_registry,
         device_registry=device_registry,
     )
-    return Runtime(Planner(), context, shutdown_hook=shutdown_hook)
+    return Runtime(
+        Planner(),
+        context,
+        shutdown_hook=_shutdown_hook_for(driver, persistence),
+    )
+
+
+def _shutdown_hook_for(driver, persistence=None):
+    close = getattr(driver, "close", None)
+    has_close = callable(close)
+    if persistence is None and not has_close:
+        return None
+
+    def shutdown():
+        if persistence is not None:
+            persistence.save_snapshot()
+        if has_close:
+            try:
+                close()
+            except Exception:
+                return None
+
+    return shutdown
 
 
 def _state_store_from_profile(profile, base_directory=None):

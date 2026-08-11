@@ -22,6 +22,11 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 10.10 is blocked.
 - Gemini is Current / Experimental: real provider validation passed with `gemini-3.6-flash`, full provider-neutral `AIActionPlan`, read, confirmed power on/off plans, ambiguity handling and destructive refusal.
 - No AI provider is default or production-ready.
+- Epic 12 is in progress.
+- Phase 12.1 is completed as design: MQTT Driver Boundary.
+- Phase 12.2 is pending merge: MQTT Request/Response Driver Minimal Implementation.
+- MQTT Driver is Current / Experimental: synchronous request/response only with fake-client CI validation.
+- Phase 12.3 is blocked until explicitly opened for real broker validation.
 - Current snapshot commit: `da2d899f9ec6d1b975cc36909615de9bb3a3debd`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -120,6 +125,13 @@ Independent product line:
 - Epic 10 remains unchanged.
 - Epic 11 status: In progress - Local Runtime API and Minimal Dashboard implemented; hardware Dashboard validation completed for PR scope and pending merge.
 
+Independent transport line:
+
+- Epic 12 - Driver and MQTT Expansion is in progress.
+- Phase 12.1 - MQTT Driver Boundary is completed as architectural design.
+- Phase 12.2 - MQTT Request/Response Driver Minimal Implementation is pending merge.
+- Phase 12.3 - Real Broker MQTT Validation is blocked until explicitly opened.
+
 ## Stable Boundaries
 
 Stable project rules:
@@ -160,12 +172,16 @@ Current experimental areas:
 - Minimal Local Dashboard.
 - Vanilla Dashboard static assets.
 - Profile-based Hardware Dashboard validation workflow.
+- MQTT request/response driver boundary.
+- MQTT profile binding model.
+- MQTT fake-client validation workflow.
 
 ## Current Transports
 
 - Current / Experimental: HTTP local.
+- Current / Experimental: MQTT request/response with injected client.
 - Current / Simulated: in-memory simulated driver.
-- Future / Not Implemented: MQTT, Serial/USB, GPIO, BLE, Zigbee, Tuya.
+- Future / Not Implemented: Serial/USB, GPIO, BLE, Zigbee, Tuya.
 
 ## Supported Platforms
 
@@ -248,6 +264,9 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 - Gemini requires explicit `python -m jarvis_core.ai_cloud --provider gemini` usage and `GEMINI_API_KEY` in the active environment.
 - Gemini real-provider validation passed in Phase 10.9 using `gemini-3.6-flash`, the full provider-neutral `AIActionPlan`, strict JarvisOS validation, confirmation flow and destructive refusal.
 - Gemini TLS and hostname verification remain enabled through the reviewed provider transport.
+- MQTT request/response support is experimental, fake-client validated and not a broker validation.
+- MQTT topics are binding/config data and must not appear in DeviceCapability, Runtime API, Dashboard or AI context.
+- MQTT does not implement subscriptions, retained state, LWT, availability topics, credentials, retries or background state updates.
 - The Runtime API is optional, localhost-only, and submits canonical command text through the existing Runtime-owned adapter boundary.
 - The Runtime API exposes detached semantic projections only.
 - The Runtime API remains the boundary consumed by the Dashboard and still does not implement LAN access, authentication, WebSocket, SSE, async Runtime, or direct internal access.
@@ -268,6 +287,8 @@ Not currently implemented:
 - SQLite;
 - migrations;
 - Dashboard validation beyond the Phase 11.4 profile-based hardware Dashboard validation;
+- real MQTT broker validation;
+- MQTT subscriptions, retained messages, availability topics, TLS/authentication, credentials, cloud MQTT, or broker UI;
 - hardware discovery;
 - persistent trust;
 - persistent AI memory;
@@ -285,6 +306,7 @@ Not currently implemented:
 - [Security Guidelines](../device-integration/SECURITY_GUIDELINES.md)
 - [ESP32 + ESP-IDF Guide](../platforms/ESP32_ESP_IDF.md)
 - [HTTP LED Example](../../examples/http-led/README.md)
+- [MQTT Driver](../drivers/MQTT_DRIVER.md)
 - [AI Adapter](../ai/README.md)
 
 ## Glossary

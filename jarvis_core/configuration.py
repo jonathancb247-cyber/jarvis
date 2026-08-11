@@ -6,6 +6,7 @@ from pathlib import Path
 
 from jarvis_core.devices import Device, DeviceCapability, DeviceState
 from jarvis_core.http_driver import HttpDeviceBinding
+from jarvis_core.mqtt_driver import MQTTDeviceBinding
 
 
 SUPPORTED_SCHEMA_VERSION = 1
@@ -24,8 +25,10 @@ ROOT_FIELDS = {
     "profile",
     "devices",
     "http_bindings",
+    "mqtt_bindings",
     "runtime_options",
 }
+REQUIRED_ROOT_FIELDS = ROOT_FIELDS - {"mqtt_bindings"}
 DEVICE_FIELDS = {"id", "name", "type", "capabilities", "metadata"}
 CAPABILITY_FIELDS = {
     "name",
@@ -41,6 +44,15 @@ BINDING_FIELDS = {
     "timeout_seconds",
     "read_path",
     "apply_path",
+}
+MQTT_BINDING_FIELDS = {
+    "transport",
+    "device_id",
+    "request_topic",
+    "response_topic",
+    "timeout_seconds",
+    "allowed_capabilities",
+    "allowed_response_keys",
 }
 RUNTIME_OPTION_FIELDS = {"state_store_path"}
 
@@ -88,6 +100,18 @@ class HttpDeviceBindingConfig:
 
 
 @dataclass(frozen=True)
+class MQTTDeviceBindingConfig:
+    """Declarative MQTT binding configuration."""
+
+    device_id: str
+    request_topic: str
+    response_topic: str
+    timeout_seconds: float
+    allowed_capabilities: tuple
+    allowed_response_keys: tuple
+
+
+@dataclass(frozen=True)
 class RuntimeProfile:
     """Validated declarative runtime profile data."""
 
@@ -95,6 +119,7 @@ class RuntimeProfile:
     name: str
     devices: tuple = field(default_factory=tuple)
     http_bindings: tuple = field(default_factory=tuple)
+    mqtt_bindings: tuple = field(default_factory=tuple)
     runtime_options: dict = field(default_factory=dict)
 
 
@@ -137,7 +162,12 @@ class RuntimeConfigurationLoader:
     def _parse_profile(self, payload):
         if not isinstance(payload, dict):
             raise ConfigurationError(CONFIG_INVALID)
-        _require_exact_fields(payload, ROOT_FIELDS, CONFIG_INVALID)
+        _require_required_allowed_fields(
+            payload,
+            REQUIRED_ROOT_FIELDS,
+            ROOT_FIELDS,
+            CONFIG_INVALID,
+        )
 
         schema_version = payload["schema_version"]
         if schema_version != SUPPORTED_SCHEMA_VERSION:
@@ -147,10 +177,13 @@ class RuntimeConfigurationLoader:
             raise ConfigurationError(CONFIG_INVALID)
         devices_payload = payload["devices"]
         bindings_payload = payload["http_bindings"]
+        mqtt_bindings_payload = payload.get("mqtt_bindings", [])
         runtime_options = payload["runtime_options"]
         if not isinstance(devices_payload, list):
             raise ConfigurationError(CONFIG_INVALID)
         if not isinstance(bindings_payload, list):
+            raise ConfigurationError(CONFIG_INVALID)
+        if not isinstance(mqtt_bindings_payload, list):
             raise ConfigurationError(CONFIG_INVALID)
         if not isinstance(runtime_options, dict):
             raise ConfigurationError(CONFIG_INVALID)
@@ -159,11 +192,17 @@ class RuntimeConfigurationLoader:
         devices = self._parse_devices(devices_payload)
         device_ids = {device.id for device in devices}
         bindings = self._parse_bindings(bindings_payload, device_ids)
+        mqtt_bindings = self._parse_mqtt_bindings(
+            mqtt_bindings_payload,
+            device_ids,
+            {binding.device_id for binding in bindings},
+        )
         return RuntimeProfile(
             schema_version=schema_version,
             name=profile_name,
             devices=tuple(devices),
             http_bindings=tuple(bindings),
+            mqtt_bindings=tuple(mqtt_bindings),
             runtime_options=runtime_options,
         )
 
@@ -311,6 +350,50 @@ class RuntimeConfigurationLoader:
             )
         return bindings
 
+    def _parse_mqtt_bindings(self, bindings_payload, device_ids, bound_device_ids):
+        bindings = []
+        seen_ids = set()
+        for item in bindings_payload:
+            if not isinstance(item, dict):
+                raise ConfigurationError(INVALID_BINDING)
+            _require_exact_fields(item, MQTT_BINDING_FIELDS, INVALID_BINDING)
+            if item["transport"] != "mqtt":
+                raise ConfigurationError(INVALID_BINDING)
+            device_id = item["device_id"]
+            if not _is_non_empty_string(device_id):
+                raise ConfigurationError(INVALID_BINDING)
+            if device_id not in device_ids:
+                raise ConfigurationError(ORPHAN_BINDING)
+            if device_id in seen_ids or device_id in bound_device_ids:
+                raise ConfigurationError(INVALID_BINDING)
+            seen_ids.add(device_id)
+            try:
+                binding = MQTTDeviceBinding(
+                    device_id=device_id,
+                    request_topic=item["request_topic"],
+                    response_topic=item["response_topic"],
+                    timeout_seconds=item["timeout_seconds"],
+                    allowed_capabilities=_string_tuple(
+                        item["allowed_capabilities"],
+                    ),
+                    allowed_response_keys=_string_tuple(
+                        item["allowed_response_keys"],
+                    ),
+                )
+            except Exception as error:
+                raise ConfigurationError(INVALID_BINDING) from error
+            bindings.append(
+                MQTTDeviceBindingConfig(
+                    device_id=binding.device_id,
+                    request_topic=binding.request_topic,
+                    response_topic=binding.response_topic,
+                    timeout_seconds=binding.timeout_seconds,
+                    allowed_capabilities=binding.allowed_capabilities,
+                    allowed_response_keys=binding.allowed_response_keys,
+                )
+            )
+        return bindings
+
 
 def build_devices(profile):
     """Materialize declarative Devices from a validated RuntimeProfile."""
@@ -355,6 +438,22 @@ def build_http_bindings(profile):
     ]
 
 
+def build_mqtt_bindings(profile):
+    """Materialize declarative MQTT bindings from a validated RuntimeProfile."""
+    _ensure_profile(profile)
+    return [
+        MQTTDeviceBinding(
+            device_id=binding.device_id,
+            request_topic=binding.request_topic,
+            response_topic=binding.response_topic,
+            timeout_seconds=binding.timeout_seconds,
+            allowed_capabilities=binding.allowed_capabilities,
+            allowed_response_keys=binding.allowed_response_keys,
+        )
+        for binding in profile.mqtt_bindings
+    ]
+
+
 def _ensure_profile(profile):
     if not isinstance(profile, RuntimeProfile):
         raise TypeError("expected RuntimeProfile")
@@ -386,6 +485,20 @@ def _require_exact_fields(payload, allowed, code):
 def _require_allowed_fields(payload, allowed, code):
     if not set(payload.keys()).issubset(allowed):
         raise ConfigurationError(code)
+
+
+def _require_required_allowed_fields(payload, required, allowed, code):
+    keys = set(payload.keys())
+    if not required.issubset(keys):
+        raise ConfigurationError(code)
+    if not keys.issubset(allowed):
+        raise ConfigurationError(code)
+
+
+def _string_tuple(values):
+    if not isinstance(values, list):
+        raise ValueError("expected list")
+    return tuple(values)
 
 
 def _deep_copy_dict(value):

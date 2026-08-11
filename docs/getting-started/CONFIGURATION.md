@@ -106,6 +106,30 @@ Do not include:
 - arbitrary metadata
 - secrets
 
+## MQTT Bindings
+
+`mqtt_bindings` is optional. Existing HTTP-only profiles do not need to add it.
+
+MQTT bindings are experimental request/response transport configuration:
+
+```json
+{
+  "transport": "mqtt",
+  "device_id": "temperature_room",
+  "request_topic": "jarvis/devices/temperature_room/request",
+  "response_topic": "jarvis/devices/temperature_room/response",
+  "timeout_seconds": 2.0,
+  "allowed_capabilities": ["temperature.read"],
+  "allowed_response_keys": ["temperature"]
+}
+```
+
+The binding must reference a declared device. One device may not have both HTTP and MQTT bindings in the same profile.
+
+MQTT topics are transport-only. They must be bounded and must not include `#`, `+`, control characters, credentials, broker URLs or arbitrary user-generated topic text. MQTT support is request/response only; subscriptions, retained state and broker authentication are not implemented.
+
+See [MQTT Driver](../drivers/MQTT_DRIVER.md).
+
 ## Runtime Options
 
 Runtime options are strict. Phase 9.3 accepts either an empty object:
@@ -154,14 +178,14 @@ Startup errors are safe and minimal:
 - `Configuration schema version is not supported.`
 - `Device configuration contains duplicates.`
 - `Device capability configuration is invalid.`
-- `HTTP device binding configuration is invalid.`
-- `HTTP device binding references an unknown device.`
+- `Device binding configuration is invalid.`
+- `Device binding references an unknown device.`
 
 Startup errors do not print full JSON, full URLs, credentials, exception reprs, or stack traces.
 
 ## State Persistence
 
-Configuration recreates Devices, capabilities, and HTTP bindings. The State Store preserves only safe semantic `DeviceState`.
+Configuration recreates Devices, capabilities, HTTP bindings, and optional MQTT bindings. The State Store preserves only safe semantic `DeviceState`.
 
 On restart:
 

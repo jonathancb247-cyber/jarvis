@@ -18,6 +18,7 @@ REQUIRED_FILES = [
     "docs/dashboard/USAGE.md",
     "docs/dashboard/SECURITY.md",
     "docs/dashboard/HARDWARE_VALIDATION.md",
+    "docs/drivers/MQTT_DRIVER.md",
     "docs/ai/README.md",
     "docs/ai/STRUCTURED_PLAN.md",
     "docs/ai/SAFE_CONTEXT.md",
@@ -122,6 +123,10 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Gemini is Current / Experimental", project_state)
         self.assertIn("Gemini real provider validated", project_state)
         self.assertIn("Phase 10.10 is blocked", project_state)
+        self.assertIn("Phase 12.1 is completed as design", project_state)
+        self.assertIn("Phase 12.2 is pending merge", project_state)
+        self.assertIn("MQTT Driver is Current / Experimental", project_state)
+        self.assertIn("Phase 12.3 is blocked", project_state)
         self.assertIn("e374d30f2c28865c82fcb880f7079974ea1dfca4", project_state)
         self.assertIn("c3a6f78a72b9c08db550743cec6910934c44899d", project_state)
         self.assertIn("Default runtime remains empty, simulated, and offline-safe", project_state)
@@ -259,6 +264,18 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("HARDWARE_DASHBOARD_VALIDATION_REQUIRED", text)
         self.assertIn("PHYSICAL_LED_ON_CONFIRMATION_PENDING", text)
         self.assertIn("No AI provider is required", text)
+
+    def test_mqtt_driver_documentation_states_request_response_boundary(self):
+        guide = REPO_ROOT / "docs" / "drivers" / "MQTT_DRIVER.md"
+        text = guide.read_text(encoding="utf-8")
+
+        self.assertIn("Experimental Request-Response Driver", text)
+        self.assertIn("read(device, capability_name) -> DriverResult", text)
+        self.assertIn("mqtt_bindings", text)
+        self.assertIn("request_id", text)
+        self.assertIn("No AI provider", text)
+        self.assertIn("Phase 12.3 remains blocked", text)
+        self.assertNotIn("Mosquitto setup", text.split("## Testing", 1)[0])
 
 
 def _documentation_files():

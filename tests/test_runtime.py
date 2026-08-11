@@ -159,6 +159,47 @@ class RuntimeTest(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertTrue(result.message.startswith("The current time is "))
 
+    def test_shutdown_hook_runs_at_most_once(self):
+        calls = []
+        runtime = Runtime(
+            Planner(),
+            RuntimeContext(
+                event_bus=EventBus(),
+                capability_registry=CapabilityRegistry(),
+                device_registry=DeviceRegistry(),
+            ),
+            shutdown_hook=lambda: calls.append("shutdown"),
+        )
+
+        runtime.shutdown()
+        runtime.shutdown()
+
+        self.assertEqual(calls, ["shutdown"])
+
+    def test_failed_shutdown_hook_can_be_retried(self):
+        calls = []
+
+        def shutdown():
+            calls.append("shutdown")
+            raise RuntimeError("save failed")
+
+        runtime = Runtime(
+            Planner(),
+            RuntimeContext(
+                event_bus=EventBus(),
+                capability_registry=CapabilityRegistry(),
+                device_registry=DeviceRegistry(),
+            ),
+            shutdown_hook=shutdown,
+        )
+
+        with self.assertRaises(RuntimeError):
+            runtime.shutdown()
+        with self.assertRaises(RuntimeError):
+            runtime.shutdown()
+
+        self.assertEqual(calls, ["shutdown", "shutdown"])
+
     def test_build_runtime_registers_device_catalog_capability(self):
         runtime = build_runtime()
 

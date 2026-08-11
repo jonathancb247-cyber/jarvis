@@ -26,8 +26,8 @@ STARTUP_MESSAGES = {
     SCHEMA_VERSION_UNSUPPORTED: "Configuration schema version is not supported.",
     DUPLICATE_DEVICE: "Device configuration contains duplicates.",
     INVALID_CAPABILITY: "Device capability configuration is invalid.",
-    INVALID_BINDING: "HTTP device binding configuration is invalid.",
-    ORPHAN_BINDING: "HTTP device binding references an unknown device.",
+    INVALID_BINDING: "Device binding configuration is invalid.",
+    ORPHAN_BINDING: "Device binding references an unknown device.",
 }
 
 STATE_STORE_STARTUP_MESSAGES = {
