@@ -18,10 +18,11 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 10.6 is completed as design: Optional Cloud AI Provider and Secret Injection Boundary.
 - Phase 10.7 is in progress / Draft: Groq provider exists in PR #39, but real strict Structured Output validation is blocked by provider constrained generation.
 - Phase 10.8 is completed as design: Gemini Structured Provider Boundary.
-- Phase 10.9 is pending merge/manual validation: Gemini provider exists in the active implementation PR, but no real Gemini call has been made.
+- Phase 10.9 is completed: Gemini Structured Provider Minimal Implementation merged in PR #41 and passed real provider validation.
 - Phase 10.10 is blocked.
-- No real AI provider is approved for merge or production use.
-- Current snapshot commit: `82432ac7bbbbd53b533e0a57594a9579646d8883`.
+- Gemini is Current / Experimental: real provider validation passed with `gemini-3.6-flash`, full provider-neutral `AIActionPlan`, read, confirmed power on/off plans, ambiguity handling and destructive refusal.
+- No AI provider is default or production-ready.
+- Current snapshot commit: `da2d899f9ec6d1b975cc36909615de9bb3a3debd`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
 - Full test suite after Phase 10.3: 444 tests passing.
@@ -104,10 +105,10 @@ Current status:
 - Phase 10.5 - Local Ollama Provider Minimal Implementation remains in progress / Draft in PR #38.
 - Phase 10.7 - Groq Strict Structured Provider Minimal Implementation remains in progress / Draft in PR #39.
 - Phase 10.8 - Gemini Structured Provider Boundary is completed as architectural design.
-- Phase 10.9 - Gemini Structured Provider Minimal Implementation is pending merge/manual Gemini validation.
+- Phase 10.9 - Gemini Structured Provider Minimal Implementation is completed after PR #41 merge.
 - Phase 10.10 - Real Provider Validation and Consolidation is blocked.
-- Gemini provider work is Experimental and not real-validated. No real Gemini API call has occurred.
-- Epic 10 provider work remains unvalidated; no real provider is approved.
+- Gemini provider work is Current / Experimental and real-provider validated with `gemini-3.6-flash`.
+- Epic 10 remains in progress: deterministic AI Adapter implemented; Gemini real provider validated; Ollama and Groq remain experimental Draft paths.
 
 Independent product line:
 
@@ -245,7 +246,8 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 - Phase 10.3 did not change Runtime, Driver, Registry, Configuration, or State Store boundaries.
 - Phase 10.9 does not wire Gemini into the default Runtime, Runtime API, or Dashboard.
 - Gemini requires explicit `python -m jarvis_core.ai_cloud --provider gemini` usage and `GEMINI_API_KEY` in the active environment.
-- Gemini real-provider validation remains gated by `GEMINI_AI_VALIDATION_REQUIRED`.
+- Gemini real-provider validation passed in Phase 10.9 using `gemini-3.6-flash`, the full provider-neutral `AIActionPlan`, strict JarvisOS validation, confirmation flow and destructive refusal.
+- Gemini TLS and hostname verification remain enabled through the reviewed provider transport.
 - The Runtime API is optional, localhost-only, and submits canonical command text through the existing Runtime-owned adapter boundary.
 - The Runtime API exposes detached semantic projections only.
 - The Runtime API remains the boundary consumed by the Dashboard and still does not implement LAN access, authentication, WebSocket, SSE, async Runtime, or direct internal access.
@@ -255,8 +257,8 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 
 Not currently implemented:
 
-- real AI providers;
-- real AI provider validation;
+- production AI providers;
+- automatic provider fallback;
 - `--profile`;
 - DriverRegistry;
 - retries/backoff;
