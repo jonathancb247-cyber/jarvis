@@ -118,9 +118,16 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Epics 1-9 are completed", project_state)
         self.assertIn("Epic 10 is in progress", project_state)
         self.assertIn("Phase 10.3 is completed", project_state)
+        self.assertIn("Phase 10.9 is completed", project_state)
+        self.assertIn("Gemini is Current / Experimental", project_state)
+        self.assertIn("Gemini real provider validated", project_state)
+        self.assertIn("Phase 10.10 is blocked", project_state)
         self.assertIn("e374d30f2c28865c82fcb880f7079974ea1dfca4", project_state)
         self.assertIn("c3a6f78a72b9c08db550743cec6910934c44899d", project_state)
         self.assertIn("Default runtime remains empty, simulated, and offline-safe", project_state)
+        self.assertNotIn("Phase 10.9 is pending merge/manual validation", project_state)
+        self.assertNotIn("no real Gemini call has been made", project_state)
+        self.assertNotIn("pending merge/manual Gemini validation", project_state)
 
     def test_project_state_documents_runtime_api_boundary(self):
         project_state = (
