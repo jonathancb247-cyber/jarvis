@@ -4,6 +4,8 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
+from jarvis_core.api.adapter import RuntimeApiAdapter
+from jarvis_core.api.projections import ApiProjectionBuilder
 from jarvis_core.bootstrap import (
     build_http_runtime,
     build_runtime,
@@ -36,9 +38,12 @@ class FakeHttpTransport:
 
 
 class FakeMQTTClient:
-    def __init__(self):
+    def __init__(self, close_events=None, close_error=None):
         self.published = []
         self.waits = []
+        self.close_count = 0
+        self.close_events = close_events
+        self.close_error = close_error
 
     def publish(self, topic, payload):
         self.published.append((topic, json.loads(payload.decode("utf-8"))))
@@ -53,7 +58,23 @@ class FakeMQTTClient:
         }
 
     def close(self):
+        self.close_count += 1
+        if self.close_events is not None:
+            self.close_events.append("close")
+        if self.close_error is not None:
+            raise self.close_error
         return None
+
+
+class RecordingStateStore(JsonDeviceStateStore):
+    def __init__(self, events):
+        self.events = events
+
+    def load(self):
+        return {}
+
+    def save(self, states):
+        self.events.append("save")
 
 
 class BootstrapTests(unittest.TestCase):
@@ -186,6 +207,116 @@ class BootstrapTests(unittest.TestCase):
                 {"temperature": 22.5},
                 mqtt_state.data["state"]["properties"],
             )
+
+    def test_http_only_runtime_shutdown_remains_safe_and_idempotent(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            config_path = write_profile(root, "state/http-lab.state.json")
+            profile = RuntimeConfigurationLoader().load(config_path)
+            events = []
+            runtime = build_runtime_from_profile(
+                profile,
+                http_transport=FakeHttpTransport(),
+                state_store=RecordingStateStore(events),
+                base_directory=root,
+            )
+
+            runtime.shutdown()
+            runtime.shutdown()
+
+            self.assertEqual(events, ["save"])
+
+    def test_runtime_shutdown_closes_mqtt_client_once(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            profile = RuntimeConfigurationLoader().load(
+                write_mixed_transport_profile(root)
+            )
+            mqtt_client = FakeMQTTClient()
+            runtime = build_runtime_from_profile(
+                profile,
+                http_transport=FakeHttpTransport(),
+                mqtt_client=mqtt_client,
+                base_directory=root,
+            )
+
+            runtime.shutdown()
+            runtime.shutdown()
+
+            self.assertEqual(1, mqtt_client.close_count)
+
+    def test_runtime_shutdown_saves_state_before_closing_driver(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            profile = RuntimeConfigurationLoader().load(
+                write_mixed_transport_profile(root)
+            )
+            events = []
+            mqtt_client = FakeMQTTClient(close_events=events)
+            runtime = build_runtime_from_profile(
+                profile,
+                http_transport=FakeHttpTransport(),
+                mqtt_client=mqtt_client,
+                state_store=RecordingStateStore(events),
+                base_directory=root,
+            )
+
+            runtime.shutdown()
+
+            self.assertEqual(events, ["save", "close"])
+            self.assertEqual(1, mqtt_client.close_count)
+
+    def test_driver_close_failure_does_not_corrupt_runtime_shutdown(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            profile = RuntimeConfigurationLoader().load(
+                write_mixed_transport_profile(root)
+            )
+            events = []
+            mqtt_client = FakeMQTTClient(
+                close_events=events,
+                close_error=RuntimeError("raw broker close failure"),
+            )
+            runtime = build_runtime_from_profile(
+                profile,
+                http_transport=FakeHttpTransport(),
+                mqtt_client=mqtt_client,
+                state_store=RecordingStateStore(events),
+                base_directory=root,
+            )
+
+            runtime.shutdown()
+            runtime.shutdown()
+
+            self.assertEqual(events, ["save", "close"])
+            self.assertEqual(1, mqtt_client.close_count)
+
+    def test_runtime_api_shutdown_closes_composed_mqtt_driver_once(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            profile = RuntimeConfigurationLoader().load(
+                write_mixed_transport_profile(root)
+            )
+            mqtt_client = FakeMQTTClient()
+            runtime = build_runtime_from_profile(
+                profile,
+                http_transport=FakeHttpTransport(),
+                mqtt_client=mqtt_client,
+                base_directory=root,
+            )
+            adapter = RuntimeApiAdapter(
+                runtime,
+                ApiProjectionBuilder(
+                    runtime.context.device_registry,
+                    profile_name=profile.name,
+                    persistence_enabled=False,
+                ),
+            )
+
+            adapter.shutdown()
+            adapter.shutdown()
+
+            self.assertEqual(1, mqtt_client.close_count)
 
     def test_build_runtime_from_config_restores_state_as_stale(self):
         with tempfile.TemporaryDirectory() as temp:

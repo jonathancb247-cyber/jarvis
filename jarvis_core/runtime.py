@@ -45,11 +45,15 @@ class Runtime:
         self.planner = planner
         self.context = context
         self._shutdown_hook = shutdown_hook
+        self._shutdown_complete = False
 
     def shutdown(self):
         """Run an injected controlled-shutdown hook, if one exists."""
+        if self._shutdown_complete:
+            return
         if self._shutdown_hook is not None:
             self._shutdown_hook()
+        self._shutdown_complete = True
 
     def handle_user_input(self, text):
         """Plan text input and return the user-facing message.

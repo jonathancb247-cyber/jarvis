@@ -132,11 +132,9 @@ def _build_runtime_with_driver(driver, devices=None, state_store=None):
         device_registry.register(device)
 
     persistence = None
-    shutdown_hook = None
     if state_store is not None:
         persistence = DeviceStatePersistence(device_registry, state_store)
         persistence.restore()
-        shutdown_hook = persistence.save_snapshot
 
     candidate_store = DiscoveryCandidateStore()
     discovery_provider = SimulatedDiscoveryProvider()
@@ -185,7 +183,29 @@ def _build_runtime_with_driver(driver, devices=None, state_store=None):
         capability_registry=capability_registry,
         device_registry=device_registry,
     )
-    return Runtime(Planner(), context, shutdown_hook=shutdown_hook)
+    return Runtime(
+        Planner(),
+        context,
+        shutdown_hook=_shutdown_hook_for(driver, persistence),
+    )
+
+
+def _shutdown_hook_for(driver, persistence=None):
+    close = getattr(driver, "close", None)
+    has_close = callable(close)
+    if persistence is None and not has_close:
+        return None
+
+    def shutdown():
+        if persistence is not None:
+            persistence.save_snapshot()
+        if has_close:
+            try:
+                close()
+            except Exception:
+                return None
+
+    return shutdown
 
 
 def _state_store_from_profile(profile, base_directory=None):
