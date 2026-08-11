@@ -16,6 +16,7 @@ from jarvis_core.configuration import (
     RuntimeProfile,
     build_devices,
     build_http_bindings,
+    build_mqtt_bindings,
 )
 from jarvis_core.devices import DeviceCapability
 
@@ -36,6 +37,7 @@ class RuntimeConfigurationLoaderTests(unittest.TestCase):
         self.assertEqual(profile.name, "http-lab")
         self.assertEqual(len(profile.devices), 1)
         self.assertEqual(len(profile.http_bindings), 1)
+        self.assertEqual(profile.mqtt_bindings, ())
         self.assertEqual(profile.runtime_options, {})
 
     def test_config_not_found(self):
@@ -116,6 +118,23 @@ class RuntimeConfigurationLoaderTests(unittest.TestCase):
     def test_bindings_must_be_list(self):
         payload = valid_profile()
         payload["http_bindings"] = {}
+        path = self.write_profile(payload)
+
+        with self.assertConfigError(CONFIG_INVALID):
+            RuntimeConfigurationLoader().load(path)
+
+    def test_mqtt_bindings_are_optional_for_existing_profiles(self):
+        payload = valid_profile()
+        self.assertNotIn("mqtt_bindings", payload)
+        path = self.write_profile(payload)
+
+        profile = RuntimeConfigurationLoader().load(path)
+
+        self.assertEqual(profile.mqtt_bindings, ())
+
+    def test_mqtt_bindings_must_be_list(self):
+        payload = valid_profile()
+        payload["mqtt_bindings"] = {}
         path = self.write_profile(payload)
 
         with self.assertConfigError(CONFIG_INVALID):
@@ -356,6 +375,76 @@ class RuntimeConfigurationLoaderTests(unittest.TestCase):
         with self.assertConfigError(INVALID_BINDING):
             RuntimeConfigurationLoader().load(path)
 
+    def test_valid_mqtt_binding(self):
+        payload = valid_profile()
+        payload["http_bindings"] = []
+        payload["mqtt_bindings"] = [valid_mqtt_binding()]
+        path = self.write_profile(payload)
+
+        profile = RuntimeConfigurationLoader().load(path)
+
+        self.assertEqual(len(profile.mqtt_bindings), 1)
+        self.assertEqual(profile.mqtt_bindings[0].device_id, "lamp_1")
+        self.assertEqual(
+            profile.mqtt_bindings[0].request_topic,
+            "jarvis/devices/lamp_1/request",
+        )
+        self.assertEqual(
+            profile.mqtt_bindings[0].allowed_capabilities,
+            ("power.switch", "status.read"),
+        )
+
+    def test_mqtt_binding_rejects_duplicate_http_binding(self):
+        payload = valid_profile()
+        payload["mqtt_bindings"] = [valid_mqtt_binding()]
+        path = self.write_profile(payload)
+
+        with self.assertConfigError(INVALID_BINDING):
+            RuntimeConfigurationLoader().load(path)
+
+    def test_mqtt_binding_rejects_orphan_device(self):
+        payload = valid_profile()
+        payload["http_bindings"] = []
+        binding = valid_mqtt_binding()
+        binding["device_id"] = "missing"
+        payload["mqtt_bindings"] = [binding]
+        path = self.write_profile(payload)
+
+        with self.assertConfigError(ORPHAN_BINDING):
+            RuntimeConfigurationLoader().load(path)
+
+    def test_mqtt_binding_rejects_wildcard_topic_and_unknown_field(self):
+        cases = [
+            ("request_topic", "jarvis/+/request"),
+            ("response_topic", "jarvis/#"),
+        ]
+
+        for field, value in cases:
+            with self.subTest(field=field):
+                payload = valid_profile()
+                payload["http_bindings"] = []
+                binding = valid_mqtt_binding()
+                binding[field] = value
+                payload["mqtt_bindings"] = [binding]
+                with self.assertConfigError(INVALID_BINDING):
+                    RuntimeConfigurationLoader().load(self.write_profile(payload))
+
+        payload = valid_profile()
+        payload["http_bindings"] = []
+        binding = valid_mqtt_binding()
+        binding["client_id"] = "secret"
+        payload["mqtt_bindings"] = [binding]
+        with self.assertConfigError(INVALID_BINDING):
+            RuntimeConfigurationLoader().load(self.write_profile(payload))
+
+        payload = valid_profile()
+        payload["http_bindings"] = []
+        binding = valid_mqtt_binding()
+        binding["transport"] = "http"
+        payload["mqtt_bindings"] = [binding]
+        with self.assertConfigError(INVALID_BINDING):
+            RuntimeConfigurationLoader().load(self.write_profile(payload))
+
     def test_materialize_devices(self):
         profile = RuntimeConfigurationLoader().load(self.write_profile(valid_profile()))
 
@@ -378,6 +467,18 @@ class RuntimeConfigurationLoaderTests(unittest.TestCase):
         self.assertEqual(len(bindings), 1)
         self.assertEqual(bindings[0].device_id, "lamp_1")
         self.assertEqual(bindings[0].read_path, "/device/read")
+
+    def test_materialize_mqtt_bindings(self):
+        payload = valid_profile()
+        payload["http_bindings"] = []
+        payload["mqtt_bindings"] = [valid_mqtt_binding()]
+        profile = RuntimeConfigurationLoader().load(self.write_profile(payload))
+
+        bindings = build_mqtt_bindings(profile)
+
+        self.assertEqual(len(bindings), 1)
+        self.assertEqual(bindings[0].device_id, "lamp_1")
+        self.assertEqual(bindings[0].response_topic, "jarvis/devices/lamp_1/response")
 
     def test_configuration_error_string_exposes_only_code(self):
         error = ConfigurationError(CONFIG_INVALID, detail="http://192.168.1.50")
@@ -456,6 +557,18 @@ def valid_profile():
             }
         ],
         "runtime_options": {},
+    }
+
+
+def valid_mqtt_binding():
+    return {
+        "transport": "mqtt",
+        "device_id": "lamp_1",
+        "request_topic": "jarvis/devices/lamp_1/request",
+        "response_topic": "jarvis/devices/lamp_1/response",
+        "timeout_seconds": 2.0,
+        "allowed_capabilities": ["power.switch", "status.read"],
+        "allowed_response_keys": ["power"],
     }
 
 

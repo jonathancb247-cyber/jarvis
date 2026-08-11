@@ -35,6 +35,27 @@ class FakeHttpTransport:
         )
 
 
+class FakeMQTTClient:
+    def __init__(self):
+        self.published = []
+        self.waits = []
+
+    def publish(self, topic, payload):
+        self.published.append((topic, json.loads(payload.decode("utf-8"))))
+
+    def wait_for_response(self, topic, correlation_id, timeout_seconds):
+        self.waits.append((topic, correlation_id, timeout_seconds))
+        return {
+            "request_id": correlation_id,
+            "ok": True,
+            "semantic": {"temperature": 22.5},
+            "error": None,
+        }
+
+    def close(self):
+        return None
+
+
 class BootstrapTests(unittest.TestCase):
     def make_http_runtime(self):
         store = HttpDeviceBindingStore()
@@ -119,6 +140,52 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(list_result.data["count"], 1)
         self.assertEqual(transport.calls[0][0], "http://192.168.1.50/device/apply")
         self.assertEqual(transport.calls[1][0], "http://192.168.1.50/device/read")
+
+    def test_build_runtime_from_profile_supports_http_and_mqtt_devices(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            config_path = write_mixed_transport_profile(root)
+            profile = RuntimeConfigurationLoader().load(config_path)
+            http_transport = FakeHttpTransport()
+            mqtt_client = FakeMQTTClient()
+
+            runtime = build_runtime_from_profile(
+                profile,
+                http_transport=http_transport,
+                mqtt_client=mqtt_client,
+                base_directory=root,
+            )
+
+            http_result = runtime.handle_adapter_input(
+                "device read lamp_1 status.read",
+                source="test",
+            )
+            mqtt_result = runtime.handle_adapter_input(
+                "device read temperature_room temperature.read",
+                source="test",
+            )
+            mqtt_state = runtime.handle_adapter_input(
+                "device state temperature_room",
+                source="test",
+            )
+
+            self.assertTrue(http_result.success)
+            self.assertTrue(mqtt_result.success)
+            self.assertEqual(1, len(http_transport.calls))
+            self.assertEqual("http://192.168.1.50/device/read", http_transport.calls[0][0])
+            self.assertEqual(1, len(mqtt_client.published))
+            self.assertEqual(
+                "jarvis/devices/temperature_room/request",
+                mqtt_client.published[0][0],
+            )
+            self.assertEqual(
+                "temperature.read",
+                mqtt_client.published[0][1]["capability"],
+            )
+            self.assertEqual(
+                {"temperature": 22.5},
+                mqtt_state.data["state"]["properties"],
+            )
 
     def test_build_runtime_from_config_restores_state_as_stale(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -307,6 +374,73 @@ def write_profile(root, state_store_path):
                     }
                 ],
                 "runtime_options": {"state_store_path": state_store_path},
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def write_mixed_transport_profile(root):
+    path = root / "mixed-profile.json"
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "profile": "mixed-lab",
+                "devices": [
+                    {
+                        "id": "lamp_1",
+                        "name": "ESP32 LED",
+                        "type": "light",
+                        "capabilities": [
+                            {
+                                "name": "status.read",
+                                "kind": "reading",
+                                "parameters": {},
+                                "constraints": {},
+                                "availability_policy": {},
+                            }
+                        ],
+                        "metadata": {},
+                    },
+                    {
+                        "id": "temperature_room",
+                        "name": "Room Temperature",
+                        "type": "sensor",
+                        "capabilities": [
+                            {
+                                "name": "temperature.read",
+                                "kind": "reading",
+                                "parameters": {},
+                                "constraints": {},
+                                "availability_policy": {},
+                            }
+                        ],
+                        "metadata": {},
+                    },
+                ],
+                "http_bindings": [
+                    {
+                        "device_id": "lamp_1",
+                        "base_url": "http://192.168.1.50",
+                        "timeout_seconds": 2.0,
+                        "read_path": "/device/read",
+                        "apply_path": "/device/apply",
+                    }
+                ],
+                "mqtt_bindings": [
+                    {
+                        "transport": "mqtt",
+                        "device_id": "temperature_room",
+                        "request_topic": "jarvis/devices/temperature_room/request",
+                        "response_topic": "jarvis/devices/temperature_room/response",
+                        "timeout_seconds": 2.0,
+                        "allowed_capabilities": ["temperature.read"],
+                        "allowed_response_keys": ["temperature"],
+                    }
+                ],
+                "runtime_options": {},
             }
         ),
         encoding="utf-8",
