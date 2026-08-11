@@ -24,10 +24,10 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - No AI provider is default or production-ready.
 - Epic 12 is in progress.
 - Phase 12.1 is completed as design: MQTT Driver Boundary.
-- Phase 12.2 is pending merge: MQTT Request/Response Driver Minimal Implementation.
-- MQTT Driver is Current / Experimental: synchronous request/response only with fake-client CI validation.
+- Phase 12.2 is completed: MQTT Request/Response Driver Minimal Implementation merged in PR #43.
+- MQTT Driver is Current / Experimental: synchronous request/response only with fake-client CI validation, per-device HTTP/MQTT composition, and Runtime shutdown ownership verified.
 - Phase 12.3 is blocked until explicitly opened for real broker validation.
-- Current snapshot commit: `da2d899f9ec6d1b975cc36909615de9bb3a3debd`.
+- Current snapshot commit: `80e83fc77534e96da74dc440942845f911ae47b4`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
 - Full test suite after Phase 10.3: 444 tests passing.
@@ -129,7 +129,10 @@ Independent transport line:
 
 - Epic 12 - Driver and MQTT Expansion is in progress.
 - Phase 12.1 - MQTT Driver Boundary is completed as architectural design.
-- Phase 12.2 - MQTT Request/Response Driver Minimal Implementation is pending merge.
+- Phase 12.2 - MQTT Request/Response Driver Minimal Implementation is completed after PR #43 merge.
+- Phase 12.2 merge commit: `80e83fc77534e96da74dc440942845f911ae47b4`.
+- Phase 12.2 validation: 529 tests passing, default CLI, profile CLI, API-only and Dashboard regressions passed.
+- MQTT remains Current / Experimental: synchronous request/response only; HTTP remains supported; no real broker, Mosquitto, ESP32 MQTT, subscriptions, retained state, retries, MQTT auth/TLS or broker credentials are validated or implemented.
 - Phase 12.3 - Real Broker MQTT Validation is blocked until explicitly opened.
 
 ## Stable Boundaries

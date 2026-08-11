@@ -124,15 +124,19 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Gemini real provider validated", project_state)
         self.assertIn("Phase 10.10 is blocked", project_state)
         self.assertIn("Phase 12.1 is completed as design", project_state)
-        self.assertIn("Phase 12.2 is pending merge", project_state)
+        self.assertIn("Phase 12.2 is completed", project_state)
+        self.assertIn("Phase 12.2 - MQTT Request/Response Driver Minimal Implementation is completed", project_state)
         self.assertIn("MQTT Driver is Current / Experimental", project_state)
         self.assertIn("Phase 12.3 is blocked", project_state)
+        self.assertIn("80e83fc77534e96da74dc440942845f911ae47b4", project_state)
         self.assertIn("e374d30f2c28865c82fcb880f7079974ea1dfca4", project_state)
         self.assertIn("c3a6f78a72b9c08db550743cec6910934c44899d", project_state)
         self.assertIn("Default runtime remains empty, simulated, and offline-safe", project_state)
         self.assertNotIn("Phase 10.9 is pending merge/manual validation", project_state)
         self.assertNotIn("no real Gemini call has been made", project_state)
         self.assertNotIn("pending merge/manual Gemini validation", project_state)
+        self.assertNotIn("Phase 12.2 is pending merge", project_state)
+        self.assertNotIn("Phase 12.2 - MQTT Request/Response Driver Minimal Implementation is pending merge", project_state)
 
     def test_project_state_documents_runtime_api_boundary(self):
         project_state = (
