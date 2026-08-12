@@ -26,9 +26,9 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 12.1 is completed as design: MQTT Driver Boundary.
 - Phase 12.2 is completed: MQTT Request/Response Driver Minimal Implementation merged in PR #43.
 - MQTT Driver is Current / Experimental: synchronous request/response only with fake-client CI validation, per-device HTTP/MQTT composition, and Runtime shutdown ownership verified.
-- Phase 12.3 is pending merge after real local Mosquitto validation in PR #45.
+- Phase 12.3 is completed: Local Mosquitto Integration Validation merged in PR #45.
 - Phase 12.4 is blocked until explicitly opened for ESP32 MQTT reference node work.
-- Current snapshot commit: `80e83fc77534e96da74dc440942845f911ae47b4`.
+- Current snapshot commit: `871f5f02cdac5f00741534d3f87e2a799d060417`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
 - Full test suite after Phase 10.3: 444 tests passing.
@@ -133,8 +133,10 @@ Independent transport line:
 - Phase 12.2 - MQTT Request/Response Driver Minimal Implementation is completed after PR #43 merge.
 - Phase 12.2 merge commit: `80e83fc77534e96da74dc440942845f911ae47b4`.
 - Phase 12.2 validation: 529 tests passing, default CLI, profile CLI, API-only and Dashboard regressions passed.
-- MQTT remains Current / Experimental: synchronous request/response only; HTTP remains supported; local loopback Mosquitto validation is pending merge in PR #45; ESP32 MQTT, LAN/public MQTT, subscriptions, retained state, retries, MQTT auth/TLS and broker credentials are not validated or implemented.
-- Phase 12.3 - Local Mosquitto Integration Validation is pending merge after validating a real loopback Mosquitto broker, Paho MQTT client adapter, local simulated MQTT lamp, persistence/restart, correlation failures, simulator failure/recovery, API/Dashboard projection and HTTP regression.
+- MQTT remains Current / Experimental: synchronous request/response only; HTTP remains supported; real local loopback Mosquitto validation was completed in PR #45; ESP32 MQTT, LAN/public MQTT, subscriptions, retained state, retries, MQTT auth/TLS and broker credentials are not validated or implemented.
+- Phase 12.3 - Local Mosquitto Integration Validation is completed after validating a real loopback Mosquitto broker, Paho MQTT client adapter, local simulated MQTT lamp, read/on/off, persistence/restart, correlation failures, simulator failure/recovery, API/Dashboard projection and HTTP regression.
+- Phase 12.3 merge commit: `871f5f02cdac5f00741534d3f87e2a799d060417`.
+- Phase 12.3 validation: 538 tests passing, default CLI, HTTP profile CLI, API-only and Dashboard regressions passed.
 - Phase 12.3 validation remains local only: no ESP32 MQTT hardware, MQTT auth/TLS, retained state, subscriptions, retries, cloud broker or Dashboard MQTT UI.
 - Phase 12.4 - ESP32 MQTT Reference Node is blocked until explicitly opened.
 
