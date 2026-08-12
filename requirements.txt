@@ -1,4 +1,5 @@
-# AVP-001 intentionally keeps Runtime, API, Dashboard, Drivers, and State Store
-# on the Python standard library. Optional cloud AI provider transports may use
-# reviewed provider-layer dependencies.
+# AVP-001 keeps Runtime, API, Dashboard, and State Store on the Python standard
+# library. Reviewed experimental provider/transport adapters may use explicit
+# dependencies when a phase approves them.
 truststore==0.10.4
+paho-mqtt==2.1.0

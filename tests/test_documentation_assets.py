@@ -19,6 +19,7 @@ REQUIRED_FILES = [
     "docs/dashboard/SECURITY.md",
     "docs/dashboard/HARDWARE_VALIDATION.md",
     "docs/drivers/MQTT_DRIVER.md",
+    "docs/drivers/MQTT_VALIDATION.md",
     "docs/ai/README.md",
     "docs/ai/STRUCTURED_PLAN.md",
     "docs/ai/SAFE_CONTEXT.md",
@@ -56,6 +57,8 @@ REQUIRED_FILES = [
     "examples/http-led/protocol-examples/success-off.json",
     "examples/http-led/protocol-examples/error-operation-not-supported.json",
     "profiles/http-lab.example.json",
+    "profiles/mqtt-lab.example.json",
+    "tools/mosquitto-loopback.conf",
     "examples/http-led/esp32-idf/CMakeLists.txt",
     "examples/http-led/esp32-idf/README.md",
     "examples/http-led/esp32-idf/main/CMakeLists.txt",
@@ -127,7 +130,10 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Phase 12.2 is completed", project_state)
         self.assertIn("Phase 12.2 - MQTT Request/Response Driver Minimal Implementation is completed", project_state)
         self.assertIn("MQTT Driver is Current / Experimental", project_state)
-        self.assertIn("Phase 12.3 is blocked", project_state)
+        self.assertIn("Phase 12.3 is pending merge after real local Mosquitto validation", project_state)
+        self.assertIn("validating a real loopback Mosquitto broker", project_state)
+        self.assertIn("Phase 12.4 is blocked", project_state)
+        self.assertNotIn("real MQTT broker validation;", project_state)
         self.assertIn("80e83fc77534e96da74dc440942845f911ae47b4", project_state)
         self.assertIn("e374d30f2c28865c82fcb880f7079974ea1dfca4", project_state)
         self.assertIn("c3a6f78a72b9c08db550743cec6910934c44899d", project_state)
@@ -278,8 +284,21 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("mqtt_bindings", text)
         self.assertIn("request_id", text)
         self.assertIn("No AI provider", text)
-        self.assertIn("Phase 12.3 remains blocked", text)
+        self.assertIn("MQTT Local Broker Validation", text)
+        self.assertIn("Phase 12.4 remains blocked", text)
         self.assertNotIn("Mosquitto setup", text.split("## Testing", 1)[0])
+
+    def test_mqtt_validation_documentation_states_loopback_boundary(self):
+        guide = REPO_ROOT / "docs" / "drivers" / "MQTT_VALIDATION.md"
+        text = guide.read_text(encoding="utf-8")
+
+        self.assertIn("tools/mosquitto-loopback.conf", text)
+        self.assertIn("listener 1883 127.0.0.1", text)
+        self.assertIn("python tools\\mqtt_simulated_lamp.py", text)
+        self.assertIn("profiles\\mqtt-lab.example.json", text)
+        self.assertIn("No AI provider", text)
+        self.assertIn("Phase 12.4 remains blocked", text)
+        self.assertNotIn("0.0.0.0", text.split("Do not use:", 1)[0])
 
 
 def _documentation_files():

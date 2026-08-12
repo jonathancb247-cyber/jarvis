@@ -130,6 +130,18 @@ MQTT topics are transport-only. They must be bounded and must not include `#`, `
 
 See [MQTT Driver](../drivers/MQTT_DRIVER.md).
 
+For local broker validation only, `profiles/mqtt-lab.example.json` defines a
+simulated `lamp_1` with request/response topics:
+
+```text
+jarvis/lab/lamp_1/request
+jarvis/lab/lamp_1/response
+```
+
+It is intended for use with the loopback Mosquitto validation workflow in
+[MQTT Local Broker Validation](../drivers/MQTT_VALIDATION.md). It does not
+replace HTTP profiles and does not imply ESP32 MQTT validation.
+
 ## Runtime Options
 
 Runtime options are strict. Phase 9.3 accepts either an empty object:

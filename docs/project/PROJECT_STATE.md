@@ -26,7 +26,8 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 12.1 is completed as design: MQTT Driver Boundary.
 - Phase 12.2 is completed: MQTT Request/Response Driver Minimal Implementation merged in PR #43.
 - MQTT Driver is Current / Experimental: synchronous request/response only with fake-client CI validation, per-device HTTP/MQTT composition, and Runtime shutdown ownership verified.
-- Phase 12.3 is blocked until explicitly opened for real broker validation.
+- Phase 12.3 is pending merge after real local Mosquitto validation in PR #45.
+- Phase 12.4 is blocked until explicitly opened for ESP32 MQTT reference node work.
 - Current snapshot commit: `80e83fc77534e96da74dc440942845f911ae47b4`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -132,8 +133,10 @@ Independent transport line:
 - Phase 12.2 - MQTT Request/Response Driver Minimal Implementation is completed after PR #43 merge.
 - Phase 12.2 merge commit: `80e83fc77534e96da74dc440942845f911ae47b4`.
 - Phase 12.2 validation: 529 tests passing, default CLI, profile CLI, API-only and Dashboard regressions passed.
-- MQTT remains Current / Experimental: synchronous request/response only; HTTP remains supported; no real broker, Mosquitto, ESP32 MQTT, subscriptions, retained state, retries, MQTT auth/TLS or broker credentials are validated or implemented.
-- Phase 12.3 - Real Broker MQTT Validation is blocked until explicitly opened.
+- MQTT remains Current / Experimental: synchronous request/response only; HTTP remains supported; local loopback Mosquitto validation is pending merge in PR #45; ESP32 MQTT, LAN/public MQTT, subscriptions, retained state, retries, MQTT auth/TLS and broker credentials are not validated or implemented.
+- Phase 12.3 - Local Mosquitto Integration Validation is pending merge after validating a real loopback Mosquitto broker, Paho MQTT client adapter, local simulated MQTT lamp, persistence/restart, correlation failures, simulator failure/recovery, API/Dashboard projection and HTTP regression.
+- Phase 12.3 validation remains local only: no ESP32 MQTT hardware, MQTT auth/TLS, retained state, subscriptions, retries, cloud broker or Dashboard MQTT UI.
+- Phase 12.4 - ESP32 MQTT Reference Node is blocked until explicitly opened.
 
 ## Stable Boundaries
 
@@ -267,7 +270,8 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 - Gemini requires explicit `python -m jarvis_core.ai_cloud --provider gemini` usage and `GEMINI_API_KEY` in the active environment.
 - Gemini real-provider validation passed in Phase 10.9 using `gemini-3.6-flash`, the full provider-neutral `AIActionPlan`, strict JarvisOS validation, confirmation flow and destructive refusal.
 - Gemini TLS and hostname verification remain enabled through the reviewed provider transport.
-- MQTT request/response support is experimental, fake-client validated and not a broker validation.
+- MQTT request/response support is experimental and validated with fake clients plus local loopback Mosquitto in PR #45.
+- MQTT local broker validation uses loopback Mosquitto with a validation-only simulated lamp; it is not production MQTT or ESP32 MQTT validation.
 - MQTT topics are binding/config data and must not appear in DeviceCapability, Runtime API, Dashboard or AI context.
 - MQTT does not implement subscriptions, retained state, LWT, availability topics, credentials, retries or background state updates.
 - The Runtime API is optional, localhost-only, and submits canonical command text through the existing Runtime-owned adapter boundary.
@@ -290,8 +294,9 @@ Not currently implemented:
 - SQLite;
 - migrations;
 - Dashboard validation beyond the Phase 11.4 profile-based hardware Dashboard validation;
-- real MQTT broker validation;
-- MQTT subscriptions, retained messages, availability topics, TLS/authentication, credentials, cloud MQTT, or broker UI;
+- MQTT over LAN, public MQTT, cloud MQTT, production broker deployment or broker UI;
+- ESP32 MQTT node validation;
+- MQTT subscriptions, retained messages, availability topics, TLS/authentication or credentials;
 - hardware discovery;
 - persistent trust;
 - persistent AI memory;
