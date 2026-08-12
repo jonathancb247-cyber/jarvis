@@ -26,7 +26,8 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 12.1 is completed as design: MQTT Driver Boundary.
 - Phase 12.2 is completed: MQTT Request/Response Driver Minimal Implementation merged in PR #43.
 - MQTT Driver is Current / Experimental: synchronous request/response only with fake-client CI validation, per-device HTTP/MQTT composition, and Runtime shutdown ownership verified.
-- Phase 12.3 is blocked until explicitly opened for real broker validation.
+- Phase 12.3 is in progress / Draft: local Paho adapter, validation profile, simulated MQTT lamp, and CI-safe tests are prepared; real Mosquitto validation is blocked by local broker setup on the current host.
+- Phase 12.4 is blocked until explicitly opened for ESP32 MQTT reference node work.
 - Current snapshot commit: `80e83fc77534e96da74dc440942845f911ae47b4`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -133,7 +134,9 @@ Independent transport line:
 - Phase 12.2 merge commit: `80e83fc77534e96da74dc440942845f911ae47b4`.
 - Phase 12.2 validation: 529 tests passing, default CLI, profile CLI, API-only and Dashboard regressions passed.
 - MQTT remains Current / Experimental: synchronous request/response only; HTTP remains supported; no real broker, Mosquitto, ESP32 MQTT, subscriptions, retained state, retries, MQTT auth/TLS or broker credentials are validated or implemented.
-- Phase 12.3 - Real Broker MQTT Validation is blocked until explicitly opened.
+- Phase 12.3 - Local Mosquitto Integration Validation is in progress / Draft after adding a Paho MQTT client adapter, loopback validation profile, local simulated MQTT lamp and CI-safe tests.
+- Phase 12.3 real broker validation remains blocked by local Mosquitto setup on the current host; validation remains local-only when resumed: no ESP32 MQTT hardware, MQTT auth/TLS, retained state, subscriptions, retries, cloud broker or Dashboard MQTT UI.
+- Phase 12.4 - ESP32 MQTT Reference Node is blocked until explicitly opened.
 
 ## Stable Boundaries
 
@@ -268,6 +271,7 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 - Gemini real-provider validation passed in Phase 10.9 using `gemini-3.6-flash`, the full provider-neutral `AIActionPlan`, strict JarvisOS validation, confirmation flow and destructive refusal.
 - Gemini TLS and hostname verification remain enabled through the reviewed provider transport.
 - MQTT request/response support is experimental, fake-client validated and not a broker validation.
+- MQTT local broker validation is designed for loopback Mosquitto with a validation-only simulated lamp; it is not production MQTT or ESP32 MQTT validation.
 - MQTT topics are binding/config data and must not appear in DeviceCapability, Runtime API, Dashboard or AI context.
 - MQTT does not implement subscriptions, retained state, LWT, availability topics, credentials, retries or background state updates.
 - The Runtime API is optional, localhost-only, and submits canonical command text through the existing Runtime-owned adapter boundary.

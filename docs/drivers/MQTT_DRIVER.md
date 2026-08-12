@@ -2,7 +2,7 @@
 
 Status: Current / Experimental Request-Response Driver
 
-JarvisOS includes an experimental MQTT driver boundary for CI-safe request/response validation. It is not a broker deployment guide and does not require Mosquitto, ESP32 hardware, credentials, TLS, subscriptions, retained messages or asynchronous Runtime state events.
+JarvisOS includes an experimental MQTT driver boundary for CI-safe request/response validation and local broker validation. It is not a production broker deployment guide and does not require ESP32 hardware, credentials, TLS, subscriptions, retained messages or asynchronous Runtime state events.
 
 ## Boundary
 
@@ -106,12 +106,12 @@ No AI provider is invoked by MQTT driver execution.
 
 CI uses fake MQTT clients only. Tests cover request envelope generation, response validation, correlation mismatch, duplicate/late behavior, timeout, broker unavailable, publish failure, malformed response, oversized response, invalid topic config, shutdown, HTTP+MQTT coexistence, no retry and no direct Registry or State Store mutation by the driver.
 
+Phase 12.3 adds a manual/local integration gate using a foreground Mosquitto broker bound to `127.0.0.1`, a Paho-backed client adapter, and a validation-only simulated MQTT lamp. See [MQTT Local Broker Validation](MQTT_VALIDATION.md).
+
 ## Not Implemented
 
-Phase 12.2 does not implement:
+Phase 12.3 still does not implement:
 
-- Mosquitto setup;
-- real broker calls;
 - ESP32 firmware;
 - MQTT subscriptions;
 - retained messages;
@@ -123,4 +123,4 @@ Phase 12.2 does not implement:
 - MQTT API routes;
 - AI/provider changes.
 
-Phase 12.3 remains blocked until explicitly opened for real broker validation.
+Phase 12.4 remains blocked until explicitly opened for ESP32 MQTT reference node work.
