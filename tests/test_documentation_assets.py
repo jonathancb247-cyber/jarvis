@@ -133,6 +133,7 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Phase 12.3 is pending merge after real local Mosquitto validation", project_state)
         self.assertIn("validating a real loopback Mosquitto broker", project_state)
         self.assertIn("Phase 12.4 is blocked", project_state)
+        self.assertNotIn("real MQTT broker validation;", project_state)
         self.assertIn("80e83fc77534e96da74dc440942845f911ae47b4", project_state)
         self.assertIn("e374d30f2c28865c82fcb880f7079974ea1dfca4", project_state)
         self.assertIn("c3a6f78a72b9c08db550743cec6910934c44899d", project_state)
