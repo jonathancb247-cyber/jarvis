@@ -69,11 +69,15 @@ Do not use:
 Install Mosquitto from the official project distribution if it is not already
 available on the host.
 
-Run the broker in the foreground:
+Run the broker in the foreground when possible:
 
 ```powershell
 mosquitto -c tools\mosquitto-loopback.conf -v
 ```
+
+If the official Windows installer starts an existing Mosquitto service and it
+is already bound only to loopback, that local service is acceptable for this
+validation. Do not expose the broker to LAN/public interfaces.
 
 Start the simulated lamp in another terminal:
 
@@ -125,6 +129,12 @@ Manual validation should cover:
 - malformed response;
 - recovery after broker and simulator restart;
 - clean shutdown.
+
+Phase 12.3 was validated against Mosquitto 2.1.2 on loopback with
+`paho-mqtt==2.1.0`. The Windows service could not be stopped from the
+non-admin validation session, so broker stop/restart remains admin-blocked;
+normal broker operation, simulator failure/recovery, and broker-unavailable
+software paths were validated safely.
 
 JarvisOS must accept only an exact matching in-window response. There is no
 automatic mutation retry and no background recovery loop.
