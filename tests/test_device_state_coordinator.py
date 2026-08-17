@@ -4,6 +4,7 @@ from jarvis_core.device_state import DeviceStateCoordinator
 from jarvis_core.devices import Device, DeviceCapability, DeviceRegistry, DeviceState
 from jarvis_core.drivers import (
     DRIVER_UNAVAILABLE,
+    REQUEST_TIMEOUT,
     DriverResult,
     SimulatedDriver,
 )
@@ -148,6 +149,74 @@ class DeviceStateCoordinatorTests(unittest.TestCase):
         self.assertEqual({"enabled": False}, state.properties)
         self.assertIsNotNone(state.updated_at)
         self.assertEqual(1, len(registry.update_calls))
+
+    def test_failed_read_after_known_marks_state_stale_without_copying_error(self):
+        device = self.make_device()
+        device.state = DeviceState(
+            status="known",
+            properties={"enabled": True},
+            updated_at="2026-07-13T12:00:00+00:00",
+        )
+        registry = self.make_registry(device)
+        result = DriverResult(
+            False,
+            {"error": "raw", "url": "http://192.168.1.50"},
+            REQUEST_TIMEOUT,
+        )
+
+        state = DeviceStateCoordinator().coordinate(
+            device,
+            "temperature.read",
+            "read",
+            result,
+            registry,
+        )
+
+        self.assertEqual("stale", state.status)
+        self.assertEqual({"enabled": True}, state.properties)
+        self.assertIsNotNone(state.updated_at)
+        self.assertIs(registry.get(device.id).state, state)
+        self.assertEqual(1, len(registry.update_calls))
+        self.assertNotIn("error", state.properties)
+        self.assertNotIn("url", state.properties)
+
+    def test_failed_read_without_known_state_preserves_unknown(self):
+        device = self.make_device()
+        registry = self.make_registry(device)
+        original_state = device.state
+        result = DriverResult(False, {}, REQUEST_TIMEOUT)
+
+        state = DeviceStateCoordinator().coordinate(
+            device,
+            "temperature.read",
+            "read",
+            result,
+            registry,
+        )
+
+        self.assertIs(original_state, state)
+        self.assertEqual("unknown", state.status)
+        self.assertEqual(0, len(registry.update_calls))
+
+    def test_failed_apply_after_known_preserves_current_mutation_semantics(self):
+        device = self.make_device()
+        device.state = DeviceState(status="known", properties={"enabled": True})
+        registry = self.make_registry(device)
+        original_state = device.state
+        result = DriverResult(False, {}, REQUEST_TIMEOUT)
+
+        state = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            result,
+            registry,
+        )
+
+        self.assertIs(original_state, state)
+        self.assertEqual("known", state.status)
+        self.assertEqual({"enabled": True}, state.properties)
+        self.assertEqual(0, len(registry.update_calls))
 
     def test_driver_does_not_modify_device_state(self):
         device = self.make_device()

@@ -53,6 +53,13 @@ class DeviceStateCoordinator:
                     status="unavailable",
                     properties=device.state.properties.copy(),
                 )
+            if operation == "read" and device.state.status == "known":
+                return self._update_state(
+                    device,
+                    registry,
+                    status="stale",
+                    properties=device.state.properties.copy(),
+                )
             return device.state
 
         approved_observations = self._approved_observations(

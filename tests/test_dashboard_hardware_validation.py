@@ -151,10 +151,31 @@ class DashboardHardwareValidationFlowTests(unittest.TestCase):
                 self.assertFalse(failure_result["success"])
                 self.assertEqual(failure_result["error"], "device_execution_failed")
                 self.assertEqual(preserved_response.status, 200)
-                self.assertEqual(preserved_state["status"], "known")
+                self.assertEqual(preserved_state["status"], "stale")
+                self.assertFalse(preserved_state["is_current"])
                 self.assertEqual(preserved_state["semantic_properties"], {"power": False})
                 self.assertNotIn("TimeoutError", str(failure_result))
                 self.assertNotIn("http://", str(failure_result))
+
+                restored_transport.fail = False
+                recovery_response = restored_adapter.handle_request(
+                    "POST",
+                    "/api/v1/commands",
+                    {"Content-Type": "application/json"},
+                    json.dumps({"input": "device read lamp_1 status.read"}).encode(
+                        "utf-8"
+                    ),
+                )
+                recovered_response = restored_adapter.handle_request(
+                    "GET",
+                    "/api/v1/devices/lamp_1/state",
+                )
+                recovered_state = recovered_response.body
+                self.assertEqual(recovery_response.status, 200)
+                self.assertTrue(recovery_response.body["success"])
+                self.assertEqual(recovered_state["status"], "known")
+                self.assertTrue(recovered_state["is_current"])
+                self.assertEqual(recovered_state["semantic_properties"], {"power": False})
             finally:
                 restored_runtime.shutdown()
 

@@ -307,6 +307,21 @@ class DeviceCommandRouterTests(unittest.TestCase):
         self.assertFalse(result.success)
         self.assertEqual(SIMULATED_TIMEOUT_ERROR, result.error)
 
+    def test_failed_read_after_known_returns_stale_state(self):
+        driver = RecordingDriver()
+        driver.simulate_timeout("read", "temperature.read")
+        router, registry, _, device = self.make_router(driver=driver)
+        device.state = DeviceState(status="known", properties={"enabled": True})
+
+        result = router.route(self.command("temperature.read", "read"))
+
+        self.assertFalse(result.success)
+        self.assertEqual(SIMULATED_TIMEOUT_ERROR, result.error)
+        self.assertEqual("stale", result.state.status)
+        self.assertEqual({"enabled": True}, result.state.properties)
+        self.assertEqual("stale", registry.get(device.id).state.status)
+        self.assertEqual(1, len(registry.update_calls))
+
     def test_state_update_failure_returns_safe_error(self):
         router, _, _, _ = self.make_router(coordinator=BrokenStateCoordinator())
 

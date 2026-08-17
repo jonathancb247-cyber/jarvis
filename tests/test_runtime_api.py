@@ -150,6 +150,44 @@ class RuntimeApiCommandTests(unittest.TestCase):
         self.assertNotIn("http://", str(response.body))
         self.assertNotIn("TimeoutError", str(response.body))
 
+    def test_failed_read_after_known_projects_stale_not_current(self):
+        with runtime_fixture(success=True) as fixture:
+            read_response = fixture.adapter.handle_request(
+                "POST",
+                "/api/v1/commands",
+                {"Content-Type": "application/json"},
+                json.dumps({"input": "device read lamp_1 status.read"}).encode("utf-8"),
+            )
+            known_response = fixture.adapter.handle_request(
+                "GET",
+                "/api/v1/devices/lamp_1/state",
+            )
+
+            fixture.transport.success = False
+            failure_response = fixture.adapter.handle_request(
+                "POST",
+                "/api/v1/commands",
+                {"Content-Type": "application/json"},
+                json.dumps({"input": "device read lamp_1 status.read"}).encode("utf-8"),
+            )
+            stale_response = fixture.adapter.handle_request(
+                "GET",
+                "/api/v1/devices/lamp_1/state",
+            )
+
+        self.assertEqual(read_response.status, 200)
+        self.assertTrue(read_response.body["success"])
+        self.assertEqual(known_response.body["status"], "known")
+        self.assertTrue(known_response.body["is_current"])
+        self.assertEqual(failure_response.status, 400)
+        self.assertFalse(failure_response.body["success"])
+        self.assertEqual(failure_response.body["error"], "device_execution_failed")
+        self.assertEqual(stale_response.body["status"], "stale")
+        self.assertFalse(stale_response.body["is_current"])
+        self.assertEqual(stale_response.body["semantic_properties"], {"power": True})
+        self.assertNotIn("TimeoutError", str(failure_response.body))
+        self.assertNotIn("http://", str(failure_response.body))
+
     def test_request_validation_rejects_unsafe_commands(self):
         unsafe_inputs = [
             "device list\ndevice list",
