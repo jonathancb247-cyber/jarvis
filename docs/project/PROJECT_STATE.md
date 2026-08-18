@@ -28,6 +28,11 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - MQTT Driver is Current / Experimental: synchronous request/response only with fake-client CI validation, per-device HTTP/MQTT composition, and Runtime shutdown ownership verified.
 - Phase 12.3 is completed: Local Mosquitto Integration Validation merged in PR #45.
 - Phase 12.4 is blocked until explicitly opened for ESP32 MQTT reference node work.
+- Voice Phase 1 is completed: Voice Experience Benchmark Harness - Fake Providers Only merged in PR #49.
+- Voice Phase 1 merge commit: `1b4c6f7821900a55681087ffe8c591fd92b3f6c3`.
+- Voice Phase 1 validation: 560 tests passing and default CLI smoke passed.
+- Voice Phase 1 is fake-only: deterministic benchmark scenarios, fake STT/TTS providers, simulated metrics, and no real microphone, speaker, provider, network, cloud, hardware, Runtime/Driver execution path, persistent Conversation Session, or Second Brain.
+- Voice Phase 1 does not provide real voice capability, real latency measurements, or provider compatibility.
 - Current snapshot commit: `871f5f02cdac5f00741534d3f87e2a799d060417`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -140,6 +145,15 @@ Independent transport line:
 - Phase 12.3 validation remains local only: no ESP32 MQTT hardware, MQTT auth/TLS, retained state, subscriptions, retries, cloud broker or Dashboard MQTT UI.
 - Phase 12.4 - ESP32 MQTT Reference Node is blocked until explicitly opened.
 
+Independent voice line:
+
+- Voice Phase 1 - Voice Experience Benchmark Harness: Fake Providers Only is completed after PR #49 merge.
+- Voice Phase 1 merge commit: `1b4c6f7821900a55681087ffe8c591fd92b3f6c3`.
+- Voice Phase 1 implementation commit: `44b63731bc7d05931c0d6f2c47d33a180b439262`.
+- Voice Phase 1 validation: 560 tests passing and default CLI smoke passed.
+- Voice Phase 1 provides deterministic fake/scripted STT and TTS providers, minimal Turn Manager and in-memory Conversation Session behavior, fake intent/confirmation outcomes, simulated metrics, compact reports and safety-invariant tests.
+- Voice Phase 1 does not provide real voice capability, real audio I/O, real STT/TTS provider compatibility, real-world latency measurements, wake-word behavior, AEC, realtime voice, hardware validation, Runtime/Driver execution, persistent Conversation Session, Second Brain, network, cloud, credentials or provider calls.
+
 ## Stable Boundaries
 
 Stable project rules:
@@ -183,6 +197,11 @@ Current experimental areas:
 - MQTT request/response driver boundary.
 - MQTT profile binding model.
 - MQTT fake-client validation workflow.
+- Voice Experience Benchmark Harness.
+- Fake STT/TTS providers.
+- Minimal fake Turn Manager.
+- In-memory fake Conversation Session.
+- Simulated voice benchmark metrics.
 
 ## Current Transports
 
