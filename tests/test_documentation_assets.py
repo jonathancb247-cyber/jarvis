@@ -18,6 +18,7 @@ REQUIRED_FILES = [
     "docs/dashboard/USAGE.md",
     "docs/dashboard/SECURITY.md",
     "docs/dashboard/HARDWARE_VALIDATION.md",
+    "docs/design/VOICE_BENCHMARK.md",
     "docs/drivers/MQTT_DRIVER.md",
     "docs/drivers/MQTT_VALIDATION.md",
     "docs/ai/README.md",
