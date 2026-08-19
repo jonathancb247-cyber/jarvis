@@ -33,7 +33,13 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Voice Phase 1 validation: 560 tests passing and default CLI smoke passed.
 - Voice Phase 1 is fake-only: deterministic benchmark scenarios, fake STT/TTS providers, simulated metrics, and no real microphone, speaker, provider, network, cloud, hardware, Runtime/Driver execution path, persistent Conversation Session, or Second Brain.
 - Voice Phase 1 does not provide real voice capability, real latency measurements, or provider compatibility.
-- Current snapshot commit: `871f5f02cdac5f00741534d3f87e2a799d060417`.
+- Voice Phase 2A is completed: STT/TTS Provider Bake-Off Foundation merged in PR #51.
+- Voice Phase 2A merge commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
+- Voice Phase 2A implementation commit: `1f41b75aa053f7242731a568e661d4411ffbbf1f`.
+- Voice Phase 2A validation: 581 tests passing and default CLI smoke passed.
+- Voice Phase 2A provides provider-neutral STT/TTS evaluation contracts, synthetic/text-only fixture taxonomy, mock provider paths, normalized failure categories, a bake-off report model and synthetic/test metrics only.
+- Voice Phase 2A does not validate real STT compatibility, real TTS compatibility, real provider latency, naturalness, real prerecorded-audio STT, real file-output TTS, microphones, speakers, credentials, network, cloud, hardware or Runtime/API/Dashboard/Driver/AI behavior.
+- Current snapshot commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
 - Full test suite after Phase 10.3: 444 tests passing.
@@ -153,6 +159,12 @@ Independent voice line:
 - Voice Phase 1 validation: 560 tests passing and default CLI smoke passed.
 - Voice Phase 1 provides deterministic fake/scripted STT and TTS providers, minimal Turn Manager and in-memory Conversation Session behavior, fake intent/confirmation outcomes, simulated metrics, compact reports and safety-invariant tests.
 - Voice Phase 1 does not provide real voice capability, real audio I/O, real STT/TTS provider compatibility, real-world latency measurements, wake-word behavior, AEC, realtime voice, hardware validation, Runtime/Driver execution, persistent Conversation Session, Second Brain, network, cloud, credentials or provider calls.
+- Voice Phase 2A - STT/TTS Provider Bake-Off Foundation is completed after PR #51 merge.
+- Voice Phase 2A merge commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
+- Voice Phase 2A implementation commit: `1f41b75aa053f7242731a568e661d4411ffbbf1f`.
+- Voice Phase 2A validation: 581 tests passing and default CLI smoke passed.
+- Voice Phase 2A provides provider-neutral STT/TTS evaluation contracts, synthetic/text-only fixture taxonomy, mock/fake provider paths, normalized failure categories, a bake-off report model and synthetic/test metrics only.
+- Voice Phase 2A does not provide or validate real STT compatibility, real TTS compatibility, real provider latency, naturalness, real prerecorded-audio STT, real file-output TTS, microphone access, speaker output, network, cloud, credentials, hardware or Runtime/API/Dashboard/Driver/AI behavior.
 
 ## Stable Boundaries
 
