@@ -183,22 +183,38 @@ reports.
 
 ### TTS Candidate
 
-The initial TTS candidate is a Piper-style local/offline TTS executable.
+The initial TTS candidate is the maintained OHF Piper local/offline TTS
+package, installed outside the repository with `pip install piper-tts`.
+
+The archived standalone Windows Piper build is not the approved Phase 2B
+evaluation path unless the maintained package is proven unusable in the target
+environment.
 
 Piper evaluation is file-output only:
 
 ```text
 approved phrase fixture
--> Piper executable
+-> local Python executable
+-> python -m piper
 -> local WAV file
 -> WAV validity check
 -> provider-neutral result
 ```
 
-No speaker playback is performed by JarvisOS. Piper executable, voice/model path
-and output directory are local evaluation inputs. Large voice/model artifacts are
-not committed by default, and voice licensing must be reviewed before any
-redistribution.
+No speaker playback is performed by JarvisOS. Piper configuration is
+evaluation-local:
+
+- `PIPER_EXECUTABLE` points to the local virtual-environment Python executable
+  used to run `python -m piper`;
+- `PIPER_VOICE_MODEL` is the maintained Piper voice ID, such as
+  `es_MX-ald-medium`;
+- `PIPER_DATA_DIR` points to the local Piper voice data directory;
+- `PIPER_OUTPUT_DIR` optionally points to the ignored local output directory.
+
+The `es_MX-ald-medium` voice remains an evaluation candidate only, not a
+selected production JarvisOS voice. Large voice/model artifacts are not
+committed by default, no automatic model download occurs inside JarvisOS, and
+voice licensing must be reviewed before any redistribution.
 
 ### Local Fixture Policy
 
@@ -256,7 +272,7 @@ Real evaluation is triggered only through an explicit manual workflow such as:
 ```bash
 python tools/voice_provider_bakeoff.py groq-stt --audio voice-fixtures.local/sample.wav --expected "Jarvis, enciende la lampara de la sala."
 python tools/voice_provider_bakeoff.py groq-stt-compare --audio voice-fixtures.local/sample.wav --expected "Jarvis, enciende la lampara de la sala."
-python tools/voice_provider_bakeoff.py piper-tts --text "Listo." --piper <local-piper-path> --voice <local-voice-model-path>
+python tools/voice_provider_bakeoff.py piper-tts --text "Listo." --piper <local-python-path> --voice es_MX-ald-medium --data-dir <local-piper-data-dir>
 ```
 
 Without `GROQ_API_KEY`, local fixture audio or Piper installation, real

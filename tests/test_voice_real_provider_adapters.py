@@ -144,58 +144,107 @@ class GroqSTTAdapterTests(unittest.TestCase):
 
 
 class PiperTTSAdapterTests(unittest.TestCase):
-    def test_piper_subprocess_uses_structured_args_without_shell(self):
+    def test_piper_subprocess_uses_maintained_module_cli_without_shell(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            exe = Path(temp_dir) / "Piper Folder" / "piper.exe"
-            model = Path(temp_dir) / "Voice Folder" / "voice.onnx"
+            exe = Path(temp_dir) / "Local Python" / "python.exe"
+            data_dir = Path(temp_dir) / "Voice Data"
             output = Path(temp_dir) / "out.wav"
             exe.parent.mkdir()
-            model.parent.mkdir()
+            data_dir.mkdir()
             exe.write_text("", encoding="utf-8")
-            model.write_text("", encoding="utf-8")
 
             class Completed:
                 returncode = 0
 
             with patch("subprocess.run", return_value=Completed()) as run:
                 PiperTTSRunner().run(
-                    config=PiperTTSConfig(exe, model, Path(temp_dir)),
-                    text="Listo.",
+                    config=PiperTTSConfig(
+                        exe,
+                        "es_MX-ald-medium",
+                        data_dir,
+                        Path(temp_dir),
+                    ),
+                    text="Voy a encender la lámpara. ¿Confirmas?",
                     output_path=output,
                 )
 
         kwargs = run.call_args.kwargs
         args = run.call_args.args[0]
         self.assertIsInstance(args, list)
-        self.assertIn(str(exe), args)
-        self.assertIn(str(model), args)
+        self.assertEqual(
+            args,
+            [
+                str(exe),
+                "-m",
+                "piper",
+                "-m",
+                "es_MX-ald-medium",
+                "-f",
+                str(output),
+                "--data-dir",
+                str(data_dir),
+                "--",
+                "Voy a encender la lámpara. ¿Confirmas?",
+            ],
+        )
         self.assertFalse(kwargs["shell"])
+        self.assertNotIn("input", kwargs)
 
-    def test_piper_missing_executable_and_model_fail_safely(self):
+    def test_piper_missing_executable_data_dir_and_voice_fail_safely(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            provider = PiperTTSProvider(
+            missing_exe = PiperTTSProvider(
                 PiperTTSConfig(
                     Path(temp_dir) / "missing.exe",
-                    Path(temp_dir) / "missing.onnx",
+                    "es_MX-ald-medium",
+                    Path(temp_dir),
                     Path(temp_dir) / "out",
                 ),
                 runner=WritingPiperRunner(),
-            )
-            result = provider.evaluate_tts(_tts_fixture())
+            ).evaluate_tts(_tts_fixture())
+            exe = Path(temp_dir) / "python.exe"
+            exe.write_text("", encoding="utf-8")
+            missing_data_dir = PiperTTSProvider(
+                PiperTTSConfig(
+                    exe,
+                    "es_MX-ald-medium",
+                    Path(temp_dir) / "missing-data",
+                    Path(temp_dir) / "out",
+                ),
+                runner=WritingPiperRunner(),
+            ).evaluate_tts(_tts_fixture())
+            data_dir = Path(temp_dir) / "voices"
+            data_dir.mkdir()
+            missing_voice = PiperTTSProvider(
+                PiperTTSConfig(
+                    exe,
+                    "es_MX-ald-medium",
+                    data_dir,
+                    Path(temp_dir) / "out",
+                ),
+                runner=WritingPiperRunner(),
+            ).evaluate_tts(_tts_fixture())
 
-        self.assertEqual(result.failure.category, ProviderFailureCategory.UNAVAILABLE)
+        self.assertEqual(missing_exe.failure.category, ProviderFailureCategory.UNAVAILABLE)
+        self.assertEqual(missing_data_dir.failure.category, ProviderFailureCategory.INVALID_INPUT)
+        self.assertEqual(missing_voice.failure.category, ProviderFailureCategory.INVALID_INPUT)
 
     def test_piper_valid_wav_result_records_real_metrics(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            exe, model = _piper_files(temp_dir)
+            exe, data_dir = _piper_files(temp_dir)
             runner = WritingPiperRunner()
             provider = PiperTTSProvider(
-                PiperTTSConfig(exe, model, Path(temp_dir) / "voice output"),
+                PiperTTSConfig(
+                    exe,
+                    "es_MX-ald-medium",
+                    data_dir,
+                    Path(temp_dir) / "voice output",
+                ),
                 runner=runner,
             )
             result = provider.evaluate_tts(_tts_fixture("tts confirmation"))
 
         self.assertIsNone(result.failure)
+        self.assertEqual(result.provider.version_or_model, "es_MX-ald-medium")
         self.assertTrue(result.synthesized_output_reference.endswith("tts_confirmation.wav"))
         self.assertEqual(result.metrics["real_provider_values"], 1)
         self.assertEqual(result.metrics["wav_valid"], 1)
@@ -204,13 +253,23 @@ class PiperTTSAdapterTests(unittest.TestCase):
 
     def test_piper_invalid_wav_and_synthesis_failure_are_normalized(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            exe, model = _piper_files(temp_dir)
+            exe, data_dir = _piper_files(temp_dir)
             invalid = PiperTTSProvider(
-                PiperTTSConfig(exe, model, Path(temp_dir) / "out-invalid"),
+                PiperTTSConfig(
+                    exe,
+                    "es_MX-ald-medium",
+                    data_dir,
+                    Path(temp_dir) / "out-invalid",
+                ),
                 runner=WritingPiperRunner(write_valid_wav=False),
             ).evaluate_tts(_tts_fixture())
             failed = PiperTTSProvider(
-                PiperTTSConfig(exe, model, Path(temp_dir) / "out-failed"),
+                PiperTTSConfig(
+                    exe,
+                    "es_MX-ald-medium",
+                    data_dir,
+                    Path(temp_dir) / "out-failed",
+                ),
                 runner=WritingPiperRunner(returncode=2),
             ).evaluate_tts(_tts_fixture())
 
@@ -245,11 +304,14 @@ def _audio_fixture(temp_dir):
 
 
 def _piper_files(temp_dir):
-    exe = Path(temp_dir) / "piper.exe"
-    model = Path(temp_dir) / "voice.onnx"
+    exe = Path(temp_dir) / "Local Python" / "python.exe"
+    data_dir = Path(temp_dir) / "Voice Data"
+    exe.parent.mkdir()
+    data_dir.mkdir()
     exe.write_text("", encoding="utf-8")
-    model.write_text("", encoding="utf-8")
-    return exe, model
+    (data_dir / "es_MX-ald-medium.onnx").write_text("", encoding="utf-8")
+    (data_dir / "es_MX-ald-medium.onnx.json").write_text("", encoding="utf-8")
+    return exe, data_dir
 
 
 def _write_wav(path):

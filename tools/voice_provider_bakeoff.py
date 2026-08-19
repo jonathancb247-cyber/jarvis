@@ -52,6 +52,7 @@ def main() -> int:
     piper.add_argument("--fixture-id", default="local_tts_fixture")
     piper.add_argument("--piper", default=os.environ.get("PIPER_EXECUTABLE", ""))
     piper.add_argument("--voice", default=os.environ.get("PIPER_VOICE_MODEL", ""))
+    piper.add_argument("--data-dir", default=os.environ.get("PIPER_DATA_DIR", ""))
     piper.add_argument("--output-dir", default=os.environ.get("PIPER_OUTPUT_DIR", "voice-output.local"))
 
     args = parser.parse_args()
@@ -60,7 +61,14 @@ def main() -> int:
     elif args.command == "groq-stt-compare":
         report = _groq_report(args.audio, args.expected, args.fixture_id, GROQ_STT_MODELS)
     else:
-        report = _piper_report(args.text, args.fixture_id, args.piper, args.voice, args.output_dir)
+        report = _piper_report(
+            args.text,
+            args.fixture_id,
+            args.piper,
+            args.voice,
+            args.data_dir,
+            args.output_dir,
+        )
 
     if validate_no_secret_markers(report):
         raise SystemExit("report_contains_secret_marker")
@@ -104,6 +112,7 @@ def _piper_report(
     fixture_id: str,
     executable: str,
     voice: str,
+    data_dir: str,
     output_dir: str,
 ) -> ProviderBakeOffReport:
     fixture = TTSPhraseFixture(
@@ -117,7 +126,8 @@ def _piper_report(
     provider = PiperTTSProvider(
         PiperTTSConfig(
             executable_path=Path(executable),
-            voice_model_path=Path(voice),
+            voice_model_id=voice,
+            data_dir=Path(data_dir),
             output_dir=Path(output_dir),
         )
     )

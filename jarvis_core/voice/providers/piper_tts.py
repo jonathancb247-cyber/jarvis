@@ -24,13 +24,16 @@ from ..provider_contracts import (
 @dataclass(frozen=True)
 class PiperTTSConfig:
     executable_path: Path
-    voice_model_path: Path
+    voice_model_id: str
+    data_dir: Path
     output_dir: Path
     timeout_seconds: int = 30
 
     def __post_init__(self) -> None:
         if self.timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be positive")
+        if not self.voice_model_id.strip():
+            raise ValueError("voice_model_id is required")
 
 
 @dataclass(frozen=True)
@@ -51,13 +54,17 @@ class PiperTTSRunner:
         completed = subprocess.run(
             [
                 str(config.executable_path),
-                "--model",
-                str(config.voice_model_path),
-                "--output_file",
+                "-m",
+                "piper",
+                "-m",
+                config.voice_model_id,
+                "-f",
                 str(output_path),
+                "--data-dir",
+                str(config.data_dir),
+                "--",
+                text,
             ],
-            input=text,
-            text=True,
             capture_output=True,
             timeout=config.timeout_seconds,
             check=False,
@@ -77,7 +84,7 @@ class PiperTTSProvider:
             "piper",
             "tts",
             ProviderDeployment.LOCAL,
-            self.config.voice_model_path.name,
+            self.config.voice_model_id,
         )
 
     @property
@@ -161,7 +168,11 @@ class PiperTTSProvider:
             return _failure(ProviderFailureCategory.INVALID_INPUT)
         if not self.config.executable_path.is_file():
             return _failure(ProviderFailureCategory.UNAVAILABLE)
-        if not self.config.voice_model_path.is_file():
+        if not self.config.data_dir.is_dir():
+            return _failure(ProviderFailureCategory.INVALID_INPUT)
+        model_path = self.config.data_dir / f"{self.config.voice_model_id}.onnx"
+        config_path = self.config.data_dir / f"{self.config.voice_model_id}.onnx.json"
+        if not model_path.is_file() or not config_path.is_file():
             return _failure(ProviderFailureCategory.INVALID_INPUT)
         return None
 
