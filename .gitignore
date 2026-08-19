@@ -1,4 +1,6 @@
 profiles/*.local.json
 state/
 *.state.json
+voice-fixtures.local/
+voice-output.local/
 
