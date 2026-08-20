@@ -206,7 +206,7 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("127.0.0.1", dashboard_security)
         self.assertIn("no external CDN", dashboard_security)
 
-    def test_ai_documentation_states_fake_only_boundary(self):
+    def test_ai_documentation_states_ai_boundary(self):
         ai_readme = (REPO_ROOT / "docs" / "ai" / "README.md").read_text(
             encoding="utf-8"
         )
@@ -214,7 +214,10 @@ class DocumentationAssetsTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn("Fake Adapter plus Unvalidated Gemini Provider", ai_readme)
+        self.assertIn("Fake Adapter plus Validated Gemini Provider", ai_readme)
+        self.assertIn("real-provider validation with `gemini-3.6-flash`", ai_readme)
+        self.assertIn("production-approved AI providers", ai_readme)
+        self.assertIn("automatic provider fallback", ai_readme)
         self.assertIn("no network", fake_adapter)
         self.assertIn("no credentials", fake_adapter)
         self.assertIn("not registered in the default runtime", fake_adapter)
@@ -227,6 +230,11 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("GEMINI_API_KEY", gemini_provider)
         self.assertIn("GEMINI_AI_VALIDATION_REQUIRED", gemini_validation)
         self.assertIn("No Gemini-specific DTO exists", gemini_provider)
+        self.assertIn("Experimental / Real-Provider Validated", gemini_provider)
+        self.assertIn("Phase 10.9 completed real-provider validation", gemini_provider)
+        self.assertIn("permanently selected", gemini_validation)
+        self.assertNotIn("Status: Experimental / Not Real-Validated", gemini_provider)
+        self.assertNotIn("Phase 10.9 does not perform a real Gemini call", gemini_provider)
 
     def test_documentation_does_not_include_personal_validation_ip(self):
         forbidden = "10.255.108.33"
