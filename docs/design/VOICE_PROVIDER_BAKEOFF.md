@@ -151,7 +151,7 @@ Runtime, DeviceState, Conversation Session and benchmark reports.
 
 ## Future Phase 2B Real-Provider Evaluation
 
-A later explicit phase may add opt-in real-provider evaluation using:
+Voice Phase 2B may add opt-in real-provider evaluation using:
 
 - prerecorded/local audio fixtures;
 - file-output TTS results;
@@ -161,6 +161,133 @@ A later explicit phase may add opt-in real-provider evaluation using:
 
 Phase 2B must still avoid live microphone/speaker integration unless separately
 authorized.
+
+Phase 2B is a provider evaluation phase, not provider selection. Valid
+recommendations remain: continue, promising, poor fit or defer.
+
+### STT Candidates
+
+The initial STT candidates are Groq Speech-to-Text models:
+
+- `whisper-large-v3-turbo`;
+- `whisper-large-v3`.
+
+Both models must use the same provider adapter and fixture path. JarvisOS must
+collect its own transcript, latency and accuracy results; provider-published
+quality numbers are not JarvisOS benchmark evidence.
+
+Groq credentials must be read only from `GROQ_API_KEY` in the active process
+environment. The key must never be committed, logged, printed, persisted, stored
+in RuntimeProfile, included in State Store, sent to AI context or included in
+reports.
+
+### TTS Candidate
+
+The initial TTS candidate is the maintained OHF Piper local/offline TTS
+package, installed outside the repository with `pip install piper-tts`.
+
+The archived standalone Windows Piper build is not the approved Phase 2B
+evaluation path unless the maintained package is proven unusable in the target
+environment.
+
+Piper evaluation is file-output only:
+
+```text
+approved phrase fixture
+-> local Python executable
+-> python -m piper
+-> local WAV file
+-> WAV validity check
+-> provider-neutral result
+```
+
+No speaker playback is performed by JarvisOS. Piper configuration is
+evaluation-local:
+
+- `PIPER_EXECUTABLE` points to the local virtual-environment Python executable
+  used to run `python -m piper`;
+- `PIPER_VOICE_MODEL` is the maintained Piper voice ID, such as
+  `es_MX-ald-medium`;
+- `PIPER_DATA_DIR` points to the local Piper voice data directory;
+- `PIPER_OUTPUT_DIR` optionally points to the ignored local output directory.
+
+The `es_MX-ald-medium` voice remains an evaluation candidate only, not a
+selected production JarvisOS voice. Large voice/model artifacts are not
+committed by default, no automatic model download occurs inside JarvisOS, and
+voice licensing must be reviewed before any redistribution.
+
+### Local Fixture Policy
+
+Local audio fixtures should live in an ignored directory such as:
+
+```text
+voice-fixtures.local/
+```
+
+Generated TTS output should live in an ignored directory such as:
+
+```text
+voice-output.local/
+```
+
+Private/user recordings are not committed by default. Reports should identify
+fixtures through stable fixture IDs rather than sensitive full paths. Fixtures
+must not include incidental conversations, credentials or unrelated private
+audio.
+
+### Real Metrics
+
+STT real-provider metrics may include:
+
+- final transcript;
+- word error rate or equivalent;
+- technical-term accuracy;
+- code-switch handling;
+- provider/file-pipeline latency;
+- normalized failure category;
+- provider/model identity.
+
+TTS real-provider metrics may include:
+
+- synthesis invocation latency;
+- total file-pipeline synthesis time;
+- output file creation success;
+- WAV validity;
+- generated audio duration;
+- normalized failure category;
+- provider/voice identity.
+
+These timings are provider/file-pipeline timings. They are not live
+conversational latency, endpointing latency or user-perceived voice UX latency.
+
+Human naturalness, fatigue, pronunciation and pacing/prosody ratings remain
+manual fields. They must not be fabricated.
+
+### Opt-In Execution
+
+Real provider evaluation must not run during default `python -m unittest`.
+
+Real evaluation is triggered only through an explicit manual workflow such as:
+
+```bash
+python tools/voice_provider_bakeoff.py groq-stt --audio voice-fixtures.local/sample.wav --expected "Jarvis, enciende la lampara de la sala."
+python tools/voice_provider_bakeoff.py groq-stt-compare --audio voice-fixtures.local/sample.wav --expected "Jarvis, enciende la lampara de la sala."
+python tools/voice_provider_bakeoff.py piper-tts --text "Listo." --piper <local-python-path> --voice es_MX-ald-medium --data-dir <local-piper-data-dir>
+```
+
+Without `GROQ_API_KEY`, local fixture audio or Piper installation, real
+evaluation must fail safely or skip in integration workflows. Default unit tests
+remain deterministic and offline-safe.
+
+### Real Versus Synthetic Reports
+
+Provider reports must identify whether they contain:
+
+- `synthetic_mock`;
+- `real_provider`.
+
+Mock metrics must never be mistaken for provider measurements. Real
+file-pipeline metrics must never be described as live voice UX latency.
 
 ## Non-Claims
 
@@ -173,3 +300,8 @@ Voice Phase 2A does not prove:
 - real privacy behavior of any vendor;
 - provider compatibility;
 - production readiness.
+
+Voice Phase 2B still does not prove live voice readiness. It does not include
+microphones, speakers, wake word, VAD, AEC, audio ducking, realtime
+speech-to-speech, Runtime execution, Dashboard integration, hardware validation,
+permanent provider selection or production readiness.

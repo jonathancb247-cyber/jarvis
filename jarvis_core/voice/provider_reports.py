@@ -22,6 +22,11 @@ class ProviderRecommendation(str, Enum):
     DEFER = "defer"
 
 
+class EvaluationMode(str, Enum):
+    SYNTHETIC_MOCK = "synthetic_mock"
+    REAL_PROVIDER = "real_provider"
+
+
 @dataclass(frozen=True)
 class ProviderBakeOffReport:
     provider: ProviderIdentity
@@ -64,6 +69,11 @@ class ProviderBakeOffReport:
             "provider_mode": self.provider.mode,
             "version_or_model": self.provider.version_or_model,
             "local_or_cloud": self.provider.deployment.value,
+            "evaluation_mode": (
+                EvaluationMode.SYNTHETIC_MOCK.value
+                if self.synthetic_only
+                else EvaluationMode.REAL_PROVIDER.value
+            ),
             "capability_summary": self.capability_summary(),
             "fixture_set": self.fixture_set,
             "stt_metrics": [_stt_result_dict(result) for result in self.stt_results],
@@ -96,7 +106,8 @@ def _stt_result_dict(result: STTEvaluationResult) -> dict[str, object]:
         "partial_latency_ms": result.partial_latency_ms,
         "failure": result.failure.category.value if result.failure else None,
         "metrics": dict(result.metrics),
-        "synthetic_test_values": True,
+        "synthetic_test_values": "synthetic_test_values" in result.metrics,
+        "real_provider_values": "real_provider_values" in result.metrics,
     }
 
 
@@ -108,7 +119,8 @@ def _tts_result_dict(result: TTSEvaluationResult) -> dict[str, object]:
         "total_synthesis_ms": result.total_synthesis_ms,
         "failure": result.failure.category.value if result.failure else None,
         "metrics": dict(result.metrics),
-        "synthetic_test_values": True,
+        "synthetic_test_values": "synthetic_test_values" in result.metrics,
+        "real_provider_values": "real_provider_values" in result.metrics,
     }
 
 
