@@ -61,10 +61,12 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Dashboard is localhost-only, API-backed, responsive, and built with vanilla HTML/CSS/JavaScript.
 - Dashboard uses capability-driven controls from formal API capabilities.
 - Dashboard has no external frontend dependencies, AI chat, auth, LAN access, WebSocket, SSE or async Runtime.
-- Phase 11.4 - Profile-based Hardware Dashboard Validation is completed for the PR validation scope and pending merge.
-- Phase 11.4 PR snapshot: automated fake-transport validation is covered by tests; real hardware Dashboard validation passed; physical LED on/off, disconnect/reconnect, persistence/restart, stale-to-known recovery and visual desktop acceptance were confirmed manually.
-- Phase 11.4 observed a temporary Dashboard `Loading` state while the ESP32 was unreachable; recovery after reconnect occurred automatically without Runtime/API/Dashboard crash. This is recorded as a non-blocking UX observation.
-- Full test suite for the Phase 11.4 PR snapshot: 473 tests passing.
+- Phase 11.4 - Profile-based Hardware Dashboard Validation is completed.
+- Phase 11.4 final validation: ESP32 HTTP Dashboard path physically validated after PR #48 freshness fix merge; real read produced `known/current`, physical disconnect plus explicit read produced `stale/not current` with prior semantic properties preserved, and reconnect plus explicit read restored `known/current`.
+- Phase 11.4 DeviceState freshness evidence: `power=false` was preserved during the failed disconnected read; no public transport URL, IP, socket, exception or driver details leaked into semantic properties or API/Dashboard responses.
+- Phase 11.4 scope boundary: explicit `status.read` refreshes physical freshness in the current implementation. Dashboard auto-refresh refreshes projected Runtime API state only and does not imply hardware polling, heartbeat, automatic offline detection, MQTT availability monitoring or automatic discovery.
+- Phase 11.4 validation notes: `stale` is not `unavailable`; `stale` means prior semantic state exists but is not confirmed current. The HTTP ESP32 path remains experimental and is not production-secure transport.
+- Full test suite after PR #48 merge and Phase 11.4 closure: 595 tests passing.
 - Phase 11.5 remains blocked.
 - Current closing commit for Epic 9: `c3a6f78a72b9c08db550743cec6910934c44899d`.
 - Full test suite at Epic 9 close: 420 tests passing.
@@ -132,10 +134,10 @@ Independent product line:
 - Epic 11 - Runtime API and Dashboard is in progress.
 - Phase 11.2 - Local Runtime API is completed.
 - Phase 11.3 - Minimal Local Dashboard is completed.
-- Phase 11.4 - Profile-based Hardware Dashboard Validation is completed for PR validation scope and pending merge.
+- Phase 11.4 - Profile-based Hardware Dashboard Validation is completed after physical ESP32 HTTP freshness validation.
 - Phase 11.5 remains blocked.
 - Epic 10 remains unchanged.
-- Epic 11 status: In progress - Local Runtime API and Minimal Dashboard implemented; hardware Dashboard validation completed for PR scope and pending merge.
+- Epic 11 status: In progress - Local Runtime API and Minimal Dashboard implemented; hardware Dashboard validation completed with physical ESP32 HTTP freshness evidence.
 
 Independent transport line:
 
