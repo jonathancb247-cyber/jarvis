@@ -1,6 +1,6 @@
 # Gemini Provider
 
-Status: Experimental / Not Real-Validated
+Status: Experimental / Real-Provider Validated
 
 Phase 10.9 adds an optional Gemini cloud provider behind the existing AI
 Adapter boundary. It is not wired into the default Runtime, Runtime API or
@@ -20,9 +20,11 @@ documentation before coding:
 - Output cap: `generation_config.max_output_tokens`.
 - First validation model: `gemini-3.6-flash`.
 
-The model allowlist is intentionally narrow and must be reverified before real
-manual validation. Free-tier limits are account, project, tier and model
-dependent and must not be treated as product guarantees.
+The model allowlist is intentionally narrow. `gemini-3.6-flash` passed the
+Phase 10.9 real-provider validation gate, but current model availability,
+lifecycle status and account quota must still be reverified before future real
+validation. Free-tier limits are account, project, tier and model dependent and
+must not be treated as product guarantees.
 
 ## Boundary
 
@@ -123,7 +125,7 @@ discovery candidates, trust internals or persistent conversation history.
 
 ## Entry Point
 
-Future manual validation uses:
+The Phase 10.9 manual validation used:
 
 ```powershell
 $env:GEMINI_API_KEY = "<loaded locally>"
@@ -137,5 +139,20 @@ The API key is never accepted as a command-line argument.
 
 ## Current Status
 
-Phase 10.9 does not perform a real Gemini call. Real validation remains gated by
-`GEMINI_AI_VALIDATION_REQUIRED`.
+Phase 10.9 completed real-provider validation for the optional Gemini provider
+using `gemini-3.6-flash`.
+
+Validated evidence included:
+
+- authenticated Gemini access;
+- full provider-neutral `AIActionPlan` structured output;
+- strict JarvisOS validation after provider decoding;
+- read plan validation;
+- confirmed power on/off mutation plans;
+- ambiguous request handling;
+- destructive request refusal.
+
+This validation is experimental evidence, not permanent provider selection or a
+production-readiness claim. Gemini remains opt-in through the AI-cloud entry
+point, is not wired into the default Runtime, Runtime API or Dashboard, and does
+not introduce automatic fallback.

@@ -1,9 +1,11 @@
 # Gemini Manual Validation
 
-Status: Experimental / Manual Gate Required
+Status: Experimental / Manual Gate Completed for Phase 10.9
 
-This document defines the future manual validation gate for the optional Gemini
-provider. Do not run these steps until explicitly authorized.
+This document records the manual validation gate for the optional Gemini
+provider. Phase 10.9 subsequently completed this gate with `gemini-3.6-flash`.
+The procedure remains useful for future revalidation, model changes or account
+quota checks, but it must not be run again unless explicitly authorized.
 
 ## Marker
 
@@ -11,9 +13,12 @@ provider. Do not run these steps until explicitly authorized.
 GEMINI_AI_VALIDATION_REQUIRED
 ```
 
+Phase 10.9 no longer has this marker outstanding. Future Gemini model changes,
+quota changes or provider regressions may reopen an equivalent manual gate.
+
 ## Preconditions
 
-- PR for Phase 10.9 is reviewed.
+- The Gemini provider implementation is reviewed.
 - Current model availability is verified in the user's Google AI Studio project.
 - The selected model supports structured output for JSON responses.
 - The local profile exists and is ignored by Git:
@@ -103,5 +108,11 @@ Verify only that the variable is absent.
 
 ## Acceptance
 
-Gemini is not considered validated until all five requests pass the manual gate
-without weakening `AIActionPlan` validation or changing Runtime ownership.
+For Phase 10.9, Gemini was considered experimentally validated after all five
+requests passed the manual gate without weakening `AIActionPlan` validation or
+changing Runtime ownership.
+
+This does not mean Gemini is the default provider, production-approved,
+permanently selected, or safe for automatic fallback. Real-provider validation
+does not replace JarvisOS structural, semantic, policy, confirmation, Planner
+or Runtime validation.
