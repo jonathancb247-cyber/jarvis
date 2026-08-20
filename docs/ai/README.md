@@ -71,3 +71,4 @@ mutates `DeviceRegistry`, writes State Store, or bypasses Runtime.
 - [Fake AI Adapter](FAKE_AI_ADAPTER.md)
 - [Gemini Provider](GEMINI_PROVIDER.md)
 - [Gemini Validation](GEMINI_VALIDATION.md)
+- [AI Provider Strategy](../design/AI_PROVIDER_STRATEGY.md)

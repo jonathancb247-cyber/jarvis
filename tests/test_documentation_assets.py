@@ -20,6 +20,7 @@ REQUIRED_FILES = [
     "docs/dashboard/HARDWARE_VALIDATION.md",
     "docs/design/VOICE_BENCHMARK.md",
     "docs/design/VOICE_PROVIDER_BAKEOFF.md",
+    "docs/design/AI_PROVIDER_STRATEGY.md",
     "docs/drivers/MQTT_DRIVER.md",
     "docs/drivers/MQTT_VALIDATION.md",
     "docs/ai/README.md",
@@ -235,6 +236,27 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("permanently selected", gemini_validation)
         self.assertNotIn("Status: Experimental / Not Real-Validated", gemini_provider)
         self.assertNotIn("Phase 10.9 does not perform a real Gemini call", gemini_provider)
+
+    def test_ai_provider_strategy_documents_current_provider_lanes(self):
+        ai_readme = (REPO_ROOT / "docs" / "ai" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        strategy = (
+            REPO_ROOT / "docs" / "design" / "AI_PROVIDER_STRATEGY.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("../design/AI_PROVIDER_STRATEGY.md", ai_readme)
+        self.assertIn("Structured Planning Provider", strategy)
+        self.assertIn("Local Essential AI", strategy)
+        self.assertIn("Voice / STT / Realtime Provider Lane", strategy)
+        self.assertIn("PR #38 classification: REFERENCE / REDESIGN.", strategy)
+        self.assertIn(
+            "PR #39 classification: RESEARCH / DO NOT MERGE AS VALIDATED PROVIDER.",
+            strategy,
+        )
+        self.assertIn("provider registry", strategy)
+        self.assertIn("automatic provider fallback", strategy)
+        self.assertIn("no DeviceState mutation", strategy)
 
     def test_documentation_does_not_include_personal_validation_ip(self):
         forbidden = "10.255.108.33"
