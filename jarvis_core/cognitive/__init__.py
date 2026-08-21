@@ -17,12 +17,14 @@ from .models import (
     Signal,
     Urgency,
 )
+from .reporting import CognitiveReportRenderer
 
 __all__ = [
     "AttentionAction",
     "COGNITIVE_BENCHMARK_VERSION",
     "CognitiveBenchmarkReport",
     "CognitiveBenchmarkRunner",
+    "CognitiveReportRenderer",
     "CognitiveScenarioResult",
     "ConfidenceBand",
     "EvidenceOrigin",
