@@ -143,7 +143,7 @@ automatic mutation retry and no background recovery loop.
 
 Phase 12.3 does not implement:
 
-- ESP32 MQTT firmware;
+- ESP32 MQTT physical validation;
 - MQTT subscriptions;
 - retained-message state ingestion;
 - availability/LWT state semantics;
@@ -153,5 +153,8 @@ Phase 12.3 does not implement:
 - MQTT Runtime API routes;
 - AI-provider behavior.
 
-Phase 12.4 remains blocked until explicitly opened for ESP32 MQTT reference
-node work.
+Phase 12.4 is the separate ESP32 MQTT reference node implementation and
+physical validation gate.
+
+The Phase 12.4 ESP32-specific workflow is documented separately in
+[MQTT ESP32 Validation](MQTT_ESP32_VALIDATION.md).

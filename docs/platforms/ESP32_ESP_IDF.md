@@ -48,7 +48,9 @@ You can use the same pattern for:
 
 ## Recommended Transport
 
-HTTP local is the current validated transport for ESP32 + ESP-IDF.
+HTTP local is the current hardware-validated transport for ESP32 + ESP-IDF.
+MQTT request/response has a separate experimental reference example for Phase
+12.4 physical validation.
 
 ## Setup
 
@@ -140,6 +142,19 @@ python tools/run_http_led_validation.py --base-url http://<IP>
 ```
 
 See [Runtime Configuration](../getting-started/CONFIGURATION.md), [Device State Persistence](../getting-started/STATE_PERSISTENCE.md), and [HTTP Profile Validation](../getting-started/HTTP_PROFILE_VALIDATION.md). The State Store persists only semantic `DeviceState` and restores it as stale.
+
+## MQTT Reference Example
+
+The MQTT request/response reference firmware lives at:
+
+```text
+examples/mqtt-led/esp32-idf/
+```
+
+It uses the same `lamp_1`, `power.switch`, `status.read` and GPIO2 LED semantics
+with Mosquitto as a local LAN broker. JarvisOS still connects to the broker over
+`127.0.0.1`; the ESP32 connects to the host's local LAN listener. See
+[MQTT ESP32 Validation](../drivers/MQTT_ESP32_VALIDATION.md).
 
 ## Example Commands
 

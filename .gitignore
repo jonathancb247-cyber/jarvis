@@ -1,4 +1,5 @@
 profiles/*.local.json
+tools/*.local.conf
 state/
 *.state.json
 voice-fixtures.local/

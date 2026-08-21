@@ -142,6 +142,11 @@ It is intended for use with the loopback Mosquitto validation workflow in
 [MQTT Local Broker Validation](../drivers/MQTT_VALIDATION.md). It does not
 replace HTTP profiles and does not imply ESP32 MQTT validation.
 
+For Phase 12.4 ESP32 MQTT validation, `profiles/mqtt-esp32.example.json`
+defines the same `lamp_1` semantics and topics for the separate ESP32 MQTT LED
+reference firmware. Copy it to `profiles/mqtt-esp32.local.json` before local
+use. The local profile and generated state file must remain ignored by Git.
+
 ## Runtime Options
 
 Runtime options are strict. Phase 9.3 accepts either an empty object:
