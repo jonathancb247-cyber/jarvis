@@ -75,6 +75,12 @@ class DeterministicContext:
             elif signal.kind == "stale_device_state":
                 active_modes.append("device_state_stale")
                 hypotheses.append(signal)
+            elif signal.kind == "unknown_device_state":
+                active_modes.append("device_state_unknown")
+                hypotheses.append(signal)
+            elif signal.kind == "current_device_state":
+                active_modes.append("device_state_current")
+                hypotheses.append(signal)
 
         if study_corrected:
             hypotheses.extend(corrections)
@@ -101,6 +107,14 @@ class DeterministicJudgment:
                 recommendation="request_explicit_status_read",
                 confidence=ConfidenceBand.HIGH,
                 safe_explanation="Device state is stale, so a fresh read should be requested before relying on it.",
+            )
+
+        if context.has_mode("device_state_unknown"):
+            return JudgmentResult(
+                action=JudgmentAction.CLARIFY,
+                recommendation="request_device_status_evidence",
+                confidence=ConfidenceBand.LOW,
+                safe_explanation="Device state is unknown, so current physical state should not be assumed.",
             )
 
         if context.explicit_corrections:

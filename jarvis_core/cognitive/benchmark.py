@@ -28,6 +28,7 @@ from .models import (
     Signal,
     Urgency,
 )
+from .signals import DeviceStateSemanticProjection, device_state_projection_to_signal
 
 
 COGNITIVE_BENCHMARK_VERSION = "cognitive-phase1-deterministic-v1"
@@ -177,12 +178,13 @@ def build_phase1_scenarios() -> tuple[ScenarioInput, ...]:
             scenario_id="stale_device",
             name="Stale Device",
             signals=(
-                _signal(
-                    "stale_device_state",
-                    EvidenceOrigin.DEVICE_STATE,
-                    ConfidenceBand.HIGH,
-                    "The last semantic state exists but is not confirmed current.",
-                    freshness=Freshness.STALE,
+                device_state_projection_to_signal(
+                    DeviceStateSemanticProjection.from_mapping(
+                        device_id="lamp_1",
+                        status="stale",
+                        is_current=False,
+                        safe_properties={"power": False},
+                    )
                 ),
             ),
             expected_judgment=JudgmentAction.CLARIFY,
