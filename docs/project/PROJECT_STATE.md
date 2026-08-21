@@ -48,6 +48,14 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Cognitive Phase 1 validates deterministic reports, safe explanations, explicit-over-inferred precedence, sensitive notification fake-surface privacy and that learned patterns do not automatically create Memory, Rules or Delegation.
 - Cognitive Phase 1 does not implement real cognition quality, persistent Memory, persistent Learning, Context persistence, real sensors, phone/watch/vehicle input, AI-assisted cognition, fuzzy logic, notifications, real Attention surfaces, Voice integration, API/Dashboard exposure, Policy integration, Runtime integration, Planner integration, Driver execution, DeviceState mutation, delegated autonomy or multi-user cognition.
 - Cognitive Phase 1 uses no persistence, network, providers, hardware, microphone/speaker, notification delivery or Runtime/Planner/Driver execution path.
+- Cognitive Phase 2 is completed: Local Cognitive Report Surface merged in PR #60.
+- Cognitive Phase 2 merge commit: `9f2da69e0c8b9130bde13757d82982f5f8a1d56c`.
+- Cognitive Phase 2 validation: 617 tests passing, default CLI smoke passed, cognitive text smoke passed and cognitive JSON smoke passed.
+- Cognitive Phase 2 reuses the Phase 1 deterministic cognitive benchmark unchanged and renders all six cognitive scenarios: Deep Focus, Night Mode Suggestion, Stale Device, Explicit User Correction, Private Notification and Habit Proposal.
+- Cognitive Phase 2 provides local diagnostic text and canonical JSON report output through `python -m jarvis_core.cognitive` and `python -m jarvis_core.cognitive --format json`.
+- Cognitive Phase 2 text and JSON output are deterministic and remain diagnostic/local only.
+- Cognitive Phase 2 does not introduce execution authority, product-facing cognitive UI, Runtime integration, Runtime API cognitive endpoints, Dashboard cognitive panels, Voice integration, AI-assisted cognition, provider-backed cognition, persistence, network, hardware, real sensors, notification delivery, action buttons, policy integration, confirmation integration, delegated autonomy or real-world cognition quality validation.
+- Cognitive Phase 2 has no Runtime/Planner/Driver path, DeviceState mutation, Command construction, API/Dashboard exposure, filesystem persistence by default, network/provider/hardware use or normal Jarvis CLI behavior change.
 - Current snapshot commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -185,6 +193,11 @@ Independent cognitive line:
 - Cognitive Phase 1 validation: 609 tests passing and default CLI smoke passed.
 - Cognitive Phase 1 provides a fake deterministic in-memory recommendation/report slice that composes Context, Learning, seeded read-only Memory, Judgment and Attention without execution authority.
 - Cognitive Phase 1 does not provide or validate persistent Memory, persistent Learning, Context persistence, real sensors, real notification delivery, real Attention surfaces, Voice integration, API/Dashboard exposure, AI-assisted cognition, fuzzy logic, policy integration, Runtime integration, Planner integration, Driver execution, DeviceState mutation, delegated autonomy or multi-user cognition.
+- Cognitive Phase 2 - Local Cognitive Report Surface is completed after PR #60 merge.
+- Cognitive Phase 2 merge commit: `9f2da69e0c8b9130bde13757d82982f5f8a1d56c`.
+- Cognitive Phase 2 validation: 617 tests passing, default CLI smoke passed, local cognitive text report smoke passed and local cognitive JSON report smoke passed.
+- Cognitive Phase 2 provides a local diagnostic report surface for the existing Phase 1 benchmark through `python -m jarvis_core.cognitive` and `python -m jarvis_core.cognitive --format json`.
+- Cognitive Phase 2 remains non-executing and local-only: no Runtime, Planner, Driver, DeviceState, API, Dashboard, Voice, AI/provider, persistence, network, hardware, notification delivery, policy, confirmation or delegated autonomy path.
 
 ## Stable Boundaries
 
@@ -239,6 +252,8 @@ Current experimental areas:
 - Seeded read-only cognitive Memory.
 - Deterministic cognitive Learning, Context, Judgment and Attention components.
 - Cognitive benchmark report metrics and safety invariant checks.
+- Local Cognitive Report Surface.
+- Deterministic cognitive text and JSON diagnostic report rendering.
 
 ## Current Transports
 
@@ -339,6 +354,8 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 - Cognitive Phase 1 is fake, deterministic, in-memory and recommendation/report-only.
 - Cognitive Phase 1 has no execution authority and no Runtime, Planner, Driver, DeviceState, API, Dashboard, AI, Voice, persistence, network, provider, hardware, microphone/speaker or notification-delivery path.
 - Cognitive Phase 1 learned patterns do not automatically create Memory, Rules or Delegation.
+- Cognitive Phase 2 is diagnostic/local only and has no execution authority.
+- Cognitive Phase 2 does not change the normal Jarvis CLI and does not expose cognition through Runtime API or Dashboard.
 
 ## Out Of Scope
 
@@ -367,6 +384,13 @@ Not currently implemented:
 - real cognitive sensors;
 - real Attention notification delivery;
 - cognitive Runtime/Planner/Driver execution authority;
+- product-facing cognitive UI;
+- Runtime API cognitive endpoints;
+- Dashboard cognitive panels;
+- Voice-connected cognition;
+- AI-assisted cognitive recommendations;
+- provider-backed cognition;
+- real-world cognition quality validation;
 - delegated cognitive autonomy;
 - multi-user cognition.
 
