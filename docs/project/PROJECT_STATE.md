@@ -39,6 +39,15 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Voice Phase 2A validation: 581 tests passing and default CLI smoke passed.
 - Voice Phase 2A provides provider-neutral STT/TTS evaluation contracts, synthetic/text-only fixture taxonomy, mock provider paths, normalized failure categories, a bake-off report model and synthetic/test metrics only.
 - Voice Phase 2A does not validate real STT compatibility, real TTS compatibility, real provider latency, naturalness, real prerecorded-audio STT, real file-output TTS, microphones, speakers, credentials, network, cloud, hardware or Runtime/API/Dashboard/Driver/AI behavior.
+- Cognitive Phase 1 is completed: Deterministic Cognitive Vertical Slice merged in PR #58.
+- Cognitive Phase 1 merge commit: `bc92c31992544f6d3824a7a1a39666b405977b23`.
+- Cognitive Phase 1 validation: 609 tests passing and default CLI smoke passed.
+- Cognitive Phase 1 implements a fake deterministic in-memory flow: scripted evidence -> Context -> Learning plus seeded read-only Memory -> Judgment -> Attention -> deterministic report.
+- Cognitive Phase 1 validates Deep Focus, Night Mode Suggestion, Stale Device, Explicit User Correction, Private Notification and Habit Proposal scenarios.
+- Cognitive Phase 1 is recommendation/report-only: Memory is seeded/read-only, Learning produces deterministic pattern evidence only, Context uses scripted explicit/inferred signals, Judgment recommends/defers/clarifies/abstains only and Attention selects fake defer/silence/surface outcomes only.
+- Cognitive Phase 1 validates deterministic reports, safe explanations, explicit-over-inferred precedence, sensitive notification fake-surface privacy and that learned patterns do not automatically create Memory, Rules or Delegation.
+- Cognitive Phase 1 does not implement real cognition quality, persistent Memory, persistent Learning, Context persistence, real sensors, phone/watch/vehicle input, AI-assisted cognition, fuzzy logic, notifications, real Attention surfaces, Voice integration, API/Dashboard exposure, Policy integration, Runtime integration, Planner integration, Driver execution, DeviceState mutation, delegated autonomy or multi-user cognition.
+- Cognitive Phase 1 uses no persistence, network, providers, hardware, microphone/speaker, notification delivery or Runtime/Planner/Driver execution path.
 - Current snapshot commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -168,6 +177,15 @@ Independent voice line:
 - Voice Phase 2A provides provider-neutral STT/TTS evaluation contracts, synthetic/text-only fixture taxonomy, mock/fake provider paths, normalized failure categories, a bake-off report model and synthetic/test metrics only.
 - Voice Phase 2A does not provide or validate real STT compatibility, real TTS compatibility, real provider latency, naturalness, real prerecorded-audio STT, real file-output TTS, microphone access, speaker output, network, cloud, credentials, hardware or Runtime/API/Dashboard/Driver/AI behavior.
 
+Independent cognitive line:
+
+- Cognitive Phase 1 - Deterministic Cognitive Vertical Slice is completed after PR #58 merge.
+- Cognitive Phase 1 merge commit: `bc92c31992544f6d3824a7a1a39666b405977b23`.
+- Cognitive Phase 1 implementation commit: `4e50b9d9970f794c0b88a0a9a9a4b58212170b98`.
+- Cognitive Phase 1 validation: 609 tests passing and default CLI smoke passed.
+- Cognitive Phase 1 provides a fake deterministic in-memory recommendation/report slice that composes Context, Learning, seeded read-only Memory, Judgment and Attention without execution authority.
+- Cognitive Phase 1 does not provide or validate persistent Memory, persistent Learning, Context persistence, real sensors, real notification delivery, real Attention surfaces, Voice integration, API/Dashboard exposure, AI-assisted cognition, fuzzy logic, policy integration, Runtime integration, Planner integration, Driver execution, DeviceState mutation, delegated autonomy or multi-user cognition.
+
 ## Stable Boundaries
 
 Stable project rules:
@@ -216,6 +234,11 @@ Current experimental areas:
 - Minimal fake Turn Manager.
 - In-memory fake Conversation Session.
 - Simulated voice benchmark metrics.
+- Deterministic Cognitive Vertical Slice.
+- In-memory fake cognitive scenario runner.
+- Seeded read-only cognitive Memory.
+- Deterministic cognitive Learning, Context, Judgment and Attention components.
+- Cognitive benchmark report metrics and safety invariant checks.
 
 ## Current Transports
 
@@ -313,6 +336,9 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 - The Runtime API exposes detached semantic projections only.
 - The Runtime API remains the boundary consumed by the Dashboard and still does not implement LAN access, authentication, WebSocket, SSE, async Runtime, or direct internal access.
 - The Dashboard is optional, local-only, API-backed, and does not import Runtime internals.
+- Cognitive Phase 1 is fake, deterministic, in-memory and recommendation/report-only.
+- Cognitive Phase 1 has no execution authority and no Runtime, Planner, Driver, DeviceState, API, Dashboard, AI, Voice, persistence, network, provider, hardware, microphone/speaker or notification-delivery path.
+- Cognitive Phase 1 learned patterns do not automatically create Memory, Rules or Delegation.
 
 ## Out Of Scope
 
@@ -335,7 +361,14 @@ Not currently implemented:
 - hardware discovery;
 - persistent trust;
 - persistent AI memory;
-- AI/LLM scenario engine behavior.
+- AI/LLM scenario engine behavior;
+- persistent cognitive Memory or Learning;
+- Context persistence;
+- real cognitive sensors;
+- real Attention notification delivery;
+- cognitive Runtime/Planner/Driver execution authority;
+- delegated cognitive autonomy;
+- multi-user cognition.
 
 ## Key Technical Documents
 
