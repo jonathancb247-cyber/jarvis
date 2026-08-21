@@ -21,6 +21,12 @@ REQUIRED_FILES = [
     "docs/design/VOICE_BENCHMARK.md",
     "docs/design/VOICE_PROVIDER_BAKEOFF.md",
     "docs/design/AI_PROVIDER_STRATEGY.md",
+    "docs/design/SECOND_BRAIN_MEMORY_BOUNDARY.md",
+    "docs/design/JUDGMENT_AUTONOMY_BOUNDARY.md",
+    "docs/design/LEARNING_ADAPTIVE_PATTERN_BOUNDARY.md",
+    "docs/design/CONTEXT_ENGINE_BOUNDARY.md",
+    "docs/design/ATTENTION_PROACTIVITY_BOUNDARY.md",
+    "docs/design/COGNITIVE_SIGNAL_EVIDENCE_VOCABULARY.md",
     "docs/drivers/MQTT_DRIVER.md",
     "docs/drivers/MQTT_VALIDATION.md",
     "docs/ai/README.md",
@@ -257,6 +263,49 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("provider registry", strategy)
         self.assertIn("automatic provider fallback", strategy)
         self.assertIn("no DeviceState mutation", strategy)
+
+    def test_cognitive_architecture_adrs_are_design_only(self):
+        expected = {
+            "SECOND_BRAIN_MEMORY_BOUNDARY.md": [
+                "Memory is not execution authority.",
+                "State Store must not become Second Brain storage.",
+                "Silent persistent memory is not approved.",
+            ],
+            "JUDGMENT_AUTONOMY_BOUNDARY.md": [
+                "Judgment is not authority.",
+                "Level 4 - Autonomous: rejected.",
+                "Judgment must never",
+            ],
+            "LEARNING_ADAPTIVE_PATTERN_BOUNDARY.md": [
+                "Learning produces evidence and hypotheses, not authority.",
+                "Learning must never create delegation automatically.",
+                "silently profile users",
+            ],
+            "CONTEXT_ENGINE_BOUNDARY.md": [
+                "What appears to be happening now?",
+                "Context does not answer",
+                "activate scenes automatically",
+            ],
+            "ATTENTION_PROACTIVITY_BOUNDARY.md": [
+                "Should Jarvis interrupt or surface this now, and how?",
+                "There is no Attention -> Runtime path.",
+                "must not optimize for engagement",
+            ],
+            "COGNITIVE_SIGNAL_EVIDENCE_VOCABULARY.md": [
+                "Shared vocabulary is not shared cognitive state.",
+                "fuzzy membership is not confidence",
+                "Reject a universal `CognitiveEvidence` base model",
+            ],
+        }
+
+        for filename, required_text in expected.items():
+            path = REPO_ROOT / "docs" / "design" / filename
+            text = path.read_text(encoding="utf-8")
+            with self.subTest(path=filename):
+                self.assertIn("Status: Accepted / Design - Not Implemented", text)
+                self.assertIn("Future Implementation Direction", text)
+                for phrase in required_text:
+                    self.assertIn(phrase, text)
 
     def test_documentation_does_not_include_personal_validation_ip(self):
         forbidden = "10.255.108.33"
