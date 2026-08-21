@@ -27,6 +27,7 @@ REQUIRED_FILES = [
     "docs/design/CONTEXT_ENGINE_BOUNDARY.md",
     "docs/design/ATTENTION_PROACTIVITY_BOUNDARY.md",
     "docs/design/COGNITIVE_SIGNAL_EVIDENCE_VOCABULARY.md",
+    "docs/design/WEARABLE_BOUNDARY.md",
     "docs/drivers/MQTT_DRIVER.md",
     "docs/drivers/MQTT_VALIDATION.md",
     "docs/ai/README.md",
@@ -342,6 +343,39 @@ class DocumentationAssetsTests(unittest.TestCase):
                 self.assertIn("Future Implementation Direction", text)
                 for phrase in required_text:
                     self.assertIn(phrase, text)
+
+    def test_wearable_boundary_adr_records_presence_signal_only(self):
+        text = (
+            REPO_ROOT / "docs" / "design" / "WEARABLE_BOUNDARY.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("Status: Accepted / Design - Not Implemented", text)
+        self.assertIn("Wearable Presence / Connection Context Source", text)
+        self.assertIn("watch_connected", text)
+        self.assertIn("Pixel Watch / Wear OS is the first implementation target", text)
+        self.assertIn(
+            "Closed-Device Research / Graceful Degradation Reference",
+            text,
+        )
+        self.assertIn("blocked_by_platform", text)
+        self.assertIn("requires_companion", text)
+        self.assertIn("requires_permission", text)
+        self.assertIn("separate from executable `DeviceCapability`", text)
+        self.assertIn("A known wearable client/probe currently appears connected", text)
+        self.assertIn("It does not mean user presence", text)
+        self.assertIn("Wearable signal\n-> Runtime action", text)
+        self.assertIn("`wearable_available`", text)
+        self.assertIn("`user_authenticated`", text)
+        self.assertIn("Wearable Phase 1 must not deliver notifications", text)
+        self.assertIn("Connection status is personal context", text)
+        self.assertIn("no provider or cloud exposure by default", text)
+        self.assertIn("no `DeviceState` mutation", text)
+        self.assertIn("no `Command` construction", text)
+        self.assertIn("Sensitive Wearable Context ADR", text)
+        self.assertIn("Adaptive Wake remains design-only", text)
+        self.assertIn("no microphone or speaker assumption", text)
+        self.assertIn("This ADR does not approve", text)
+        self.assertIn("Wearable Phase 1 - Wear OS Presence / Connection Signal", text)
 
     def test_documentation_does_not_include_personal_validation_ip(self):
         forbidden = "10.255.108.33"
