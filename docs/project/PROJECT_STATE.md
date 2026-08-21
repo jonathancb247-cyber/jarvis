@@ -56,6 +56,17 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Cognitive Phase 2 text and JSON output are deterministic and remain diagnostic/local only.
 - Cognitive Phase 2 does not introduce execution authority, product-facing cognitive UI, Runtime integration, Runtime API cognitive endpoints, Dashboard cognitive panels, Voice integration, AI-assisted cognition, provider-backed cognition, persistence, network, hardware, real sensors, notification delivery, action buttons, policy integration, confirmation integration, delegated autonomy or real-world cognition quality validation.
 - Cognitive Phase 2 has no Runtime/Planner/Driver path, DeviceState mutation, Command construction, API/Dashboard exposure, filesystem persistence by default, network/provider/hardware use or normal Jarvis CLI behavior change.
+- Cognitive Phase 3 is completed: Read-Only DeviceState Cognitive Signal Mapping merged in PR #62.
+- Cognitive Phase 3 merge commit: `be319286fa50fbc88df141995627d50d3b829ce3`.
+- Cognitive Phase 3 validation: 629 tests passing, default CLI smoke passed, cognitive text smoke passed and cognitive JSON smoke passed.
+- Cognitive Phase 3 is the first real JarvisOS semantic boundary entered cognition as evidence.
+- Cognitive Phase 3 maps detached, read-only DeviceState semantic input into cognitive evidence; no live DeviceState object enters cognition.
+- Cognitive Phase 3 mapping behavior: known/current -> fresh cognitive evidence; stale -> stale cognitive evidence; known/not-current -> conservatively stale; unknown -> insufficient low-confidence evidence with no fabricated properties.
+- Cognitive Phase 3 keeps safe semantic properties bounded, immutable and filtered.
+- Cognitive Phase 3 stale evidence produces read/clarify recommendation only and no explicit read occurs.
+- Cognitive Phase 3 preserves Phase 1 and Phase 2 behavior unchanged, and existing diagnostic text/JSON reporting remains deterministic.
+- Cognitive Phase 3 does not implement or validate Runtime integration, Runtime API cognition, Dashboard cognition, DeviceState mutation, device refresh, Driver execution, Planner execution, Command creation, hardware access, network access, persistence, AI/provider cognition, Voice integration, notification delivery, policy/confirmation integration, delegated autonomy, background polling, automatic scene activation, wearable integration or real-world cognitive accuracy.
+- Cognitive Phase 3 has no Runtime/Planner/Driver/API/Dashboard/Voice/AI/State Store execution path, no persistence/network/hardware/provider use, and cognition treats DeviceState only as evidence.
 - Current snapshot commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -198,6 +209,14 @@ Independent cognitive line:
 - Cognitive Phase 2 validation: 617 tests passing, default CLI smoke passed, local cognitive text report smoke passed and local cognitive JSON report smoke passed.
 - Cognitive Phase 2 provides a local diagnostic report surface for the existing Phase 1 benchmark through `python -m jarvis_core.cognitive` and `python -m jarvis_core.cognitive --format json`.
 - Cognitive Phase 2 remains non-executing and local-only: no Runtime, Planner, Driver, DeviceState, API, Dashboard, Voice, AI/provider, persistence, network, hardware, notification delivery, policy, confirmation or delegated autonomy path.
+- Cognitive Phase 3 - Read-Only DeviceState Cognitive Signal Mapping is completed after PR #62 merge.
+- Cognitive Phase 3 merge commit: `be319286fa50fbc88df141995627d50d3b829ce3`.
+- Cognitive Phase 3 implementation commit: `d6695cd226718d8880ae9d4e88b16b6656f146b5`.
+- Cognitive Phase 3 validation: 629 tests passing, default CLI smoke passed, local cognitive text report smoke passed and local cognitive JSON report smoke passed.
+- Cognitive Phase 3 is the first real JarvisOS semantic boundary to enter cognition as detached read-only evidence: no live DeviceState object enters cognition, safe semantic properties are bounded, immutable and filtered, and cognition treats DeviceState only as evidence.
+- Cognitive Phase 3 mapping behavior is explicit: known/current -> fresh cognitive evidence; stale -> stale cognitive evidence; known/not-current -> conservatively stale; unknown -> insufficient low-confidence evidence with no fabricated properties.
+- Cognitive Phase 3 remains recommendation/report-only: stale evidence can produce read/clarify recommendations, but no explicit read occurs and no Runtime/Planner/Driver/API/Dashboard/Voice/AI/State Store execution path is introduced.
+- Cognitive Phase 3 does not provide or validate Runtime integration, Runtime API cognition, Dashboard cognition, DeviceState mutation, device refresh, Driver execution, Planner execution, Command creation, hardware access, network access, persistence, AI/provider cognition, Voice integration, notification delivery, policy/confirmation integration, delegated autonomy, background polling, automatic scene activation, wearable integration or real-world cognitive accuracy.
 
 ## Stable Boundaries
 
@@ -254,6 +273,8 @@ Current experimental areas:
 - Cognitive benchmark report metrics and safety invariant checks.
 - Local Cognitive Report Surface.
 - Deterministic cognitive text and JSON diagnostic report rendering.
+- Read-only DeviceState cognitive signal mapping.
+- Detached DeviceState semantic projections as cognitive evidence.
 
 ## Current Transports
 
@@ -356,6 +377,9 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 - Cognitive Phase 1 learned patterns do not automatically create Memory, Rules or Delegation.
 - Cognitive Phase 2 is diagnostic/local only and has no execution authority.
 - Cognitive Phase 2 does not change the normal Jarvis CLI and does not expose cognition through Runtime API or Dashboard.
+- Cognitive Phase 3 lets cognition consume detached DeviceState semantic projections as evidence only.
+- Cognitive Phase 3 does not perform device refreshes, explicit reads, Runtime actions, Planner actions, Driver calls or DeviceState mutation.
+- Cognitive Phase 3 preserves deterministic local cognitive reporting and introduces no API, Dashboard, Voice, AI/provider, persistence, network, hardware, notification-delivery or State Store path.
 
 ## Out Of Scope
 
@@ -384,12 +408,15 @@ Not currently implemented:
 - real cognitive sensors;
 - real Attention notification delivery;
 - cognitive Runtime/Planner/Driver execution authority;
+- cognitive DeviceState mutation or device refresh;
 - product-facing cognitive UI;
 - Runtime API cognitive endpoints;
 - Dashboard cognitive panels;
 - Voice-connected cognition;
 - AI-assisted cognitive recommendations;
 - provider-backed cognition;
+- wearable integration;
+- cognitive background polling or automatic scene activation;
 - real-world cognition quality validation;
 - delegated cognitive autonomy;
 - multi-user cognition.
