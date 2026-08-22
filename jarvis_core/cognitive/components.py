@@ -81,6 +81,14 @@ class DeterministicContext:
             elif signal.kind == "current_device_state":
                 active_modes.append("device_state_current")
                 hypotheses.append(signal)
+            elif signal.kind == "watch_connected":
+                active_modes.append("wearable_available")
+                active_modes.append("personal_surface_evidence_available")
+                active_modes.append("context_evidence_available")
+                hypotheses.append(signal)
+            elif signal.kind in {"watch_unavailable", "watch_unknown_or_stale"}:
+                active_modes.append("wearable_signal_degraded")
+                hypotheses.append(signal)
 
         if study_corrected:
             hypotheses.extend(corrections)
@@ -115,6 +123,24 @@ class DeterministicJudgment:
                 recommendation="request_device_status_evidence",
                 confidence=ConfidenceBand.LOW,
                 safe_explanation="Device state is unknown, so current physical state should not be assumed.",
+            )
+
+        if context.has_mode("wearable_available"):
+            return JudgmentResult(
+                action=JudgmentAction.SUGGEST,
+                recommendation="note_watch_connection_signal_available",
+                confidence=ConfidenceBand.MEDIUM,
+                safe_explanation=(
+                    "Watch connection signal is available as context evidence only; it does not prove user presence or identity."
+                ),
+            )
+
+        if context.has_mode("wearable_signal_degraded"):
+            return JudgmentResult(
+                action=JudgmentAction.CLARIFY,
+                recommendation="note_wearable_context_confidence_reduced",
+                confidence=ConfidenceBand.LOW,
+                safe_explanation="Wearable signal is unavailable or stale, so no user context should be inferred from it.",
             )
 
         if context.explicit_corrections:

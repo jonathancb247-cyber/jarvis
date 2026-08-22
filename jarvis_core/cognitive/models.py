@@ -26,6 +26,7 @@ class EvidenceOrigin(str, Enum):
     MEMORY = "memory"
     LEARNING = "learning"
     DEVICE_STATE = "device_state"
+    WEARABLE = "wearable"
     SYSTEM = "system"
 
 
