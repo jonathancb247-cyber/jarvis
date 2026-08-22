@@ -67,6 +67,19 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Cognitive Phase 3 preserves Phase 1 and Phase 2 behavior unchanged, and existing diagnostic text/JSON reporting remains deterministic.
 - Cognitive Phase 3 does not implement or validate Runtime integration, Runtime API cognition, Dashboard cognition, DeviceState mutation, device refresh, Driver execution, Planner execution, Command creation, hardware access, network access, persistence, AI/provider cognition, Voice integration, notification delivery, policy/confirmation integration, delegated autonomy, background polling, automatic scene activation, wearable integration or real-world cognitive accuracy.
 - Cognitive Phase 3 has no Runtime/Planner/Driver/API/Dashboard/Voice/AI/State Store execution path, no persistence/network/hardware/provider use, and cognition treats DeviceState only as evidence.
+- Wearable Phase 1 is completed: Wear OS Presence / Connection Signal merged in PR #66.
+- Wearable Phase 1 merge commit: `9621d4197ed1cf2ca00d4be7bc791cfd6a19a9e3`.
+- Wearable Phase 1 validation: 642 tests passing, default CLI smoke passed and existing six-scenario cognitive report smoke passed.
+- Pixel Watch / Wear OS remains the first wearable implementation target, but Phase 1 is fake-first and deterministic only.
+- Wearable Phase 1 implements exactly four fake wearable presence states: connected, disconnected, unknown and stale.
+- Wearable Phase 1 uses a detached, frozen and read-only `WearablePresenceProjection`; fake fixtures map into cognitive evidence only.
+- Wearable Phase 1 reuses existing Context, Judgment, Attention and local cognitive reporting. The existing six-scenario cognitive report remains unchanged.
+- `watch_connected` means only that a known wearable probe appears connected. It does not imply user presence, watch wearing, awake state, user availability, identity/authentication, health or location.
+- Degraded wearable states reduce wearable evidence only and do not create user absence, availability or identity inference.
+- Wearable Phase 1 introduces no execution authority, Runtime action, Planner/Driver execution, DeviceState mutation, policy/confirmation integration, delegated autonomy, provider/cloud integration, persistence, network, hardware, Android/ADB integration, notifications, haptics, watch UI, microphone, speaker, Voice integration or real Wear OS probe.
+- Wearable Phase 1 does not implement or validate real Pixel Watch connectivity, HR, HRV, sleep, activity/exercise, precise location, biometrics or wrist presence as identity.
+- Sensitive Wearable Context remains blocked behind a future ADR/gate before health, sleep, activity, location or biometric signals enter cognition.
+- Real Pixel Watch validation remains a separate future hardware gate; the future real Wear OS probe is expected to replace only the source side.
 - Current snapshot commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -218,6 +231,17 @@ Independent cognitive line:
 - Cognitive Phase 3 remains recommendation/report-only: stale evidence can produce read/clarify recommendations, but no explicit read occurs and no Runtime/Planner/Driver/API/Dashboard/Voice/AI/State Store execution path is introduced.
 - Cognitive Phase 3 does not provide or validate Runtime integration, Runtime API cognition, Dashboard cognition, DeviceState mutation, device refresh, Driver execution, Planner execution, Command creation, hardware access, network access, persistence, AI/provider cognition, Voice integration, notification delivery, policy/confirmation integration, delegated autonomy, background polling, automatic scene activation, wearable integration or real-world cognitive accuracy.
 
+Independent wearable line:
+
+- Wearable Boundary ADR is accepted for Wear OS Presence / Connection Signal.
+- Wearable Phase 1 - Wear OS Presence / Connection Signal is completed after PR #66 merge.
+- Wearable Phase 1 merge commit: `9621d4197ed1cf2ca00d4be7bc791cfd6a19a9e3`.
+- Wearable Phase 1 validation: 642 tests passing, default CLI smoke passed and existing six-scenario cognitive report smoke passed.
+- Wearable Phase 1 provides a fake deterministic local slice for `watch_connected` using detached read-only wearable projections and cognitive evidence mapping only.
+- Wearable Phase 1 remains non-executing and fake-only: no real Pixel Watch connectivity, Wear OS app/probe, Android/ADB integration, hardware access, network transport, notifications, haptics, watch UI, microphone, speaker, Voice, health signals, location, biometrics, persistence, provider/cloud integration, Runtime/Planner/Driver execution, DeviceState mutation, policy/confirmation integration or delegated autonomy.
+- Sensitive Wearable Context remains blocked behind a future ADR/gate before HR, HRV, sleep, activity, precise location, biometrics or wrist-presence identity evidence enters cognition.
+- Real Pixel Watch validation remains a separate future hardware gate.
+
 ## Stable Boundaries
 
 Stable project rules:
@@ -275,6 +299,8 @@ Current experimental areas:
 - Deterministic cognitive text and JSON diagnostic report rendering.
 - Read-only DeviceState cognitive signal mapping.
 - Detached DeviceState semantic projections as cognitive evidence.
+- Fake deterministic wearable presence signal mapping.
+- Detached wearable semantic projections as cognitive evidence.
 
 ## Current Transports
 
@@ -380,6 +406,9 @@ python -m jarvis_core.dashboard --config profiles/http-lab.example.json
 - Cognitive Phase 3 lets cognition consume detached DeviceState semantic projections as evidence only.
 - Cognitive Phase 3 does not perform device refreshes, explicit reads, Runtime actions, Planner actions, Driver calls or DeviceState mutation.
 - Cognitive Phase 3 preserves deterministic local cognitive reporting and introduces no API, Dashboard, Voice, AI/provider, persistence, network, hardware, notification-delivery or State Store path.
+- Wearable Phase 1 lets cognition consume fake detached wearable presence projections as evidence only.
+- `watch_connected` does not imply presence, watch wearing, wakefulness, availability, identity, health or location.
+- Real Pixel Watch validation and Sensitive Wearable Context remain separate future gates.
 
 ## Out Of Scope
 
@@ -415,7 +444,11 @@ Not currently implemented:
 - Voice-connected cognition;
 - AI-assisted cognitive recommendations;
 - provider-backed cognition;
-- wearable integration;
+- real wearable integration beyond fake deterministic presence evidence;
+- real Pixel Watch connectivity or Wear OS app/probe;
+- Android/ADB wearable integration;
+- wearable notifications, haptics, watch UI, microphone, speaker or Voice integration;
+- HR, HRV, sleep, activity/exercise, precise location, biometrics or wrist presence as identity;
 - cognitive background polling or automatic scene activation;
 - real-world cognition quality validation;
 - delegated cognitive autonomy;
