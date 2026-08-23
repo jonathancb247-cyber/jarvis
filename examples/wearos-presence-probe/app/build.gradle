@@ -1,6 +1,4 @@
-plugins {
-    id "com.android.application"
-}
+apply plugin: "com.android.application"
 
 def receiverUrl = providers.gradleProperty("jarvis.receiverUrl").orElse("http://127.0.0.1:8766/wearable/presence")
 
