@@ -21,6 +21,7 @@ from jarvis_core.ai.contracts import (
 )
 from jarvis_core.ai.fake_provider import DeterministicFakeAIProvider
 from jarvis_core.ai.gemini import GeminiAIProvider, GeminiProviderConfig
+from jarvis_core.ai.ollama import OllamaAIProvider, OllamaProviderConfig
 from jarvis_core.ai.provider import AIProvider
 
 __all__ = [
@@ -42,4 +43,6 @@ __all__ = [
     "FakeAIAdapter",
     "GeminiAIProvider",
     "GeminiProviderConfig",
+    "OllamaAIProvider",
+    "OllamaProviderConfig",
 ]
