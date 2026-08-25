@@ -90,7 +90,18 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Second Brain Phase 1 implementation snapshot: `jarvis_core/second_brain/__init__.py`, `jarvis_core/second_brain/__main__.py`, `jarvis_core/second_brain/models.py`, `jarvis_core/second_brain/fixtures.py`, `jarvis_core/second_brain/retrieval.py`, `jarvis_core/second_brain/reporting.py`, and `tests/test_second_brain_retrieval.py`.
 - Second Brain Phase 1 example semantics remain conservative: the Pixel Watch fixture says fake/deterministic Wearable Phase 1 completed while real Pixel Watch hardware validation remains separate/pending, and the MQTT fixture represents local MQTT request/response validation without claiming physical ESP32 MQTT validation complete.
 - Second Brain Phase 1 does not implement persistence, SQLite, JSON/file memory storage, durable memory, automatic memory extraction, automatic profiling, filesystem memory writes, network access, Notion/GitHub/Obsidian/Google Drive connectors, source indexing, embeddings, vector DB, semantic retrieval, RAG, AI/provider-backed retrieval, Runtime integration, Planner/Driver execution, DeviceState mutation, API/Dashboard integration, policy/confirmation changes or execution authority.
-- Second Brain Phase 2 remains unopened. Durable storage/persistence requires a separate explicit design/ADR gate, connectors/source indexing remain future work, retrieval/RAG/embeddings/AI remain future work, and Obsidian remains optional/future rather than core storage.
+- Second Brain Phase 2 is completed: SQLite Fixture Persistence merged in PR #72.
+- Second Brain Phase 2 merge commit: `f7c0f5e870c4c53886221264aa33bc2aee91c3df`.
+- Second Brain Phase 2 validation: 675 tests passing, default CLI smoke passed, default deterministic in-memory Second Brain diagnostic passed and SQLite restart/correction/purge persistence proofs passed.
+- Second Brain Phase 2 provides fixture-only SQLite persistence through Python stdlib `sqlite3`; SQLite is a storage adapter and not a core JarvisOS dependency.
+- Second Brain remains in-memory by default. SQLite requires explicit diagnostic use with `--storage sqlite --db PATH`.
+- Second Brain Phase 2 validates schema version 1, deterministic initialization/reload, duplicate ID rejection, explicit correction/supersession transactions, logical delete, hard purge, `user_scope` filtering/isolation, bounded `storage_corrupt` for malformed/incomplete schema, `schema_version_unsupported` for unsupported schema versions, no raw SQLite errors in reviewed public paths, and deterministic Phase 1 retrieval parity.
+- Second Brain Phase 2 persistence proof: synthetic fixture data survives process restart, corrections survive restart with prior records retained as superseded, and hard-purged records remain absent after restart.
+- Second Brain Phase 2 implementation snapshot: `jarvis_core/second_brain/repository.py`, `jarvis_core/second_brain/__init__.py`, `jarvis_core/second_brain/__main__.py`, `tests/test_second_brain_retrieval.py`, and `tests/test_second_brain_sqlite_repository.py`.
+- Second Brain Phase 2 authorizes only synthetic ordinary/non-sensitive fixtures. PERSONAL, SENSITIVE and RESTRICTED durable data remain blocked, and fixture-only keyword guards are not a future real-memory safety model.
+- Second Brain Phase 2 keeps State Store DeviceState-only; SQLite does not become Runtime, DeviceState or State Store persistence.
+- Second Brain Phase 2 has no execution authority and does not implement real personal memory, sensitive memory, health memory, financial memory, relationship memory, private-message memory, precise-location memory, biometric memory, credentials/secrets, encryption, key management, backup/export, automatic memory extraction, automatic profiling, live source indexing, Notion/GitHub/Obsidian/Google Drive connectors, embeddings, vector DB, semantic retrieval, RAG, AI/provider-backed retrieval, AI durable writes, Runtime integration, Planner/Driver execution, DeviceState mutation, State Store reuse, API/Dashboard exposure, Voice memory integration, policy/confirmation changes or cloud/cross-device sync.
+- Second Brain Phase 3 remains unopened. Real personal memory requires a separate Sensitive Memory / Retention / encryption gate; source connectors/indexing, semantic retrieval/RAG/embeddings, AI-backed memory writes and Obsidian integration remain future work.
 - Current snapshot commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -262,7 +273,17 @@ Independent Second Brain line:
 - Second Brain Phase 1 handles freshness, supersession, contradiction and source precedence deterministically: explicit correction outranks prior fact, equal-strength contradictions return contradicted, and unknown queries return no fabricated answer.
 - Second Brain Phase 1 remains diagnostic/retrieval-only and has no execution authority.
 - Second Brain Phase 1 does not provide or validate persistence, SQLite, file-backed memory, durable memory, automatic memory extraction, automatic profiling, filesystem memory writes, source indexing, connectors, embeddings, vector DB, semantic retrieval, RAG, AI/provider-backed retrieval, Runtime integration, Planner/Driver execution, DeviceState mutation, API/Dashboard integration, policy/confirmation changes or execution authority.
-- Second Brain Phase 2 remains unopened; durable storage/persistence, connectors/source indexing, retrieval/RAG/embeddings/AI and Obsidian integration remain future work behind separate explicit gates.
+- Second Brain Phase 2 - SQLite Fixture Persistence is completed after PR #72 merge.
+- Second Brain Phase 2 merge commit: `f7c0f5e870c4c53886221264aa33bc2aee91c3df`.
+- Second Brain Phase 2 validation: 675 tests passing, default CLI smoke passed, local Second Brain in-memory diagnostic passed and SQLite restart/correction/purge persistence proofs passed.
+- Second Brain Phase 2 provides explicit fixture-only SQLite persistence through Python stdlib `sqlite3`; SQLite remains a storage adapter, not a core JarvisOS dependency, and in-memory remains the default Second Brain mode.
+- SQLite mode is explicit through `--storage sqlite --db PATH`; no hidden automatic seeding is performed.
+- Second Brain Phase 2 validates schema version 1, deterministic initialization/reload, duplicate ID rejection, explicit correction/supersession transactions, logical delete, hard purge, `user_scope` filtering/isolation, malformed/incomplete schema -> bounded `storage_corrupt`, unsupported schema version -> `schema_version_unsupported`, no raw SQLite errors in reviewed public paths, and deterministic Phase 1 retrieval parity.
+- Second Brain Phase 2 persistence proof: synthetic fixtures survive process restart, corrections survive restart, prior records remain superseded, and hard-purged records remain absent after restart.
+- Second Brain Phase 2 implementation snapshot: `jarvis_core/second_brain/repository.py`, `jarvis_core/second_brain/__init__.py`, `jarvis_core/second_brain/__main__.py`, `tests/test_second_brain_retrieval.py`, and `tests/test_second_brain_sqlite_repository.py`.
+- Second Brain Phase 2 keeps boundaries explicit: only synthetic ordinary/non-sensitive fixtures are authorized; PERSONAL, SENSITIVE and RESTRICTED durable data remain blocked; fixture-only keyword guards are not a future real-memory safety model; State Store remains DeviceState-only; SQLite does not become Runtime/DeviceState persistence.
+- Second Brain Phase 2 does not implement or validate real personal memory, sensitive memory, health memory, financial memory, relationship memory, private-message memory, precise-location memory, biometric memory, credentials/secrets, encryption, key management, backup/export, automatic memory extraction, automatic profiling, live source indexing, Notion/GitHub/Obsidian/Google Drive connectors, embeddings, vector DB, semantic retrieval, RAG, AI/provider-backed retrieval, AI durable writes, Runtime integration, Planner/Driver execution, DeviceState mutation, State Store reuse, API/Dashboard exposure, Voice memory integration, policy/confirmation changes, cloud/cross-device sync or execution authority.
+- Second Brain Phase 3 remains unopened; real personal/sensitive memory, connectors/source indexing, retrieval/RAG/embeddings/AI, AI-backed memory writes and Obsidian integration remain future work behind separate explicit gates.
 
 ## Stable Boundaries
 
@@ -326,6 +347,8 @@ Current experimental areas:
 - Deterministic in-memory Second Brain retrieval.
 - Seeded approved Second Brain knowledge fixtures.
 - Local Second Brain text and JSON diagnostic report rendering.
+- Fixture-only SQLite Second Brain persistence adapter.
+- Local SQLite Second Brain diagnostic mode.
 
 ## Current Transports
 
@@ -447,7 +470,6 @@ Not currently implemented:
 - async/background I/O;
 - secrets store;
 - production authentication or authorization;
-- SQLite;
 - migrations;
 - Dashboard validation beyond the Phase 11.4 profile-based hardware Dashboard validation;
 - MQTT over LAN, public MQTT, cloud MQTT, production broker deployment or broker UI;
@@ -469,8 +491,9 @@ Not currently implemented:
 - Voice-connected cognition;
 - AI-assisted cognitive recommendations;
 - provider-backed cognition;
-- persistent Second Brain storage;
-- SQLite-backed memory;
+- real personal or sensitive Second Brain memory;
+- encrypted Second Brain storage or key management;
+- Second Brain backup/export;
 - JSON/file-backed memory;
 - automatic memory extraction;
 - automatic profiling;
