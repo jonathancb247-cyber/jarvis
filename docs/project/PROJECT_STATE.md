@@ -80,6 +80,17 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Wearable Phase 1 does not implement or validate real Pixel Watch connectivity, HR, HRV, sleep, activity/exercise, precise location, biometrics or wrist presence as identity.
 - Sensitive Wearable Context remains blocked behind a future ADR/gate before health, sleep, activity, location or biometric signals enter cognition.
 - Real Pixel Watch validation remains a separate future hardware gate; the future real Wear OS probe is expected to replace only the source side.
+- Second Brain Phase 1 is completed: Deterministic In-Memory Knowledge Retrieval merged in PR #69.
+- Second Brain Phase 1 merge commit: `fbb64eac19f8f880794322ac647ac8040ba069b2`.
+- Second Brain Phase 1 validation: 656 tests passing, default CLI smoke passed, deterministic text diagnostic passed and deterministic JSON diagnostic passed.
+- Second Brain Phase 1 is fake, deterministic and in-memory only, with seeded approved knowledge and deterministic retrieval through exact and normalized keyword-topic matching.
+- Second Brain Phase 1 handles current, stale, historical, superseded and contradicted freshness; superseded evidence is retained but not treated as co-current.
+- Second Brain Phase 1 applies deterministic source precedence: explicit correction outranks prior fact, equal-strength contradictions return contradicted rather than fabricated truth, and unknown queries return no fabricated answer.
+- Second Brain Phase 1 provides deterministic text and JSON diagnostic output and no execution authority.
+- Second Brain Phase 1 implementation snapshot: `jarvis_core/second_brain/__init__.py`, `jarvis_core/second_brain/__main__.py`, `jarvis_core/second_brain/models.py`, `jarvis_core/second_brain/fixtures.py`, `jarvis_core/second_brain/retrieval.py`, `jarvis_core/second_brain/reporting.py`, and `tests/test_second_brain_retrieval.py`.
+- Second Brain Phase 1 example semantics remain conservative: the Pixel Watch fixture says fake/deterministic Wearable Phase 1 completed while real Pixel Watch hardware validation remains separate/pending, and the MQTT fixture represents local MQTT request/response validation without claiming physical ESP32 MQTT validation complete.
+- Second Brain Phase 1 does not implement persistence, SQLite, JSON/file memory storage, durable memory, automatic memory extraction, automatic profiling, filesystem memory writes, network access, Notion/GitHub/Obsidian/Google Drive connectors, source indexing, embeddings, vector DB, semantic retrieval, RAG, AI/provider-backed retrieval, Runtime integration, Planner/Driver execution, DeviceState mutation, API/Dashboard integration, policy/confirmation changes or execution authority.
+- Second Brain Phase 2 remains unopened. Durable storage/persistence requires a separate explicit design/ADR gate, connectors/source indexing remain future work, retrieval/RAG/embeddings/AI remain future work, and Obsidian remains optional/future rather than core storage.
 - Current snapshot commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -242,6 +253,17 @@ Independent wearable line:
 - Sensitive Wearable Context remains blocked behind a future ADR/gate before HR, HRV, sleep, activity, precise location, biometrics or wrist-presence identity evidence enters cognition.
 - Real Pixel Watch validation remains a separate future hardware gate.
 
+Independent Second Brain line:
+
+- Second Brain Phase 1 - Deterministic In-Memory Knowledge Retrieval is completed after PR #69 merge.
+- Second Brain Phase 1 merge commit: `fbb64eac19f8f880794322ac647ac8040ba069b2`.
+- Second Brain Phase 1 validation: 656 tests passing, default CLI smoke passed, local Second Brain text diagnostic passed and local Second Brain JSON diagnostic passed.
+- Second Brain Phase 1 provides fake/deterministic/in-memory retrieval over seeded approved knowledge only, using exact and normalized keyword-topic matching.
+- Second Brain Phase 1 handles freshness, supersession, contradiction and source precedence deterministically: explicit correction outranks prior fact, equal-strength contradictions return contradicted, and unknown queries return no fabricated answer.
+- Second Brain Phase 1 remains diagnostic/retrieval-only and has no execution authority.
+- Second Brain Phase 1 does not provide or validate persistence, SQLite, file-backed memory, durable memory, automatic memory extraction, automatic profiling, filesystem memory writes, source indexing, connectors, embeddings, vector DB, semantic retrieval, RAG, AI/provider-backed retrieval, Runtime integration, Planner/Driver execution, DeviceState mutation, API/Dashboard integration, policy/confirmation changes or execution authority.
+- Second Brain Phase 2 remains unopened; durable storage/persistence, connectors/source indexing, retrieval/RAG/embeddings/AI and Obsidian integration remain future work behind separate explicit gates.
+
 ## Stable Boundaries
 
 Stable project rules:
@@ -301,6 +323,9 @@ Current experimental areas:
 - Detached DeviceState semantic projections as cognitive evidence.
 - Fake deterministic wearable presence signal mapping.
 - Detached wearable semantic projections as cognitive evidence.
+- Deterministic in-memory Second Brain retrieval.
+- Seeded approved Second Brain knowledge fixtures.
+- Local Second Brain text and JSON diagnostic report rendering.
 
 ## Current Transports
 
@@ -444,6 +469,16 @@ Not currently implemented:
 - Voice-connected cognition;
 - AI-assisted cognitive recommendations;
 - provider-backed cognition;
+- persistent Second Brain storage;
+- SQLite-backed memory;
+- JSON/file-backed memory;
+- automatic memory extraction;
+- automatic profiling;
+- Second Brain filesystem memory writes;
+- Second Brain source indexing;
+- Notion, GitHub, Obsidian or Google Drive Second Brain connectors;
+- embeddings, vector DB, semantic retrieval or RAG;
+- AI/provider-backed Second Brain retrieval;
 - real wearable integration beyond fake deterministic presence evidence;
 - real Pixel Watch connectivity or Wear OS app/probe;
 - Android/ADB wearable integration;
