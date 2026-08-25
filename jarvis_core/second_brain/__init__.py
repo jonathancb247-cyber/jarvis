@@ -1,6 +1,13 @@
 """Deterministic in-memory Second Brain retrieval helpers for JarvisOS."""
 
 from .fixtures import build_seed_knowledge
+from .github_sources import (
+    DEFAULT_GITHUB_SOURCE_PATHS,
+    GitHubApiTransport,
+    GitHubFileSnapshot,
+    GitHubSourceAdapter,
+    GitHubSourceError,
+)
 from .index import SOURCE_INDEX_SCHEMA_VERSION, SQLiteSourceIndex, SourceIndexError
 from .models import (
     KnowledgeConfidence,
@@ -73,6 +80,11 @@ __all__ = [
     "SourceRetrievalStatus",
     "SourceType",
     "DeterministicSemanticScorer",
+    "DEFAULT_GITHUB_SOURCE_PATHS",
+    "GitHubApiTransport",
+    "GitHubFileSnapshot",
+    "GitHubSourceAdapter",
+    "GitHubSourceError",
     "build_demo_queries",
     "build_seed_knowledge",
     "build_source_demo_queries",
