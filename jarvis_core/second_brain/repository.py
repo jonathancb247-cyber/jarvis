@@ -166,6 +166,17 @@ class SQLiteKnowledgeRepository(KnowledgeRepository):
                     )
                     """
                 )
+                current = connection.execute(
+                    "SELECT value FROM second_brain_metadata WHERE key = ?",
+                    ("schema_version",),
+                ).fetchone()
+                if current is None:
+                    connection.execute(
+                        "INSERT INTO second_brain_metadata (key, value) VALUES (?, ?)",
+                        ("schema_version", str(SECOND_BRAIN_SCHEMA_VERSION)),
+                    )
+                elif current[0] != str(SECOND_BRAIN_SCHEMA_VERSION):
+                    raise SecondBrainStorageError("schema_version_unsupported")
                 connection.execute(
                     """
                     CREATE TABLE IF NOT EXISTS knowledge_items (
@@ -189,17 +200,6 @@ class SQLiteKnowledgeRepository(KnowledgeRepository):
                     )
                     """
                 )
-                current = connection.execute(
-                    "SELECT value FROM second_brain_metadata WHERE key = ?",
-                    ("schema_version",),
-                ).fetchone()
-                if current is None:
-                    connection.execute(
-                        "INSERT INTO second_brain_metadata (key, value) VALUES (?, ?)",
-                        ("schema_version", str(SECOND_BRAIN_SCHEMA_VERSION)),
-                    )
-                elif current[0] != str(SECOND_BRAIN_SCHEMA_VERSION):
-                    raise SecondBrainStorageError("schema_version_unsupported")
                 _assert_schema(connection)
         except SecondBrainStorageError:
             raise
@@ -224,8 +224,11 @@ class SQLiteKnowledgeRepository(KnowledgeRepository):
         return SECOND_BRAIN_SCHEMA_VERSION
 
     def health(self) -> dict[str, int]:
-        with self._connection_checked() as connection:
-            count = connection.execute("SELECT COUNT(*) FROM knowledge_items WHERE deleted = 0").fetchone()[0]
+        try:
+            with self._connection_checked() as connection:
+                count = connection.execute("SELECT COUNT(*) FROM knowledge_items WHERE deleted = 0").fetchone()[0]
+        except sqlite3.DatabaseError as exc:
+            raise SecondBrainStorageError("storage_corrupt") from exc
         return {"schema_version": SECOND_BRAIN_SCHEMA_VERSION, "item_count": int(count)}
 
     def insert(self, item: KnowledgeItem) -> KnowledgeItem:
@@ -254,8 +257,11 @@ class SQLiteKnowledgeRepository(KnowledgeRepository):
         values: tuple[object, ...] = (knowledge_id,)
         if not include_deleted:
             sql = f"{sql} AND deleted = 0"
-        with self._connection_checked() as connection:
-            row = connection.execute(sql, values).fetchone()
+        try:
+            with self._connection_checked() as connection:
+                row = connection.execute(sql, values).fetchone()
+        except sqlite3.DatabaseError as exc:
+            raise SecondBrainStorageError("storage_corrupt") from exc
         return _item_from_row(row) if row is not None else None
 
     def list(
@@ -276,8 +282,11 @@ class SQLiteKnowledgeRepository(KnowledgeRepository):
         if clauses:
             sql = f"{sql} WHERE {' AND '.join(clauses)}"
         sql = f"{sql} ORDER BY rowid ASC"
-        with self._connection_checked() as connection:
-            rows = connection.execute(sql, tuple(values)).fetchall()
+        try:
+            with self._connection_checked() as connection:
+                rows = connection.execute(sql, tuple(values)).fetchall()
+        except sqlite3.DatabaseError as exc:
+            raise SecondBrainStorageError("storage_corrupt") from exc
         return tuple(_item_from_row(row) for row in rows)
 
     def correct(self, prior_knowledge_id: str, correction: KnowledgeItem) -> KnowledgeItem:
@@ -329,22 +338,29 @@ class SQLiteKnowledgeRepository(KnowledgeRepository):
         return correction
 
     def logical_delete(self, knowledge_id: str) -> bool:
-        with self._connection_checked() as connection:
-            cursor = connection.execute(
-                "UPDATE knowledge_items SET deleted = 1 WHERE knowledge_id = ?",
-                (knowledge_id,),
-            )
+        try:
+            with self._connection_checked() as connection:
+                cursor = connection.execute(
+                    "UPDATE knowledge_items SET deleted = 1 WHERE knowledge_id = ?",
+                    (knowledge_id,),
+                )
+        except sqlite3.DatabaseError as exc:
+            raise SecondBrainStorageError("storage_corrupt") from exc
         return cursor.rowcount > 0
 
     def hard_purge(self, knowledge_id: str) -> bool:
-        with self._connection_checked() as connection:
-            cursor = connection.execute("DELETE FROM knowledge_items WHERE knowledge_id = ?", (knowledge_id,))
+        try:
+            with self._connection_checked() as connection:
+                cursor = connection.execute("DELETE FROM knowledge_items WHERE knowledge_id = ?", (knowledge_id,))
+        except sqlite3.DatabaseError as exc:
+            raise SecondBrainStorageError("storage_corrupt") from exc
         return cursor.rowcount > 0
 
     @contextmanager
     def _connection_checked(self) -> Iterator[sqlite3.Connection]:
-        self.schema_version()
         with self._connection() as connection:
+            _check_schema_version(connection)
+            _assert_schema(connection)
             yield connection
 
     @contextmanager
@@ -401,6 +417,20 @@ def _assert_schema(connection: sqlite3.Connection) -> None:
     )
     if tuple(column for column in columns if column in required) != required:
         raise SecondBrainStorageError("storage_corrupt")
+
+
+def _check_schema_version(connection: sqlite3.Connection) -> None:
+    try:
+        value = connection.execute(
+            "SELECT value FROM second_brain_metadata WHERE key = ?",
+            ("schema_version",),
+        ).fetchone()
+    except sqlite3.DatabaseError as exc:
+        raise SecondBrainStorageError("storage_corrupt") from exc
+    if value is None:
+        raise SecondBrainStorageError("storage_corrupt")
+    if value[0] != str(SECOND_BRAIN_SCHEMA_VERSION):
+        raise SecondBrainStorageError("schema_version_unsupported")
 
 
 def _item_values(item: KnowledgeItem) -> tuple[object, ...]:

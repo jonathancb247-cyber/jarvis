@@ -174,6 +174,44 @@ class SQLiteKnowledgeRepositoryTests(unittest.TestCase):
             with self.assertRaisesRegex(SecondBrainStorageError, "storage_corrupt"):
                 repository.list()
 
+    def test_incomplete_schema_missing_knowledge_table_fails_with_bounded_errors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = Path(directory) / "second-brain.sqlite"
+            _create_metadata_only_database(db_path)
+            repository = SQLiteKnowledgeRepository(db_path)
+
+            calls = (
+                ("health", repository.health),
+                ("get", lambda: repository.get("anything")),
+                ("list", repository.list),
+                ("logical_delete", lambda: repository.logical_delete("anything")),
+                ("hard_purge", lambda: repository.hard_purge("anything")),
+                ("insert", lambda: repository.insert(_ordinary_item("incomplete_schema_insert"))),
+                ("correct", lambda: repository.correct("anything", _ordinary_item("incomplete_schema_correction"))),
+            )
+
+            for name, call in calls:
+                with self.subTest(name=name):
+                    with self.assertRaisesRegex(SecondBrainStorageError, "storage_corrupt"):
+                        call()
+
+    def test_malformed_schema_table_fails_with_bounded_errors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = Path(directory) / "second-brain.sqlite"
+            _create_malformed_knowledge_table_database(db_path)
+            repository = SQLiteKnowledgeRepository(db_path)
+
+            calls = (
+                ("initialize", repository.initialize),
+                ("list", repository.list),
+                ("insert", lambda: repository.insert(_ordinary_item("malformed_schema_insert"))),
+            )
+
+            for name, call in calls:
+                with self.subTest(name=name):
+                    with self.assertRaisesRegex(SecondBrainStorageError, "storage_corrupt"):
+                        call()
+
     def test_unsupported_schema_version_fails_without_reset(self):
         with tempfile.TemporaryDirectory() as directory:
             repository = _empty_repository(directory)
@@ -190,6 +228,16 @@ class SQLiteKnowledgeRepositoryTests(unittest.TestCase):
 
             with self.assertRaisesRegex(SecondBrainStorageError, "schema_version_unsupported"):
                 SQLiteKnowledgeRepository(db_path).initialize()
+
+    def test_unsupported_schema_version_does_not_create_knowledge_table(self):
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = Path(directory) / "second-brain.sqlite"
+            _create_metadata_only_database(db_path, schema_version="999")
+
+            with self.assertRaisesRegex(SecondBrainStorageError, "schema_version_unsupported"):
+                SQLiteKnowledgeRepository(db_path).initialize()
+
+            self.assertNotIn("knowledge_items", _table_names(db_path))
 
     def test_corrupted_database_file_fails_safely(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -300,6 +348,41 @@ def _insert_raw_row(db_path: Path, *, kind: str) -> None:
             ),
         )
         connection.commit()
+    finally:
+        connection.close()
+
+
+def _create_metadata_only_database(db_path: Path, *, schema_version: str = "1") -> None:
+    connection = sqlite3.connect(db_path)
+    try:
+        connection.execute("CREATE TABLE second_brain_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        connection.execute(
+            "INSERT INTO second_brain_metadata (key, value) VALUES (?, ?)",
+            ("schema_version", schema_version),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def _create_malformed_knowledge_table_database(db_path: Path) -> None:
+    connection = sqlite3.connect(db_path)
+    try:
+        connection.execute("CREATE TABLE second_brain_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        connection.execute(
+            "INSERT INTO second_brain_metadata (key, value) VALUES (?, ?)",
+            ("schema_version", str(SECOND_BRAIN_SCHEMA_VERSION)),
+        )
+        connection.execute("CREATE TABLE knowledge_items (knowledge_id TEXT PRIMARY KEY)")
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def _table_names(db_path: Path) -> tuple[str, ...]:
+    connection = sqlite3.connect(db_path)
+    try:
+        return tuple(row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'"))
     finally:
         connection.close()
 
