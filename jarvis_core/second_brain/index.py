@@ -73,6 +73,7 @@ class SQLiteSourceIndex:
                     CREATE TABLE IF NOT EXISTS indexed_source_documents (
                         document_id TEXT PRIMARY KEY,
                         source_id TEXT NOT NULL,
+                        source_scope TEXT NOT NULL,
                         source_type TEXT NOT NULL,
                         source_reference TEXT NOT NULL,
                         title TEXT NOT NULL,
@@ -102,7 +103,11 @@ class SQLiteSourceIndex:
             raise SourceIndexError("source_index_unavailable") from exc
 
     def refresh(self, adapter: SourceAdapter) -> dict[str, int]:
-        records = adapter.enumerate_records()
+        try:
+            records = adapter.enumerate_records()
+            source_scope = adapter.source_scope
+        except (OSError, UnicodeError, ValueError) as exc:
+            raise SourceIndexError("source_adapter_failed") from exc
         seen_source_ids = {record.source_id for record in records}
         inserted = 0
         unchanged = 0
@@ -112,13 +117,13 @@ class SQLiteSourceIndex:
             with self._connection_checked() as connection:
                 for record in records:
                     _validate_record(record)
-                    document = _document_from_record(record)
+                    document = _document_from_record(record, source_scope)
                     existing_same_hash = connection.execute(
                         """
                         SELECT rowid, * FROM indexed_source_documents
-                        WHERE source_id = ? AND content_hash = ? AND deleted = 0
+                        WHERE source_id = ? AND source_scope = ? AND content_hash = ? AND deleted = 0
                         """,
-                        (record.source_id, document.content_hash),
+                        (record.source_id, source_scope, document.content_hash),
                     ).fetchone()
                     if existing_same_hash is not None:
                         unchanged += 1
@@ -127,9 +132,9 @@ class SQLiteSourceIndex:
                     active_rows = connection.execute(
                         """
                         SELECT rowid, * FROM indexed_source_documents
-                        WHERE source_id = ? AND deleted = 0
+                        WHERE source_id = ? AND source_scope = ? AND deleted = 0
                         """,
-                        (record.source_id,),
+                        (record.source_id, source_scope),
                     ).fetchall()
                     supersedes = tuple(_document_from_row(row).document_id for row in active_rows)
                     document = IndexedSourceDocument(
@@ -153,7 +158,8 @@ class SQLiteSourceIndex:
                         superseded += 1
 
                 active_rows = connection.execute(
-                    "SELECT rowid, * FROM indexed_source_documents WHERE deleted = 0"
+                    "SELECT rowid, * FROM indexed_source_documents WHERE source_scope = ? AND deleted = 0",
+                    (source_scope,),
                 ).fetchall()
                 for row in active_rows:
                     document = _document_from_row(row)
@@ -247,19 +253,20 @@ class SQLiteSourceIndex:
 
 _INSERT_SQL = """
 INSERT INTO indexed_source_documents (
-    document_id, source_id, source_type, source_reference, title, topic,
+    document_id, source_id, source_scope, source_type, source_reference, title, topic,
     content, content_hash, captured_at, freshness, authority, confidence,
     sensitivity, user_scope, supersedes_json, superseded_by_json,
     contradicted_by_json, deleted, safe_explanation
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 
-def _document_from_record(record: SourceRecord) -> IndexedSourceDocument:
+def _document_from_record(record: SourceRecord, source_scope: str) -> IndexedSourceDocument:
     content_hash = _content_hash(record)
     return IndexedSourceDocument(
         document_id=f"{record.source_id}@{content_hash[:12]}",
         source_id=record.source_id,
+        source_scope=source_scope,
         source_type=record.source_type,
         source_reference=record.source_reference,
         title=record.title,
@@ -302,6 +309,7 @@ def _document_values(document: IndexedSourceDocument) -> tuple[object, ...]:
     return (
         document.document_id,
         document.source_id,
+        document.source_scope,
         document.source_type.value,
         document.source_reference,
         document.title,
@@ -327,6 +335,7 @@ def _document_from_row(row: sqlite3.Row) -> IndexedSourceDocument:
         return IndexedSourceDocument(
             document_id=_required_text(row["document_id"]),
             source_id=_required_text(row["source_id"]),
+            source_scope=_required_text(row["source_scope"]),
             source_type=SourceType(row["source_type"]),
             source_reference=_required_text(row["source_reference"]),
             title=_required_text(row["title"]),
@@ -354,6 +363,7 @@ def _assert_schema(connection: sqlite3.Connection) -> None:
     required = (
         "document_id",
         "source_id",
+        "source_scope",
         "source_type",
         "source_reference",
         "title",
@@ -427,4 +437,3 @@ def _required_text(value: object) -> str:
     if not isinstance(value, str) or not value:
         raise SourceIndexError("source_index_corrupt")
     return value
-

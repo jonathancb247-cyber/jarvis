@@ -16,6 +16,7 @@ from .models import KnowledgeConfidence, KnowledgeFreshness, KnowledgeSensitivit
 
 
 SOURCE_FIXTURE_CAPTURED_AT = "2026-08-24T00:00:00Z"
+MAX_LOCAL_MARKDOWN_BYTES = 64 * 1024
 
 
 class SourceType(str, Enum):
@@ -62,6 +63,7 @@ class SourceRecord:
 class IndexedSourceDocument:
     document_id: str
     source_id: str
+    source_scope: str
     source_type: SourceType
     source_reference: str
     title: str
@@ -107,6 +109,10 @@ class SourceAdapter:
     def enumerate_records(self) -> tuple[SourceRecord, ...]:
         raise NotImplementedError
 
+    @property
+    def source_scope(self) -> str:
+        raise NotImplementedError
+
 
 class LocalMarkdownSourceAdapter(SourceAdapter):
     """Parse deterministic local Markdown fixture files."""
@@ -114,15 +120,24 @@ class LocalMarkdownSourceAdapter(SourceAdapter):
     def __init__(self, source_dir: str | Path):
         self._source_dir = Path(source_dir)
 
+    @property
+    def source_scope(self) -> str:
+        return f"{SourceType.LOCAL_MARKDOWN.value}:{self._source_dir.resolve()}"
+
     def enumerate_records(self) -> tuple[SourceRecord, ...]:
+        if not self._source_dir.is_dir():
+            raise ValueError("source_dir_unavailable")
         records = []
         for path in sorted(self._source_dir.glob("*.md"), key=lambda item: item.name):
+            _validate_local_markdown_path(self._source_dir, path)
             records.append(parse_markdown_source(path))
         return tuple(records)
 
 
 def parse_markdown_source(path: str | Path) -> SourceRecord:
     source_path = Path(path)
+    if source_path.stat().st_size > MAX_LOCAL_MARKDOWN_BYTES:
+        raise ValueError("source_file_too_large")
     text = source_path.read_text(encoding="utf-8")
     metadata, content = _split_front_matter(text)
     return SourceRecord(
@@ -304,3 +319,16 @@ def _split_ids(value: str) -> tuple[str, ...]:
 
 def source_terms(value: str) -> tuple[str, ...]:
     return tuple(re.findall(r"[a-z0-9]+", value.lower()))
+
+
+def _validate_local_markdown_path(source_dir: Path, path: Path) -> None:
+    if path.is_symlink():
+        raise ValueError("source_symlink_unsupported")
+    root = source_dir.resolve()
+    resolved = path.resolve()
+    if resolved.parent != root:
+        raise ValueError("source_path_outside_root")
+    if not resolved.is_file():
+        raise ValueError("source_file_unavailable")
+    if resolved.stat().st_size > MAX_LOCAL_MARKDOWN_BYTES:
+        raise ValueError("source_file_too_large")

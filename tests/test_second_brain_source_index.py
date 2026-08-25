@@ -119,6 +119,47 @@ class SecondBrainSourceIndexTests(unittest.TestCase):
         self.assertTrue(stale.deleted)
         self.assertEqual(stale.freshness, KnowledgeFreshness.STALE)
 
+    def test_refresh_deletion_is_scoped_to_adapter_source_set(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            first_dir = base / "first"
+            second_dir = base / "second"
+            db_path = base / "source-index.sqlite"
+            _write_record(first_dir, _record("first_doc", "Scoped deletion first source set."))
+            _write_record(second_dir, _record("second_doc", "Scoped deletion second source set."))
+            index = _initialized_index(db_path)
+            index.refresh(LocalMarkdownSourceAdapter(first_dir))
+            index.refresh(LocalMarkdownSourceAdapter(second_dir))
+            (first_dir / "first_doc.md").unlink()
+
+            summary = index.refresh(LocalMarkdownSourceAdapter(first_dir))
+            active_source_ids = {document.source_id for document in index.list()}
+
+        self.assertEqual(summary["deleted"], 1)
+        self.assertNotIn("first_doc", active_source_ids)
+        self.assertIn("second_doc", active_source_ids)
+
+    def test_invalid_source_directory_fails_with_bounded_error(self):
+        with tempfile.TemporaryDirectory() as temp:
+            index = _initialized_index(Path(temp) / "source-index.sqlite")
+
+            with self.assertRaises(SourceIndexError) as raised:
+                index.refresh(LocalMarkdownSourceAdapter(Path(temp) / "missing"))
+
+        self.assertEqual(raised.exception.code, "source_adapter_failed")
+
+    def test_too_large_source_file_fails_with_bounded_error(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source_dir, db_path = _source_and_db(temp)
+            source_dir.mkdir(parents=True)
+            (source_dir / "large.md").write_text("x" * (65 * 1024), encoding="utf-8")
+            index = _initialized_index(db_path)
+
+            with self.assertRaises(SourceIndexError) as raised:
+                index.refresh(LocalMarkdownSourceAdapter(source_dir))
+
+        self.assertEqual(raised.exception.code, "source_adapter_failed")
+
     def test_exact_and_keyword_retrieval_include_provenance(self):
         with tempfile.TemporaryDirectory() as temp:
             retriever = _fixture_retriever(temp)
