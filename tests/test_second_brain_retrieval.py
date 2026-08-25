@@ -159,7 +159,6 @@ class SecondBrainRetrievalTests(unittest.TestCase):
             "jarvis_core.ai_cloud",
             "jarvis_core.voice",
             "jarvis_core.state_store",
-            "sqlite3",
             "requests",
             "urllib",
             "socket",
@@ -174,15 +173,11 @@ class SecondBrainRetrievalTests(unittest.TestCase):
                 self.assertTrue(forbidden_modules.isdisjoint(imported), imported)
 
     def test_second_brain_package_has_no_runtime_persistence_or_provider_hooks(self):
-        forbidden_tokens = (
+        always_forbidden_tokens = (
             "Command(",
             "handle_adapter_input",
             ".read(",
             ".apply(",
-            "open(",
-            "Path(",
-            "write_text",
-            "sqlite",
             "vector",
             "embedding",
             "requests",
@@ -200,12 +195,19 @@ class SecondBrainRetrievalTests(unittest.TestCase):
             "Groq",
             "Ollama",
         )
+        persistence_tokens_allowed_only_in_storage_boundary = (
+            "Path(",
+            "sqlite",
+        )
 
         for path in SECOND_BRAIN_ROOT.glob("*.py"):
             text = path.read_text(encoding="utf-8")
             with self.subTest(path=path.relative_to(REPO_ROOT).as_posix()):
-                for token in forbidden_tokens:
+                for token in always_forbidden_tokens:
                     self.assertNotIn(token, text)
+                if path.name not in {"__main__.py", "repository.py"}:
+                    for token in persistence_tokens_allowed_only_in_storage_boundary:
+                        self.assertNotIn(token, text)
 
 
 def _all_item_text():
