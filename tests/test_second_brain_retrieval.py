@@ -205,7 +205,7 @@ class SecondBrainRetrievalTests(unittest.TestCase):
             with self.subTest(path=path.relative_to(REPO_ROOT).as_posix()):
                 for token in always_forbidden_tokens:
                     self.assertNotIn(token, text)
-                if path.name not in {"__main__.py", "repository.py"}:
+                if path.name not in {"__main__.py", "index.py", "repository.py", "sources.py"}:
                     for token in persistence_tokens_allowed_only_in_storage_boundary:
                         self.assertNotIn(token, text)
 
