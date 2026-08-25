@@ -22,6 +22,7 @@ REQUIRED_FILES = [
     "docs/design/VOICE_PROVIDER_BAKEOFF.md",
     "docs/design/AI_PROVIDER_STRATEGY.md",
     "docs/design/SECOND_BRAIN_MEMORY_BOUNDARY.md",
+    "docs/design/SECOND_BRAIN_STORAGE_PERSISTENCE_BOUNDARY.md",
     "docs/design/JUDGMENT_AUTONOMY_BOUNDARY.md",
     "docs/design/LEARNING_ADAPTIVE_PATTERN_BOUNDARY.md",
     "docs/design/CONTEXT_ENGINE_BOUNDARY.md",
@@ -345,6 +346,13 @@ class DocumentationAssetsTests(unittest.TestCase):
                 "State Store must not become Second Brain storage.",
                 "Silent persistent memory is not approved.",
             ],
+            "SECOND_BRAIN_STORAGE_PERSISTENCE_BOUNDARY.md": [
+                "Persistence stores approved knowledge.",
+                "SQLite is a storage adapter choice, not a core JarvisOS dependency.",
+                "`JsonDeviceStateStore` remains DeviceState-only.",
+                "No AI provider may commit durable memory directly.",
+                "Second Brain storage\n-> Runtime action",
+            ],
             "JUDGMENT_AUTONOMY_BOUNDARY.md": [
                 "Judgment is not authority.",
                 "Level 4 - Autonomous: rejected.",
@@ -380,6 +388,55 @@ class DocumentationAssetsTests(unittest.TestCase):
                 self.assertIn("Future Implementation Direction", text)
                 for phrase in required_text:
                     self.assertIn(phrase, text)
+
+    def test_second_brain_storage_persistence_adr_is_design_only(self):
+        text = (
+            REPO_ROOT
+            / "docs"
+            / "design"
+            / "SECOND_BRAIN_STORAGE_PERSISTENCE_BOUNDARY.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("Status: Accepted / Design - Not Implemented", text)
+        self.assertIn("SQLite", text)
+        self.assertIn("Python's standard-library `sqlite3`", text)
+        self.assertIn("fixture-only validation", text)
+        self.assertIn("State Store", text)
+        self.assertIn("It must not become Second Brain", text)
+        self.assertIn("schema versioning", text)
+        self.assertIn("no silent durable writes", text)
+        self.assertIn("explicit \"remember X\" request", text)
+        self.assertIn("explicit correction", text)
+        self.assertIn("user-approved save suggestion", text)
+        self.assertIn("Not automatically eligible", text)
+        self.assertIn("raw conversation history", text)
+        self.assertIn("AI or provider guesses", text)
+        self.assertIn("credentials or secrets", text)
+        self.assertIn("correction and supersession must be atomic", text)
+        self.assertIn("\"Forget this\" must not merely hide content", text)
+        self.assertIn("hard purge", text)
+        self.assertIn("restricted / never-store", text)
+        self.assertIn("Sensitive Memory remains a future gate", text)
+        self.assertIn("no cross-user recall", text)
+        self.assertIn("unknown identity cannot access personal durable memory", text)
+        self.assertIn("current GitHub/Notion truth", text)
+        self.assertIn("stale cached memory snapshot", text)
+        self.assertIn("KnowledgeRepository", text)
+        self.assertIn("SQLiteKnowledgeRepository", text)
+        self.assertIn("Phase 1 retrieval parity", text)
+        self.assertIn("SQLite alone is not a security boundary", text)
+        self.assertIn("Forbidden logs", text)
+        self.assertIn("This ADR does not approve", text)
+        self.assertIn("real personal memory storage", text)
+        self.assertIn("Obsidian integration", text)
+        self.assertIn("embeddings", text)
+        self.assertIn("vector DB", text)
+        self.assertIn("RAG", text)
+        self.assertIn("AI durable writes", text)
+        self.assertIn("API or Dashboard exposure", text)
+        self.assertIn("Runtime execution", text)
+        self.assertIn("Second Brain Phase 2 - SQLite Fixture Persistence", text)
+        self.assertIn("Still prohibited", text)
 
     def test_wearable_boundary_adr_records_presence_signal_only(self):
         text = (
