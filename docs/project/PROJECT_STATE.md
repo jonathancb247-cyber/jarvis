@@ -101,7 +101,16 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Second Brain Phase 2 authorizes only synthetic ordinary/non-sensitive fixtures. PERSONAL, SENSITIVE and RESTRICTED durable data remain blocked, and fixture-only keyword guards are not a future real-memory safety model.
 - Second Brain Phase 2 keeps State Store DeviceState-only; SQLite does not become Runtime, DeviceState or State Store persistence.
 - Second Brain Phase 2 has no execution authority and does not implement real personal memory, sensitive memory, health memory, financial memory, relationship memory, private-message memory, precise-location memory, biometric memory, credentials/secrets, encryption, key management, backup/export, automatic memory extraction, automatic profiling, live source indexing, Notion/GitHub/Obsidian/Google Drive connectors, embeddings, vector DB, semantic retrieval, RAG, AI/provider-backed retrieval, AI durable writes, Runtime integration, Planner/Driver execution, DeviceState mutation, State Store reuse, API/Dashboard exposure, Voice memory integration, policy/confirmation changes or cloud/cross-device sync.
-- Second Brain Phase 3 remains unopened. Real personal memory requires a separate Sensitive Memory / Retention / encryption gate; source connectors/indexing, semantic retrieval/RAG/embeddings, AI-backed memory writes and Obsidian integration remain future work.
+- Second Brain Phase 3/4 Foundation Slice is completed: Source Index and Hybrid Retrieval foundation merged in PR #74.
+- Second Brain Phase 3/4 Foundation Slice merge commit: `ee7dc1cc918c2c14a50c9ce0c6bfa8e70ecc0c42`.
+- Second Brain Phase 3/4 Foundation Slice validation: 694 tests passing, default CLI smoke passed, local Second Brain in-memory diagnostic passed, source-index diagnostic JSON smoke passed, source-index focused tests passed, Phase 1 retrieval regression passed and Phase 2 SQLite repository regression passed.
+- Second Brain Phase 3/4 Foundation Slice implements local Markdown fixture source indexing only: `LocalMarkdownSourceAdapter` -> `SourceRecord` -> independent `SQLiteSourceIndex` -> `SourceHybridRetriever` -> `SourceRetrievalResult` -> local diagnostic.
+- Second Brain Phase 3/4 Foundation Slice validates a nonrecursive bounded fixture source adapter, path and symlink escape protections, persistent local SQLite source index, deterministic source refresh, deterministic versioning and supersession, deleted-source reconciliation scoped by `source_scope`, deterministic lexical plus fake-semantic hybrid scoring, contradiction and authority handling, provenance-rich results and local CLI diagnostics.
+- Second Brain Phase 3/4 Foundation Slice proof: source index persists and reopens with the same selected result; changed sources create a new current version and supersede the old version; deleted sources stop being current after refresh and reopen; equal-authority deliberate conflicts return contradicted; stronger authority conflicts select the stronger source while retaining weaker conflict evidence.
+- Second Brain Phase 3 - Source Connectors / Indexing is FOUNDATION COMPLETE for local Markdown fixture indexing only. Live GitHub, Notion, Obsidian, Google Drive or other connectors remain future work.
+- Second Brain Phase 4 - Semantic Retrieval / RAG is FOUNDATION COMPLETE for deterministic lexical plus fake-semantic scoring only. True semantic retrieval, embeddings, vector DB and RAG remain future work.
+- Second Brain Phase 3/4 Foundation Slice has no execution authority and does not implement live source connectors, network source fetching, credentials/auth, real personal or sensitive memory, embeddings, vector DB, true semantic retrieval, RAG, AI/provider-backed retrieval, Runtime integration, Planner/Driver execution, DeviceState mutation, State Store reuse, API/Dashboard exposure, Cognition integration, policy/confirmation changes or cloud/cross-device sync.
+- Real personal memory still requires a separate Sensitive Memory / Retention / encryption gate; live source connectors, true semantic retrieval/RAG/embeddings, AI-backed memory writes and Obsidian integration remain future work behind separate explicit gates.
 - Current snapshot commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
 - Phase 10.3 PR: #32 merged.
 - Phase 10.3 implementation commit: `e374d30f2c28865c82fcb880f7079974ea1dfca4`.
@@ -283,7 +292,17 @@ Independent Second Brain line:
 - Second Brain Phase 2 implementation snapshot: `jarvis_core/second_brain/repository.py`, `jarvis_core/second_brain/__init__.py`, `jarvis_core/second_brain/__main__.py`, `tests/test_second_brain_retrieval.py`, and `tests/test_second_brain_sqlite_repository.py`.
 - Second Brain Phase 2 keeps boundaries explicit: only synthetic ordinary/non-sensitive fixtures are authorized; PERSONAL, SENSITIVE and RESTRICTED durable data remain blocked; fixture-only keyword guards are not a future real-memory safety model; State Store remains DeviceState-only; SQLite does not become Runtime/DeviceState persistence.
 - Second Brain Phase 2 does not implement or validate real personal memory, sensitive memory, health memory, financial memory, relationship memory, private-message memory, precise-location memory, biometric memory, credentials/secrets, encryption, key management, backup/export, automatic memory extraction, automatic profiling, live source indexing, Notion/GitHub/Obsidian/Google Drive connectors, embeddings, vector DB, semantic retrieval, RAG, AI/provider-backed retrieval, AI durable writes, Runtime integration, Planner/Driver execution, DeviceState mutation, State Store reuse, API/Dashboard exposure, Voice memory integration, policy/confirmation changes, cloud/cross-device sync or execution authority.
-- Second Brain Phase 3 remains unopened; real personal/sensitive memory, connectors/source indexing, retrieval/RAG/embeddings/AI, AI-backed memory writes and Obsidian integration remain future work behind separate explicit gates.
+- Second Brain Phase 3/4 Foundation Slice - Source Index and Hybrid Retrieval foundation is completed after PR #74 merge.
+- Second Brain Phase 3/4 Foundation Slice merge commit: `ee7dc1cc918c2c14a50c9ce0c6bfa8e70ecc0c42`.
+- Second Brain Phase 3/4 Foundation Slice validation: 694 tests passing, default CLI smoke passed, local Second Brain in-memory diagnostic passed, source-index diagnostic JSON smoke passed, source-index focused tests passed, Phase 1 retrieval regression passed and Phase 2 SQLite repository regression passed.
+- Second Brain Phase 3/4 Foundation Slice provides local Markdown fixture source indexing only through `LocalMarkdownSourceAdapter`, `SourceRecord`, independent `SQLiteSourceIndex`, `SourceHybridRetriever`, `SourceRetrievalResult` and local diagnostic output.
+- Second Brain Phase 3/4 Foundation Slice validates nonrecursive bounded local source indexing, path and symlink escape protections, deterministic source refresh, deterministic source versioning and supersession, source deletion reconciliation scoped by `source_scope`, provenance-rich results, deterministic lexical plus fake-semantic hybrid scoring, contradiction handling and authority precedence.
+- Second Brain Phase 3/4 Foundation Slice proof: source index persists and reopens with the same selected result; changed sources create a new current version and supersede the old version; deleted sources stop being current after refresh and reopen; equal-authority deliberate conflicts return contradicted; stronger authority conflicts select the stronger source while retaining weaker conflict evidence.
+- Second Brain Phase 3 - Source Connectors / Indexing is FOUNDATION COMPLETE for local Markdown fixture indexing only; live GitHub, Notion, Obsidian, Google Drive or other connectors remain future work.
+- Second Brain Phase 4 - Semantic Retrieval / RAG is FOUNDATION COMPLETE for deterministic lexical plus fake-semantic scoring only; true semantic retrieval, embeddings, vector DB and RAG remain future work.
+- Second Brain Phase 3/4 Foundation Slice remains diagnostic/retrieval-only and has no execution authority.
+- Second Brain Phase 3/4 Foundation Slice does not implement or validate live GitHub connectors, live Notion connectors, Obsidian integration, Google Drive connectors, network source fetching, credentials/auth, real personal memory, sensitive memory, embeddings, vector DB, true semantic retrieval, RAG, AI/provider-backed retrieval, AI durable writes, Runtime integration, Planner/Driver execution, DeviceState mutation, State Store reuse, API/Dashboard exposure, Cognition integration, policy/confirmation changes, cloud/cross-device sync or execution authority.
+- Real personal/sensitive memory, live connectors, true semantic retrieval/RAG/embeddings/AI, AI-backed memory writes and Obsidian integration remain future work behind separate explicit gates.
 
 ## Stable Boundaries
 
@@ -349,6 +368,9 @@ Current experimental areas:
 - Local Second Brain text and JSON diagnostic report rendering.
 - Fixture-only SQLite Second Brain persistence adapter.
 - Local SQLite Second Brain diagnostic mode.
+- Local Markdown Second Brain source indexing.
+- Persistent SQLite Second Brain source index.
+- Deterministic Second Brain hybrid retrieval with fake semantic scoring.
 
 ## Current Transports
 
@@ -498,7 +520,7 @@ Not currently implemented:
 - automatic memory extraction;
 - automatic profiling;
 - Second Brain filesystem memory writes;
-- Second Brain source indexing;
+- live Second Brain source connectors;
 - Notion, GitHub, Obsidian or Google Drive Second Brain connectors;
 - embeddings, vector DB, semantic retrieval or RAG;
 - AI/provider-backed Second Brain retrieval;
