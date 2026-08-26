@@ -21,6 +21,12 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 10.9 is completed: Gemini Structured Provider Minimal Implementation merged in PR #41 and passed real provider validation.
 - Phase 10.10 is blocked.
 - Gemini is Current / Experimental: real provider validation passed with `gemini-3.6-flash`, full provider-neutral `AIActionPlan`, read, confirmed power on/off plans, ambiguity handling and destructive refusal.
+- Ollama Local Provider Foundation is completed after PR #77 merge.
+- Ollama Local Provider Foundation merge commit: `0a2d0b2d564d5d12ce4d01d41c0f828744030890`.
+- Ollama Local Provider Foundation validation: fake-transport AI provider tests, explicit `ai_local` CLI tests, AI regression tests, 713-test full suite and default CLI smoke passed.
+- Ollama Local Provider Foundation adds explicit `python -m jarvis_core.ai_local --provider ollama --model ...` usage with localhost-only `/api/chat`, `stream=false`, structured-output request shape, bounded transport and safe provider errors.
+- Ollama remains a Local Essential AI candidate. Real Ollama service/model validation is still pending; no Ollama model has passed real JarvisOS `AIActionPlan` validation in current `main`.
+- AI Router, provider registry, automatic provider fallback and automatic model switching remain unimplemented.
 - No AI provider is default or production-ready.
 - Epic 12 is in progress.
 - Phase 12.1 is completed as design: MQTT Driver Boundary.
@@ -107,9 +113,16 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Second Brain Phase 3/4 Foundation Slice implements local Markdown fixture source indexing only: `LocalMarkdownSourceAdapter` -> `SourceRecord` -> independent `SQLiteSourceIndex` -> `SourceHybridRetriever` -> `SourceRetrievalResult` -> local diagnostic.
 - Second Brain Phase 3/4 Foundation Slice validates a nonrecursive bounded fixture source adapter, path and symlink escape protections, persistent local SQLite source index, deterministic source refresh, deterministic versioning and supersession, deleted-source reconciliation scoped by `source_scope`, deterministic lexical plus fake-semantic hybrid scoring, contradiction and authority handling, provenance-rich results and local CLI diagnostics.
 - Second Brain Phase 3/4 Foundation Slice proof: source index persists and reopens with the same selected result; changed sources create a new current version and supersede the old version; deleted sources stop being current after refresh and reopen; equal-authority deliberate conflicts return contradicted; stronger authority conflicts select the stronger source while retaining weaker conflict evidence.
-- Second Brain Phase 3 - Source Connectors / Indexing is FOUNDATION COMPLETE for local Markdown fixture indexing only. Live GitHub, Notion, Obsidian, Google Drive or other connectors remain future work.
+- Second Brain Phase 3 - Source Connectors / Indexing is FOUNDATION COMPLETE for local Markdown fixture indexing and bounded GitHub source adapter foundation only. Live GitHub validation and live Notion, Obsidian, Google Drive or other connectors remain future work.
 - Second Brain Phase 4 - Semantic Retrieval / RAG is FOUNDATION COMPLETE for deterministic lexical plus fake-semantic scoring only. True semantic retrieval, embeddings, vector DB and RAG remain future work.
 - Second Brain Phase 3/4 Foundation Slice has no execution authority and does not implement live source connectors, network source fetching, credentials/auth, real personal or sensitive memory, embeddings, vector DB, true semantic retrieval, RAG, AI/provider-backed retrieval, Runtime integration, Planner/Driver execution, DeviceState mutation, State Store reuse, API/Dashboard exposure, Cognition integration, policy/confirmation changes or cloud/cross-device sync.
+- GitHub Source Adapter Foundation is completed after PR #76 merge.
+- GitHub Source Adapter Foundation merge commit: `ec7b4dc2fc0e90ebbf641885306bed1689ff07a8`.
+- GitHub Source Adapter Foundation validation: fake GitHub transport tests, source-index regression tests, 713-test full suite, default CLI smoke and local Second Brain diagnostic smoke passed.
+- GitHub Source Adapter Foundation implements bounded GitHub source indexing through `GitHubSourceAdapter` -> `SourceRecord` -> `SQLiteSourceIndex` -> `SourceHybridRetriever` -> `SourceRetrievalResult` -> local diagnostic.
+- GitHub Source Adapter Foundation keeps repository, ref and Markdown paths explicit and bounded; token input remains external only; tokens are not persisted, logged, copied into `SourceRecord` or forwarded to AI.
+- GitHub Source Adapter Foundation preserves HTTPS/TLS verification, bounded timeouts and response sizes, safe connector error normalization, authority/provenance mapping and `source_scope` isolation.
+- Live GitHub validation remains pending. This foundation does not implement Notion, Obsidian or Google Drive connectors and does not connect Second Brain to AI, RAG, Runtime, API, Dashboard or real personal/sensitive memory.
 - Real personal memory still requires a separate Sensitive Memory / Retention / encryption gate; live source connectors, true semantic retrieval/RAG/embeddings, AI-backed memory writes and Obsidian integration remain future work behind separate explicit gates.
 - Current snapshot commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
 - Phase 10.3 PR: #32 merged.
@@ -199,7 +212,9 @@ Current status:
 - Phase 10.9 - Gemini Structured Provider Minimal Implementation is completed after PR #41 merge.
 - Phase 10.10 - Real Provider Validation and Consolidation is blocked.
 - Gemini provider work is Current / Experimental and real-provider validated with `gemini-3.6-flash`.
-- Epic 10 remains in progress: deterministic AI Adapter implemented; Gemini real provider validated; Ollama and Groq remain experimental Draft paths.
+- Ollama Local Provider Foundation is completed after PR #77 merge as a fake-transport validated `ai_local` foundation only; real Ollama service/model validation remains pending.
+- Groq remains the voice/low-latency research lane and PR #39 remains Draft research, not a validated structured-planning provider.
+- Epic 10 remains in progress: deterministic AI Adapter implemented; Gemini real provider validated; Ollama local foundation implemented but not real-model validated; Groq remains a research Draft path.
 
 Independent product line:
 
@@ -298,10 +313,14 @@ Independent Second Brain line:
 - Second Brain Phase 3/4 Foundation Slice provides local Markdown fixture source indexing only through `LocalMarkdownSourceAdapter`, `SourceRecord`, independent `SQLiteSourceIndex`, `SourceHybridRetriever`, `SourceRetrievalResult` and local diagnostic output.
 - Second Brain Phase 3/4 Foundation Slice validates nonrecursive bounded local source indexing, path and symlink escape protections, deterministic source refresh, deterministic source versioning and supersession, source deletion reconciliation scoped by `source_scope`, provenance-rich results, deterministic lexical plus fake-semantic hybrid scoring, contradiction handling and authority precedence.
 - Second Brain Phase 3/4 Foundation Slice proof: source index persists and reopens with the same selected result; changed sources create a new current version and supersede the old version; deleted sources stop being current after refresh and reopen; equal-authority deliberate conflicts return contradicted; stronger authority conflicts select the stronger source while retaining weaker conflict evidence.
-- Second Brain Phase 3 - Source Connectors / Indexing is FOUNDATION COMPLETE for local Markdown fixture indexing only; live GitHub, Notion, Obsidian, Google Drive or other connectors remain future work.
+- Second Brain Phase 3 - Source Connectors / Indexing is FOUNDATION COMPLETE for local Markdown fixture indexing and bounded GitHub source adapter foundation only; live GitHub validation and live Notion, Obsidian, Google Drive or other connectors remain future work.
 - Second Brain Phase 4 - Semantic Retrieval / RAG is FOUNDATION COMPLETE for deterministic lexical plus fake-semantic scoring only; true semantic retrieval, embeddings, vector DB and RAG remain future work.
 - Second Brain Phase 3/4 Foundation Slice remains diagnostic/retrieval-only and has no execution authority.
-- Second Brain Phase 3/4 Foundation Slice does not implement or validate live GitHub connectors, live Notion connectors, Obsidian integration, Google Drive connectors, network source fetching, credentials/auth, real personal memory, sensitive memory, embeddings, vector DB, true semantic retrieval, RAG, AI/provider-backed retrieval, AI durable writes, Runtime integration, Planner/Driver execution, DeviceState mutation, State Store reuse, API/Dashboard exposure, Cognition integration, policy/confirmation changes, cloud/cross-device sync or execution authority.
+- Second Brain Phase 3/4 Foundation Slice does not implement or validate live GitHub source access, live Notion connectors, Obsidian integration, Google Drive connectors, credentials/auth, real personal memory, sensitive memory, embeddings, vector DB, true semantic retrieval, RAG, AI/provider-backed retrieval, AI durable writes, Runtime integration, Planner/Driver execution, DeviceState mutation, State Store reuse, API/Dashboard exposure, Cognition integration, policy/confirmation changes, cloud/cross-device sync or execution authority.
+- GitHub Source Adapter Foundation is completed after PR #76 merge commit `ec7b4dc2fc0e90ebbf641885306bed1689ff07a8`.
+- GitHub Source Adapter Foundation is fake-transport validated and adds bounded GitHub source indexing only; live GitHub validation remains pending.
+- GitHub Source Adapter Foundation preserves explicit repo/ref/path scope, external-only token input, no token persistence/logging, HTTPS/TLS, bounded transport errors, authority/provenance mapping and `source_scope` isolation.
+- Live Notion, Obsidian and Google Drive connectors remain future work. Second Brain -> AI integration, RAG, embeddings, vector DB and real personal/sensitive memory remain unimplemented.
 - Real personal/sensitive memory, live connectors, true semantic retrieval/RAG/embeddings/AI, AI-backed memory writes and Obsidian integration remain future work behind separate explicit gates.
 
 ## Stable Boundaries
@@ -520,8 +539,8 @@ Not currently implemented:
 - automatic memory extraction;
 - automatic profiling;
 - Second Brain filesystem memory writes;
-- live Second Brain source connectors;
-- Notion, GitHub, Obsidian or Google Drive Second Brain connectors;
+- live Notion, Obsidian or Google Drive Second Brain connectors;
+- live GitHub source validation;
 - embeddings, vector DB, semantic retrieval or RAG;
 - AI/provider-backed Second Brain retrieval;
 - real wearable integration beyond fake deterministic presence evidence;
