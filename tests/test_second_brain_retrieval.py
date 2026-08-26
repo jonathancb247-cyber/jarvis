@@ -165,12 +165,21 @@ class SecondBrainRetrievalTests(unittest.TestCase):
             "subprocess",
             "threading",
         }
+        github_adapter_allowed_modules = {
+            "urllib",
+            "urllib.error",
+            "urllib.parse",
+            "urllib.request",
+        }
 
         for path in SECOND_BRAIN_ROOT.glob("*.py"):
             tree = ast.parse(path.read_text(encoding="utf-8"))
             imported = _imports(tree)
+            forbidden_for_path = forbidden_modules
+            if path.name == "github_sources.py":
+                forbidden_for_path = forbidden_modules - github_adapter_allowed_modules
             with self.subTest(path=path.name):
-                self.assertTrue(forbidden_modules.isdisjoint(imported), imported)
+                self.assertTrue(forbidden_for_path.isdisjoint(imported), imported)
 
     def test_second_brain_package_has_no_runtime_persistence_or_provider_hooks(self):
         always_forbidden_tokens = (
@@ -195,6 +204,11 @@ class SecondBrainRetrievalTests(unittest.TestCase):
             "Groq",
             "Ollama",
         )
+        github_adapter_allowed_tokens = (
+            ".read(",
+            "urllib",
+        )
+        cli_allowed_tokens = ("environ",)
         persistence_tokens_allowed_only_in_storage_boundary = (
             "Path(",
             "sqlite",
@@ -203,7 +217,14 @@ class SecondBrainRetrievalTests(unittest.TestCase):
         for path in SECOND_BRAIN_ROOT.glob("*.py"):
             text = path.read_text(encoding="utf-8")
             with self.subTest(path=path.relative_to(REPO_ROOT).as_posix()):
-                for token in always_forbidden_tokens:
+                forbidden_tokens = always_forbidden_tokens
+                if path.name == "github_sources.py":
+                    forbidden_tokens = tuple(
+                        token for token in forbidden_tokens if token not in github_adapter_allowed_tokens
+                    )
+                if path.name == "__main__.py":
+                    forbidden_tokens = tuple(token for token in forbidden_tokens if token not in cli_allowed_tokens)
+                for token in forbidden_tokens:
                     self.assertNotIn(token, text)
                 if path.name not in {"__main__.py", "index.py", "repository.py", "sources.py"}:
                     for token in persistence_tokens_allowed_only_in_storage_boundary:

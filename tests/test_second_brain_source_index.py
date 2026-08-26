@@ -7,6 +7,11 @@ from pathlib import Path
 import unittest
 
 from jarvis_core.second_brain.index import SQLiteSourceIndex, SourceIndexError
+from jarvis_core.second_brain.github_sources import (
+    GitHubFileSnapshot,
+    GitHubSourceAdapter,
+    GitHubSourceError,
+)
 from jarvis_core.second_brain.models import (
     KnowledgeConfidence,
     KnowledgeFreshness,
@@ -312,6 +317,151 @@ class SecondBrainSourceIndexTests(unittest.TestCase):
         self.assertEqual(payload["mode"], "local_source_index")
         self.assertEqual(payload["results"][0]["status"], "found")
 
+    def test_github_adapter_maps_project_state_authority_and_provenance(self):
+        transport = FakeGitHubTransport(
+            {
+                "docs/project/PROJECT_STATE.md": "# JarvisOS Project State\n\nSecond Brain Phase 3/4 Foundation Slice.",
+            }
+        )
+        adapter = GitHubSourceAdapter(
+            repository="owner/repo",
+            ref="main",
+            paths=("docs/project/PROJECT_STATE.md",),
+            transport=transport,
+        )
+
+        records = adapter.enumerate_records()
+
+        self.assertEqual(adapter.source_scope, "github:owner/repo:main")
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0].source_type, SourceType.GITHUB)
+        self.assertEqual(records[0].authority, SourceAuthority.PROJECT_STATE)
+        self.assertIn("github.com/owner/repo/blob/commit-main/docs/project/PROJECT_STATE.md", records[0].source_reference)
+        self.assertEqual(records[0].sensitivity, KnowledgeSensitivity.ORDINARY)
+
+    def test_github_adapter_maps_accepted_adr_authority(self):
+        transport = FakeGitHubTransport(
+            {
+                "docs/design/SECOND_BRAIN_MEMORY_BOUNDARY.md": (
+                    "# ADR - Second Brain / Memory Boundary\n\nStatus: Accepted / Design - Not Implemented"
+                ),
+            }
+        )
+        adapter = GitHubSourceAdapter(
+            repository="owner/repo",
+            ref="main",
+            paths=("docs/design/SECOND_BRAIN_MEMORY_BOUNDARY.md",),
+            transport=transport,
+        )
+
+        record = adapter.enumerate_records()[0]
+
+        self.assertEqual(record.authority, SourceAuthority.DESIGN_ADR)
+
+    def test_github_source_index_persists_reopens_and_retrieves(self):
+        with tempfile.TemporaryDirectory() as temp:
+            db_path = Path(temp) / "source-index.sqlite"
+            adapter = GitHubSourceAdapter(
+                repository="owner/repo",
+                ref="main",
+                paths=("docs/project/PROJECT_STATE.md",),
+                transport=FakeGitHubTransport(
+                    {"docs/project/PROJECT_STATE.md": "# JarvisOS Project State\n\nGemini real provider validated."}
+                ),
+            )
+            index = _initialized_index(db_path)
+            summary = index.refresh(adapter)
+            result = SourceHybridRetriever(index.list()).retrieve("Gemini provider validated")
+            reopened = SourceHybridRetriever(_initialized_index(db_path).list()).retrieve(
+                "Gemini provider validated"
+            )
+
+        self.assertEqual(summary["inserted"], 1)
+        self.assertEqual(result.status, SourceRetrievalStatus.FOUND)
+        self.assertEqual(reopened.status, SourceRetrievalStatus.FOUND)
+        self.assertEqual(result.selected_document, reopened.selected_document)
+
+    def test_github_source_refresh_supersedes_prior_snapshot(self):
+        with tempfile.TemporaryDirectory() as temp:
+            db_path = Path(temp) / "source-index.sqlite"
+            index = _initialized_index(db_path)
+            first = FakeGitHubTransport(
+                {"docs/project/PROJECT_STATE.md": "# JarvisOS Project State\n\nOld current snapshot."},
+                commit_sha="commit-old",
+            )
+            second = FakeGitHubTransport(
+                {"docs/project/PROJECT_STATE.md": "# JarvisOS Project State\n\nNew current snapshot."},
+                commit_sha="commit-new",
+            )
+            index.refresh(
+                GitHubSourceAdapter(
+                    repository="owner/repo",
+                    ref="main",
+                    paths=("docs/project/PROJECT_STATE.md",),
+                    transport=first,
+                )
+            )
+
+            summary = index.refresh(
+                GitHubSourceAdapter(
+                    repository="owner/repo",
+                    ref="main",
+                    paths=("docs/project/PROJECT_STATE.md",),
+                    transport=second,
+                )
+            )
+            all_docs = index.list(include_deleted=True)
+
+        self.assertEqual(summary["inserted"], 1)
+        self.assertEqual(summary["superseded"], 1)
+        self.assertEqual(len([item for item in all_docs if item.freshness is KnowledgeFreshness.CURRENT]), 1)
+        self.assertEqual(len([item for item in all_docs if item.freshness is KnowledgeFreshness.SUPERSEDED]), 1)
+
+    def test_github_adapter_failure_is_bounded_by_source_index(self):
+        with tempfile.TemporaryDirectory() as temp:
+            index = _initialized_index(Path(temp) / "source-index.sqlite")
+            adapter = GitHubSourceAdapter(
+                repository="owner/repo",
+                ref="main",
+                paths=("docs/project/PROJECT_STATE.md",),
+                transport=FailingGitHubTransport("github_source_unauthorized"),
+            )
+
+            with self.assertRaises(SourceIndexError) as raised:
+                index.refresh(adapter)
+
+        self.assertEqual(raised.exception.code, "source_adapter_failed")
+
+    def test_github_adapter_rejects_unbounded_paths(self):
+        with self.assertRaises(GitHubSourceError) as raised:
+            GitHubSourceAdapter(
+                repository="owner/repo",
+                ref="main",
+                paths=("../secret.md",),
+                transport=FakeGitHubTransport({}),
+            )
+
+        self.assertEqual(raised.exception.code, "github_path_invalid")
+
+    def test_github_source_cli_rejects_missing_repo(self):
+        with tempfile.TemporaryDirectory() as temp:
+            command = (
+                sys.executable,
+                "-m",
+                "jarvis_core.second_brain",
+                "--retrieval",
+                "source",
+                "--source-provider",
+                "github",
+                "--source-index",
+                str(Path(temp) / "source-index.sqlite"),
+            )
+
+            result = subprocess.run(command, check=False, capture_output=True, text=True, cwd=Path(__file__).parents[1])
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("github_repo_required", result.stderr)
+
 
 def _source_and_db(temp: str) -> tuple[Path, Path]:
     base = Path(temp)
@@ -385,6 +535,34 @@ def _document_for_source(index: SQLiteSourceIndex, source_id: str):
     if not matches:
         raise AssertionError(f"Missing active source {source_id}")
     return matches[0]
+
+
+class FakeGitHubTransport:
+    def __init__(self, files: dict[str, str], *, commit_sha: str = "commit-main"):
+        self._files = files
+        self._commit_sha = commit_sha
+
+    def fetch_file(self, repository: str, path: str, ref: str) -> GitHubFileSnapshot:
+        if path not in self._files:
+            raise GitHubSourceError("github_source_missing")
+        return GitHubFileSnapshot(
+            repository=repository,
+            path=path,
+            ref=ref,
+            commit_sha=self._commit_sha,
+            blob_sha=f"blob-{path}",
+            html_url=f"https://github.com/{repository}/blob/{self._commit_sha}/{path}",
+            content=self._files[path],
+            fetched_at="2026-08-25T00:00:00Z",
+        )
+
+
+class FailingGitHubTransport:
+    def __init__(self, code: str):
+        self._code = code
+
+    def fetch_file(self, repository: str, path: str, ref: str) -> GitHubFileSnapshot:
+        raise GitHubSourceError(self._code)
 
 
 if __name__ == "__main__":
