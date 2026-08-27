@@ -58,9 +58,15 @@ class OllamaProviderTests(unittest.TestCase):
         self.assertEqual(transport.calls[0]["host"], "127.0.0.1")
         self.assertEqual(transport.calls[0]["path"], OLLAMA_CHAT_PATH)
         self.assertFalse(request["stream"])
+        self.assertIs(request["think"], False)
         self.assertEqual(request["model"], "qwen3:4b")
         self.assertEqual(request["format"]["type"], "object")
+        self.assertNotIn("think", request["options"])
         self.assertEqual(request["options"]["temperature"], 0)
+        self.assertEqual(request["options"]["num_predict"], 512)
+        self.assertEqual(len(request["messages"]), 2)
+        self.assertEqual(request["messages"][0]["role"], "system")
+        self.assertEqual(request["messages"][1]["role"], "user")
         self.assertNotIn("api_key", json.dumps(request).lower())
 
     def test_read_plan_passes_existing_adapter_validation(self):

@@ -122,6 +122,7 @@ class OllamaAIProvider:
     def build_request(self, context):
         return {
             "model": self.config.model,
+            "think": False,
             "stream": False,
             "format": ai_action_plan_schema(),
             "options": {
