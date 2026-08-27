@@ -17,6 +17,7 @@ from jarvis_core.ai.ollama import (
     OllamaHttpTransport,
     OllamaProviderConfig,
     OllamaProviderError,
+    _system_instruction,
 )
 from tests.test_ai_adapter import RecordingDriver, test_runtime
 
@@ -68,6 +69,28 @@ class OllamaProviderTests(unittest.TestCase):
         self.assertEqual(request["messages"][0]["role"], "system")
         self.assertEqual(request["messages"][1]["role"], "user")
         self.assertNotIn("api_key", json.dumps(request).lower())
+
+    def test_system_instruction_defines_mutually_exclusive_plan_shapes(self):
+        instruction = _system_instruction()
+
+        self.assertIn("If kind is execute", instruction)
+        self.assertIn("steps must contain 1..5 executable steps", instruction)
+        self.assertIn("clarification must be null", instruction)
+        self.assertIn("refusal must be null", instruction)
+        self.assertIn("If kind is clarify", instruction)
+        self.assertIn("steps must be []", instruction)
+        self.assertIn("clarification must be non-null", instruction)
+        self.assertIn("confirmation_required must be false", instruction)
+        self.assertIn("If kind is refuse", instruction)
+        self.assertIn("refusal must be non-null", instruction)
+        self.assertIn(
+            "Never request clarification for a device or capability already "
+            "explicitly identified in safe_context",
+            instruction,
+        )
+        self.assertIn("JarvisOS English command grammar", instruction)
+        self.assertIn("Do not invent devices or capabilities", instruction)
+        self.assertIn("Do not include chain-of-thought", instruction)
 
     def test_read_plan_passes_existing_adapter_validation(self):
         provider = OllamaAIProvider(

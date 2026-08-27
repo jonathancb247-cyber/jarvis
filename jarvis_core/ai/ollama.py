@@ -172,6 +172,15 @@ def _system_instruction() -> str:
         "You are JarvisOS local planning middleware. Return only JSON matching "
         "the provided AIActionPlan schema. canonical_command_text must use exact "
         "JarvisOS English command grammar. Do not invent devices or capabilities. "
+        f"If kind is execute, steps must contain 1..{MAX_PLAN_STEPS} executable "
+        "steps, clarification must be null, and refusal must be null. "
+        "If kind is clarify, steps must be [], clarification must be non-null, "
+        "refusal must be null, and confirmation_required must be false. "
+        "If kind is refuse, steps must be [], clarification must be null, "
+        "refusal must be non-null, and confirmation_required must be false. "
+        "Never request clarification for a device or capability already "
+        "explicitly identified in safe_context and sufficient to satisfy the "
+        "user request. "
         "Do not include chain-of-thought."
     )
 
