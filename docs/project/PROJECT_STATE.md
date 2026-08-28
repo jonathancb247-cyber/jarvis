@@ -25,7 +25,11 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Ollama Local Provider Foundation merge commit: `0a2d0b2d564d5d12ce4d01d41c0f828744030890`.
 - Ollama Local Provider Foundation validation: fake-transport AI provider tests, explicit `ai_local` CLI tests, AI regression tests, 713-test full suite and default CLI smoke passed.
 - Ollama Local Provider Foundation adds explicit `python -m jarvis_core.ai_local --provider ollama --model ...` usage with localhost-only `/api/chat`, `stream=false`, structured-output request shape, bounded transport and safe provider errors.
-- Ollama remains a Local Essential AI candidate. Real Ollama service/model validation is still pending; no Ollama model has passed real JarvisOS `AIActionPlan` validation in current `main`.
+- PR #79 added explicit top-level `think:false` for Ollama structured-plan requests.
+- PR #80 hardened the Ollama system instruction with mutually exclusive `AIActionPlan` prompt-shape guidance for execute, clarify and refuse plans.
+- Ollama remains a Local Essential AI candidate through the explicit opt-in `ai_local` entry point. Real `qwen3:4b` structured planning has been validated for one bounded read case: the model produced `kind=execute`, canonical command `device read lamp_1 status.read`, `target_device_id=lamp_1`, `capability_name=status.read`, `action_kind=read`, no clarification/refusal and no confirmation requirement.
+- The real `qwen3:4b` plan was accepted by the existing JarvisOS validation boundary and reached Runtime through the deterministic execution path; the physical HTTP device operation then failed with `device_timeout`, so physical device execution is not validated by this Ollama result.
+- `qwen3:4b` is not declared generally reliable from this single validation case. Broader Real Ollama service/model validation is still pending, and broader local-model bakeoff remains future work.
 - AI Router, provider registry, automatic provider fallback and automatic model switching remain unimplemented.
 - No AI provider is default or production-ready.
 - Epic 12 is in progress.
@@ -212,7 +216,7 @@ Current status:
 - Phase 10.9 - Gemini Structured Provider Minimal Implementation is completed after PR #41 merge.
 - Phase 10.10 - Real Provider Validation and Consolidation is blocked.
 - Gemini provider work is Current / Experimental and real-provider validated with `gemini-3.6-flash`.
-- Ollama Local Provider Foundation is completed after PR #77 merge as a fake-transport validated `ai_local` foundation only; real Ollama service/model validation remains pending.
+- Ollama Local Provider Foundation is completed after PR #77 merge as a fake-transport validated `ai_local` foundation. PR #79 added `think:false`, PR #80 hardened prompt-shape guidance, and one real `qwen3:4b` bounded read plan has passed existing `AIActionPlan` validation and reached Runtime; broader local-model bakeoff and physical device execution remain future work.
 - Groq remains the voice/low-latency research lane and PR #39 remains Draft research, not a validated structured-planning provider.
 - Epic 10 remains in progress: deterministic AI Adapter implemented; Gemini real provider validated; Ollama local foundation implemented but not real-model validated; Groq remains a research Draft path.
 
