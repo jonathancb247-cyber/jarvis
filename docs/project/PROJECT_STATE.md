@@ -218,7 +218,7 @@ Current status:
 - Gemini provider work is Current / Experimental and real-provider validated with `gemini-3.6-flash`.
 - Ollama Local Provider Foundation is completed after PR #77 merge as a fake-transport validated `ai_local` foundation. PR #79 added `think:false`, PR #80 hardened prompt-shape guidance, and one real `qwen3:4b` bounded read plan has passed existing `AIActionPlan` validation and reached Runtime; broader local-model bakeoff and physical device execution remain future work.
 - Groq remains the voice/low-latency research lane and PR #39 remains Draft research, not a validated structured-planning provider.
-- Epic 10 remains in progress: deterministic AI Adapter implemented; Gemini real provider validated; Ollama local foundation implemented but not real-model validated; Groq remains a research Draft path.
+- Epic 10 remains in progress: deterministic AI Adapter implemented; Gemini real provider validated; Ollama local foundation implemented with one bounded qwen3:4b real-model validation case; broader validation remains pending; Groq remains a research Draft path.
 
 Independent product line:
 
@@ -598,3 +598,4 @@ Not currently implemented:
 7. Run `python -m unittest`.
 8. Run relevant smoke tests.
 9. Report scope confirmations explicitly.
+
