@@ -9,6 +9,7 @@ from .benchmark import (
 from .events import VoiceEvent, VoiceEventKind
 from .fakes import FakeSTTProvider, FakeTTSProvider
 from .provider_bakeoff import (
+    build_bilingual_semantic_fixtures,
     build_default_stt_fixtures,
     build_default_tts_fixtures,
     build_mock_bakeoff_report,
@@ -23,18 +24,36 @@ from .provider_contracts import (
     TTSPhraseFixture,
 )
 from .provider_reports import ProviderBakeOffReport, ProviderRecommendation
+from .semantic_bakeoff import (
+    BilingualSemanticFixture,
+    ConceptualTool,
+    DownstreamSemanticEvaluationResult,
+    DownstreamSemanticOutput,
+    DownstreamSemanticScores,
+    SemanticExpectation,
+    SemanticOutcomeTag,
+    compare_bilingual_pair,
+    evaluate_downstream_semantics,
+)
 from .session import ConversationSession
 from .turns import TurnManager
 
 __all__ = [
     "BenchmarkReport",
     "BenchmarkScenarioResult",
+    "BilingualSemanticFixture",
+    "ConceptualTool",
     "ConversationSession",
+    "DownstreamSemanticEvaluationResult",
+    "DownstreamSemanticOutput",
+    "DownstreamSemanticScores",
     "FakeSTTProvider",
     "FakeTTSProvider",
     "ProviderBakeOffReport",
     "ProviderFailureCategory",
     "ProviderRecommendation",
+    "SemanticExpectation",
+    "SemanticOutcomeTag",
     "STTCapabilities",
     "STTEvaluationResult",
     "STTFixture",
@@ -45,8 +64,11 @@ __all__ = [
     "VoiceBenchmarkRunner",
     "VoiceEvent",
     "VoiceEventKind",
+    "build_bilingual_semantic_fixtures",
     "build_default_stt_fixtures",
     "build_default_tts_fixtures",
     "build_mock_bakeoff_report",
     "build_phase1_scenarios",
+    "compare_bilingual_pair",
+    "evaluate_downstream_semantics",
 ]

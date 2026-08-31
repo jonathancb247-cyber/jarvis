@@ -16,6 +16,7 @@ The foundation extends the fake Voice Experience Benchmark with:
 - provider identity and local/cloud classification;
 - compact provider capability metadata;
 - deterministic STT and TTS fixture metadata;
+- bilingual downstream semantic/tool fixture metadata;
 - normalized provider failures;
 - synthetic/test metric placeholders;
 - human-rating placeholders;
@@ -64,6 +65,20 @@ TTS evaluation can represent:
 - capability metadata;
 - human-rating placeholders.
 
+Downstream semantic/tool evaluation can represent:
+
+- provider and mode identifier;
+- local/cloud classification through the enclosing provider report;
+- paired English/Spanish scenario identifiers;
+- STT transcript correctness;
+- intent correctness;
+- conceptual tool selection correctness;
+- argument extraction correctness;
+- relative date/time normalization correctness;
+- clarification quality;
+- end-to-end task success;
+- simulated or externally supplied latency metadata.
+
 These contracts are intentionally not SDK-specific.
 
 ## Fixture Taxonomy
@@ -98,6 +113,60 @@ TTS phrase fixtures may represent:
 Phase 2A uses textual fixture metadata only. It does not include private user
 recordings, public datasets or synthesized audio files.
 
+## Bilingual Semantic / Tool Robustness
+
+Voice provider evaluation must distinguish transcription quality from downstream
+semantic usefulness. A provider can produce a correct transcript while the
+downstream intent/tool layer still fails, and that must be recorded as a
+semantic/tool failure rather than an STT failure.
+
+Phase 2A includes deterministic paired English/Spanish semantic scenarios:
+
+| Scenario | English | Spanish | Conceptual tool | Expected arguments |
+| --- | --- | --- | --- | --- |
+| Flashlight power | `turn on the flashlight` | `enciende la linterna` | `device_power` | `target=flashlight`, `state=on` |
+| Wi-Fi settings | `open Wi-Fi settings` | `abre los ajustes de Wi-Fi` | `open_settings` | `panel=wifi` |
+| Map lookup | `show Mexico City on the map` | `muestrame Ciudad de Mexico en el mapa` | `show_map` | `place=Mexico City` / `place=Ciudad de Mexico` |
+| Calendar event | `create a calendar event tomorrow at 5 PM` | `crea un evento manana a las 5` | `calendar_create_event` | English: `date=tomorrow`, `time=17:00`; Spanish: `date=tomorrow`, `time=ambiguous_5` with clarification required |
+
+The conceptual tools are benchmark concepts only. They are not JarvisOS Runtime
+capabilities, Planner commands, Android API calls, external app calls or driver
+operations.
+
+Semantic/tool metrics are scored independently:
+
+- `stt_transcription_accuracy`;
+- `intent_accuracy`;
+- `tool_selection_accuracy`;
+- `argument_extraction_accuracy`;
+- `relative_datetime_normalization`;
+- `clarification_quality`;
+- `end_to_end_task_success`.
+
+Required scoring separation:
+
+- correct transcript plus wrong conceptual tool is semantic/tool failure, not
+  STT failure;
+- correct conceptual tool plus malformed arguments is argument extraction
+  failure;
+- relative date/time failures are separate from transcript and tool selection;
+- requesting machine/API-formatted user input, such as ISO timestamps, is a
+  clarification UX failure;
+- clarification is valid only when human-level information is genuinely missing.
+
+Outcome tags include:
+
+- `english_pass_spanish_fail`;
+- `spanish_transcript_pass_tool_fail`;
+- `relative_datetime_not_normalized`;
+- `machine_formatted_clarification_requested`;
+- `clarification_needed`;
+- `clarification_unnecessary`.
+
+The benchmark does not require users to speak API-formatted values. For example,
+`manana a las 5` may require a human-facing AM/PM clarification; it must not
+require the user to provide an ISO timestamp.
+
 ## Failure Taxonomy
 
 Provider failures are normalized to:
@@ -124,6 +193,7 @@ Reports include:
 - fixture set;
 - STT metrics;
 - TTS metrics;
+- bilingual semantic/tool metrics;
 - normalized failures;
 - privacy notes;
 - cost/quota notes;
@@ -133,6 +203,25 @@ Reports include:
 
 Reports may contain synthetic test values. Synthetic values are not real provider
 performance.
+
+## Non-Execution Guarantee
+
+The bilingual semantic layer evaluates conceptual expected tools and arguments
+only. It must not call:
+
+- Runtime;
+- Planner;
+- Runtime API;
+- Dashboard;
+- Drivers;
+- Android APIs;
+- external apps;
+- provider SDKs;
+- network services.
+
+Future real STT providers may supply transcripts and latency metadata to the
+same semantic evaluator, but the evaluator still produces only benchmark
+results.
 
 ## Privacy Rules
 
@@ -299,6 +388,8 @@ Voice Phase 2A does not prove:
 - real naturalness;
 - real privacy behavior of any vendor;
 - provider compatibility;
+- Android tool compatibility;
+- downstream app/tool execution compatibility;
 - production readiness.
 
 Voice Phase 2B still does not prove live voice readiness. It does not include
