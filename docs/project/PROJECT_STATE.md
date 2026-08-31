@@ -47,8 +47,13 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Voice Phase 2A merge commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
 - Voice Phase 2A implementation commit: `1f41b75aa053f7242731a568e661d4411ffbbf1f`.
 - Voice Phase 2A validation: 581 tests passing and default CLI smoke passed.
-- Voice Phase 2A provides provider-neutral STT/TTS evaluation contracts, synthetic/text-only fixture taxonomy, mock provider paths, normalized failure categories, a bake-off report model and synthetic/test metrics only.
-- Voice Phase 2A does not validate real STT compatibility, real TTS compatibility, real provider latency, naturalness, real prerecorded-audio STT, real file-output TTS, microphones, speakers, credentials, network, cloud, hardware or Runtime/API/Dashboard/Driver/AI behavior.
+- Voice Phase 2A bilingual semantic evaluation extension is completed after PR #82 merge.
+- Voice Phase 2A bilingual semantic evaluation merge commit: `af437ce86c67002f45018ad2f27ee550f487b378`.
+- Voice Phase 2A bilingual semantic evaluation implementation commit: `5cdf245f599e341b6b5287ca733b6225e257ed75`.
+- Voice Phase 2A bilingual semantic evaluation validation: 725 tests passing and default CLI smoke passed.
+- Voice Phase 2A provides provider-neutral STT/TTS evaluation contracts, synthetic/text-only fixture taxonomy, mock provider paths, normalized failure categories, a bake-off report model, bilingual paired semantic/tool fixtures, separated STT/intent/tool/argument/date/clarification scoring, conceptual tool outcome tags and synthetic/test metrics only.
+- Voice Phase 2A conceptual tools are non-executing benchmark concepts only; they do not call Runtime, Planner, API, Dashboard, Drivers, Android APIs or external apps.
+- Voice Phase 2A does not validate real STT performance, real TTS performance, real provider latency, naturalness, real prerecorded-audio STT, real file-output TTS, Android tool compatibility, provider compatibility, microphones, speakers, credentials, network, cloud, hardware or Runtime/API/Dashboard/Driver/AI behavior.
 - Cognitive Phase 1 is completed: Deterministic Cognitive Vertical Slice merged in PR #58.
 - Cognitive Phase 1 merge commit: `bc92c31992544f6d3824a7a1a39666b405977b23`.
 - Cognitive Phase 1 validation: 609 tests passing and default CLI smoke passed.
@@ -256,8 +261,13 @@ Independent voice line:
 - Voice Phase 2A merge commit: `6bcde6bade0e596789e27e142b3f2f66edbed2c9`.
 - Voice Phase 2A implementation commit: `1f41b75aa053f7242731a568e661d4411ffbbf1f`.
 - Voice Phase 2A validation: 581 tests passing and default CLI smoke passed.
-- Voice Phase 2A provides provider-neutral STT/TTS evaluation contracts, synthetic/text-only fixture taxonomy, mock/fake provider paths, normalized failure categories, a bake-off report model and synthetic/test metrics only.
-- Voice Phase 2A does not provide or validate real STT compatibility, real TTS compatibility, real provider latency, naturalness, real prerecorded-audio STT, real file-output TTS, microphone access, speaker output, network, cloud, credentials, hardware or Runtime/API/Dashboard/Driver/AI behavior.
+- Voice Phase 2A - Provider Bake-Off Harness + Bilingual Semantic Evaluation is completed after PR #82 merge.
+- Voice Phase 2A bilingual semantic evaluation merge commit: `af437ce86c67002f45018ad2f27ee550f487b378`.
+- Voice Phase 2A bilingual semantic evaluation implementation commit: `5cdf245f599e341b6b5287ca733b6225e257ed75`.
+- Voice Phase 2A bilingual semantic evaluation validation: 725 tests passing and default CLI smoke passed.
+- Voice Phase 2A provides provider-neutral STT/TTS evaluation contracts, synthetic/text-only fixture taxonomy, mock/fake provider paths, normalized failure categories, a bake-off report model, bilingual paired fixtures, separated STT transcription / intent / conceptual tool / argument / relative date-time / clarification scoring, outcome tags and synthetic/test metrics only.
+- Voice Phase 2A conceptual tools are non-executing benchmark concepts only and have no Runtime, Planner, API, Dashboard, Driver, Android API or external-app execution path.
+- Voice Phase 2A does not provide or validate real STT performance, real TTS performance, real latency, naturalness, real prerecorded-audio STT, real file-output TTS, Android tool compatibility, provider compatibility, microphone access, speaker output, network, cloud, credentials, hardware or Runtime/API/Dashboard/Driver/AI behavior.
 
 Independent cognitive line:
 
