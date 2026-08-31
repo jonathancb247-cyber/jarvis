@@ -20,6 +20,10 @@ from .provider_contracts import (
     TTSPhraseFixture,
 )
 from .provider_reports import ProviderBakeOffReport, ProviderRecommendation
+from .semantic_bakeoff import (
+    build_bilingual_semantic_fixtures,
+    build_mock_semantic_results,
+)
 
 
 def build_default_stt_fixtures() -> tuple[STTFixture, ...]:
@@ -249,9 +253,21 @@ def build_mock_bakeoff_report(
             tts_provider.evaluate_tts(fixture)
             for fixture in build_default_tts_fixtures()
         ),
+        semantic_results=build_mock_semantic_results(identity),
         privacy_notes=("synthetic fixtures only", "no credentials", "no network"),
         cost_quota_notes=("not evaluated in Phase 2A",),
         known_limitations=("no real provider evaluated", "no real audio measured"),
         recommendation=ProviderRecommendation.CONTINUE,
         synthetic_only=True,
     )
+
+
+__all__ = [
+    "MockSTTProvider",
+    "MockTTSProvider",
+    "build_bilingual_semantic_fixtures",
+    "build_default_stt_fixtures",
+    "build_default_tts_fixtures",
+    "build_mock_bakeoff_report",
+    "build_mock_provider_identity",
+]

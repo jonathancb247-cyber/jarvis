@@ -404,6 +404,25 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("automatic provider fallback", strategy)
         self.assertIn("no DeviceState mutation", strategy)
 
+    def test_voice_provider_bakeoff_documents_bilingual_semantic_layer(self):
+        text = (
+            REPO_ROOT / "docs" / "design" / "VOICE_PROVIDER_BAKEOFF.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("bilingual downstream semantic/tool fixture metadata", text)
+        self.assertIn("stt_transcription_accuracy", text)
+        self.assertIn("tool_selection_accuracy", text)
+        self.assertIn("argument_extraction_accuracy", text)
+        self.assertIn("relative_datetime_normalization", text)
+        self.assertIn("clarification_quality", text)
+        self.assertIn("english_pass_spanish_fail", text)
+        self.assertIn("spanish_transcript_pass_tool_fail", text)
+        self.assertIn("machine_formatted_clarification_requested", text)
+        self.assertIn("correct transcript plus wrong conceptual tool", text)
+        self.assertIn("The conceptual tools are benchmark concepts only", text)
+        self.assertIn("It must not call:", text)
+        self.assertIn("Android tool compatibility", text)
+
     def test_cognitive_architecture_adrs_are_design_only(self):
         expected = {
             "SECOND_BRAIN_MEMORY_BOUNDARY.md": [

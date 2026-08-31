@@ -13,6 +13,7 @@ from .provider_contracts import (
     STTEvaluationResult,
     TTSEvaluationResult,
 )
+from .semantic_bakeoff import DownstreamSemanticEvaluationResult
 
 
 class ProviderRecommendation(str, Enum):
@@ -33,6 +34,7 @@ class ProviderBakeOffReport:
     fixture_set: str
     stt_results: tuple[STTEvaluationResult, ...] = ()
     tts_results: tuple[TTSEvaluationResult, ...] = ()
+    semantic_results: tuple[DownstreamSemanticEvaluationResult, ...] = ()
     privacy_notes: tuple[str, ...] = ()
     cost_quota_notes: tuple[str, ...] = ()
     known_limitations: tuple[str, ...] = ()
@@ -51,6 +53,9 @@ class ProviderBakeOffReport:
             if result.failure is not None:
                 failures.append(result.failure.category)
         for result in self.tts_results:
+            if result.failure is not None:
+                failures.append(result.failure.category)
+        for result in self.semantic_results:
             if result.failure is not None:
                 failures.append(result.failure.category)
         return tuple(failures)
@@ -78,6 +83,9 @@ class ProviderBakeOffReport:
             "fixture_set": self.fixture_set,
             "stt_metrics": [_stt_result_dict(result) for result in self.stt_results],
             "tts_metrics": [_tts_result_dict(result) for result in self.tts_results],
+            "semantic_tool_metrics": [
+                result.as_dict() for result in self.semantic_results
+            ],
             "normalized_failures": [failure.value for failure in self.normalized_failures()],
             "privacy_notes": list(self.privacy_notes),
             "cost_quota_notes": list(self.cost_quota_notes),
