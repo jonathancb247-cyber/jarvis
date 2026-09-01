@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -34,6 +35,12 @@ from jarvis_core.voice.providers.piper_tts import (
     PiperTTSRunResult,
     PiperTTSRunner,
 )
+from jarvis_core.voice.providers.whisper_cpp_stt import (
+    WhisperCppSTTConfig,
+    WhisperCppSTTProvider,
+    WhisperCppSTTRunResult,
+    WhisperCppSTTRunner,
+)
 
 
 class FakeGroqTransport:
@@ -62,6 +69,20 @@ class WritingPiperRunner(PiperTTSRunner):
         else:
             output_path.write_text("not wav", encoding="utf-8")
         return PiperTTSRunResult(self.returncode)
+
+
+class CapturingWhisperCppRunner(WhisperCppSTTRunner):
+    def __init__(self, returncode=0, stdout="Enciende la linterna", error=None):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.error = error
+        self.calls = []
+
+    def run(self, *, config, audio_path):
+        self.calls.append((config, audio_path))
+        if self.error is not None:
+            raise self.error
+        return WhisperCppSTTRunResult(self.returncode, self.stdout, "")
 
 
 class GroqSTTAdapterTests(unittest.TestCase):
@@ -230,6 +251,152 @@ class GroqSTTAdapterTests(unittest.TestCase):
         self.assertEqual(captured[0][0].language, "en")
         self.assertEqual(captured[0][1].language_hint, "en-US")
         self.assertIn(FixtureCategory.ENGLISH, captured[0][1].categories)
+        self.assertNotIn(str(audio), repr(report.as_dict()))
+
+
+class WhisperCppSTTAdapterTests(unittest.TestCase):
+    def test_whisper_cpp_adapter_uses_local_subprocess_runner_boundary(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            executable, model, audio = _whisper_cpp_files(temp_dir)
+            runner = CapturingWhisperCppRunner(
+                stdout=(
+                    "whisper_init_from_file_with_params_no_state: loading model\n"
+                    "main: processing audio\n"
+                    "[00:00:00.000 --> 00:00:01.000]  Enciende la linterna\n"
+                )
+            )
+            provider = WhisperCppSTTProvider(
+                WhisperCppSTTConfig(executable, model),
+                runner=runner,
+            )
+
+            result = provider.evaluate_stt(_stt_fixture(audio))
+
+        self.assertIsNone(result.failure)
+        self.assertEqual(result.provider.name, "whisper.cpp")
+        self.assertEqual(result.provider.deployment, ProviderDeployment.LOCAL)
+        self.assertEqual(result.provider.version_or_model, "ggml-small.bin")
+        self.assertEqual(result.final_transcript, "Enciende la linterna")
+        self.assertEqual(result.detected_language, "es-MX")
+        self.assertEqual(result.metrics["real_provider_values"], 1)
+        self.assertEqual(runner.calls[0][0].language, "es")
+        self.assertEqual(runner.calls[0][1], audio)
+
+    def test_whisper_cpp_runner_invokes_cli_without_shell(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            executable, model, audio = _whisper_cpp_files(temp_dir)
+
+            class Completed:
+                returncode = 0
+                stdout = "Enciende la linterna"
+                stderr = ""
+
+            with patch("subprocess.run", return_value=Completed()) as run:
+                WhisperCppSTTRunner().run(
+                    config=WhisperCppSTTConfig(executable, model, language="es"),
+                    audio_path=audio,
+                )
+
+        kwargs = run.call_args.kwargs
+        args = run.call_args.args[0]
+        self.assertEqual(
+            args,
+            [
+                str(executable),
+                "-m",
+                str(model),
+                "-f",
+                str(audio),
+                "-l",
+                "es",
+            ],
+        )
+        self.assertFalse(kwargs["shell"])
+
+    def test_whisper_cpp_missing_executable_model_and_audio_fail_safely(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            executable, model, audio = _whisper_cpp_files(temp_dir)
+            missing_executable = WhisperCppSTTProvider(
+                WhisperCppSTTConfig(Path(temp_dir) / "missing.exe", model),
+                runner=CapturingWhisperCppRunner(),
+            ).evaluate_stt(_stt_fixture(audio))
+            missing_model = WhisperCppSTTProvider(
+                WhisperCppSTTConfig(executable, Path(temp_dir) / "missing.bin"),
+                runner=CapturingWhisperCppRunner(),
+            ).evaluate_stt(_stt_fixture(audio))
+            missing_audio = WhisperCppSTTProvider(
+                WhisperCppSTTConfig(executable, model),
+                runner=CapturingWhisperCppRunner(),
+            ).evaluate_stt(_stt_fixture(Path(temp_dir) / "missing.wav"))
+
+        self.assertEqual(missing_executable.failure.category, ProviderFailureCategory.UNAVAILABLE)
+        self.assertEqual(missing_model.failure.category, ProviderFailureCategory.INVALID_INPUT)
+        self.assertEqual(missing_audio.failure.category, ProviderFailureCategory.INVALID_INPUT)
+
+    def test_whisper_cpp_failure_paths_are_normalized(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            executable, model, audio = _whisper_cpp_files(temp_dir)
+            fixture = _stt_fixture(audio)
+            timeout = WhisperCppSTTProvider(
+                WhisperCppSTTConfig(executable, model),
+                runner=CapturingWhisperCppRunner(error=subprocess.TimeoutExpired("whisper-cli", 1)),
+            ).evaluate_stt(fixture)
+            failed = WhisperCppSTTProvider(
+                WhisperCppSTTConfig(executable, model),
+                runner=CapturingWhisperCppRunner(returncode=2),
+            ).evaluate_stt(fixture)
+            malformed = WhisperCppSTTProvider(
+                WhisperCppSTTConfig(executable, model),
+                runner=CapturingWhisperCppRunner(stdout=""),
+            ).evaluate_stt(fixture)
+
+        self.assertEqual(timeout.failure.category, ProviderFailureCategory.TIMEOUT)
+        self.assertEqual(failed.failure.category, ProviderFailureCategory.PROVIDER_ERROR)
+        self.assertEqual(malformed.failure.category, ProviderFailureCategory.MALFORMED_OUTPUT)
+
+    def test_whisper_cpp_tool_supports_environment_defaults_and_no_path_in_report(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            executable, model, audio = _whisper_cpp_files(temp_dir)
+            captured = []
+
+            class CapturingProvider:
+                def __init__(self, config):
+                    self.config = config
+                    self.identity = ProviderIdentity(
+                        "whisper.cpp",
+                        "stt",
+                        ProviderDeployment.LOCAL,
+                        config.model_path.name,
+                    )
+                    self.capabilities = STTCapabilities(local_offline=True)
+
+                def evaluate_stt(self, fixture):
+                    captured.append((self.config, fixture))
+                    return STTEvaluationResult(
+                        self.identity,
+                        fixture.fixture_id,
+                        self.capabilities,
+                        final_transcript=fixture.expected_transcript,
+                        transcript_latency_ms=1,
+                        metrics={"real_provider_values": 1},
+                    )
+
+            with patch.object(voice_provider_bakeoff, "WhisperCppSTTProvider", CapturingProvider):
+                report = voice_provider_bakeoff._whisper_cpp_report(
+                    str(audio),
+                    "enciende la linterna",
+                    "whisper_fixture",
+                    "es",
+                    str(executable),
+                    str(model),
+                )
+
+        self.assertEqual(report.as_dict()["evaluation_mode"], "real_provider")
+        self.assertFalse(report.as_dict()["synthetic_only"])
+        self.assertEqual(captured[0][0].executable_path, executable)
+        self.assertEqual(captured[0][0].model_path, model)
+        self.assertEqual(captured[0][1].language_hint, "es-MX")
+        self.assertIn(FixtureCategory.MEXICAN_SPANISH, captured[0][1].categories)
         self.assertNotIn(str(audio), repr(report.as_dict()))
 
 
@@ -402,6 +569,17 @@ def _piper_files(temp_dir):
     (data_dir / "es_MX-ald-medium.onnx").write_text("", encoding="utf-8")
     (data_dir / "es_MX-ald-medium.onnx.json").write_text("", encoding="utf-8")
     return exe, data_dir
+
+
+def _whisper_cpp_files(temp_dir):
+    root = Path(temp_dir)
+    executable = root / "whisper-cli.exe"
+    model = root / "models" / "ggml-small.bin"
+    audio = _audio_fixture(temp_dir)
+    executable.write_text("", encoding="utf-8")
+    model.parent.mkdir()
+    model.write_text("", encoding="utf-8")
+    return executable, model, audio
 
 
 def _write_wav(path):

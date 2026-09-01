@@ -35,6 +35,8 @@ from jarvis_core.voice.providers import (
     GroqSTTProvider,
     PiperTTSConfig,
     PiperTTSProvider,
+    WhisperCppSTTConfig,
+    WhisperCppSTTProvider,
 )
 
 
@@ -63,6 +65,14 @@ def main() -> int:
     piper.add_argument("--data-dir", default=os.environ.get("PIPER_DATA_DIR", ""))
     piper.add_argument("--output-dir", default=os.environ.get("PIPER_OUTPUT_DIR", "voice-output.local"))
 
+    whisper = subparsers.add_parser("whisper-cpp-stt", help="Evaluate local whisper.cpp STT")
+    whisper.add_argument("--audio", required=True)
+    whisper.add_argument("--expected", required=True)
+    whisper.add_argument("--fixture-id", default="local_stt_fixture")
+    whisper.add_argument("--language", choices=("es", "en"), default="es")
+    whisper.add_argument("--whisper", default=os.environ.get("WHISPER_CPP_EXECUTABLE", ""))
+    whisper.add_argument("--model", default=os.environ.get("WHISPER_CPP_MODEL", ""))
+
     args = parser.parse_args()
     if args.command == "groq-stt":
         report = _groq_report(
@@ -80,7 +90,7 @@ def main() -> int:
             GROQ_STT_MODELS,
             args.language,
         )
-    else:
+    elif args.command == "piper-tts":
         report = _piper_report(
             args.text,
             args.fixture_id,
@@ -88,6 +98,15 @@ def main() -> int:
             args.voice,
             args.data_dir,
             args.output_dir,
+        )
+    else:
+        report = _whisper_cpp_report(
+            args.audio,
+            args.expected,
+            args.fixture_id,
+            args.language,
+            args.whisper,
+            args.model,
         )
 
     if validate_no_secret_markers(report):
@@ -177,6 +196,40 @@ def _piper_report(
         privacy_notes=("approved phrase fixtures only", "no speaker playback"),
         cost_quota_notes=("local Piper execution; voice licensing must be reviewed",),
         known_limitations=("file-output only", "human naturalness not evaluated"),
+        recommendation=ProviderRecommendation.CONTINUE,
+        synthetic_only=False,
+    )
+
+
+def _whisper_cpp_report(
+    audio: str,
+    expected: str,
+    fixture_id: str,
+    language: str,
+    executable: str,
+    model: str,
+) -> ProviderBakeOffReport:
+    fixture = STTFixture(
+        fixture_id,
+        _stt_categories_for_language(language),
+        expected,
+        language_hint=_stt_language_hint(language),
+        audio_reference=audio,
+    )
+    provider = WhisperCppSTTProvider(
+        WhisperCppSTTConfig(
+            executable_path=Path(executable),
+            model_path=Path(model),
+            language=language,
+        )
+    )
+    return ProviderBakeOffReport(
+        provider=provider.identity,
+        fixture_set="voice-phase-2b-local-files",
+        stt_results=(provider.evaluate_stt(fixture),),
+        privacy_notes=("local fixture ids only", "offline local provider"),
+        cost_quota_notes=("local CPU execution; model licensing must be reviewed",),
+        known_limitations=("file-pipeline latency only", "no live microphone evaluation"),
         recommendation=ProviderRecommendation.CONTINUE,
         synthetic_only=False,
     )
