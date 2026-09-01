@@ -54,6 +54,10 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Voice Phase 2A provides provider-neutral STT/TTS evaluation contracts, synthetic/text-only fixture taxonomy, mock provider paths, normalized failure categories, a bake-off report model, bilingual paired semantic/tool fixtures, separated STT/intent/tool/argument/date/clarification scoring, conceptual tool outcome tags and synthetic/test metrics only.
 - Voice Phase 2A conceptual tools are non-executing benchmark concepts only; they do not call Runtime, Planner, API, Dashboard, Drivers, Android APIs or external apps.
 - Voice Phase 2A does not validate real STT performance, real TTS performance, real provider latency, naturalness, real prerecorded-audio STT, real file-output TTS, Android tool compatibility, provider compatibility, microphones, speakers, credentials, network, cloud, hardware or Runtime/API/Dashboard/Driver/AI behavior.
+- Voice Phase 2B real local STT evaluation has one validated offline whisper.cpp case: provider `whisper.cpp`, model `ggml-small.bin`, deployment local/offline, fixture `jarvis_input`, expected transcript `Enciende la linterna`, `evaluation_mode=real_provider`, `local_or_cloud=local`, `failure=null`, detected language `es-MX`, WER `0.0`, technical-term accuracy `1.0`, code-switch handling `1.0`, `provider_file_pipeline_latency_ms=9290`, `transcript_latency_ms=9290`, `local_offline=true`, recommendation `continue`.
+- The whisper.cpp result is one observed local file-pipeline run on this machine/execution using an external executable and model, not a universal latency benchmark, production-readiness claim or live microphone validation.
+- Voice STT provider selection foundation is implemented as offline-first provider-neutral selection: local STT is preferred by default, Groq remains an explicit cloud STT candidate, and cloud fallback remains policy-controlled and non-silent.
+- Voice Phase 2B still needs broader local optimization, additional fixture coverage, optional Groq cloud STT validation and live microphone work in separate future gates.
 - Cognitive Phase 1 is completed: Deterministic Cognitive Vertical Slice merged in PR #58.
 - Cognitive Phase 1 merge commit: `bc92c31992544f6d3824a7a1a39666b405977b23`.
 - Cognitive Phase 1 validation: 609 tests passing and default CLI smoke passed.
@@ -268,6 +272,10 @@ Independent voice line:
 - Voice Phase 2A provides provider-neutral STT/TTS evaluation contracts, synthetic/text-only fixture taxonomy, mock/fake provider paths, normalized failure categories, a bake-off report model, bilingual paired fixtures, separated STT transcription / intent / conceptual tool / argument / relative date-time / clarification scoring, outcome tags and synthetic/test metrics only.
 - Voice Phase 2A conceptual tools are non-executing benchmark concepts only and have no Runtime, Planner, API, Dashboard, Driver, Android API or external-app execution path.
 - Voice Phase 2A does not provide or validate real STT performance, real TTS performance, real latency, naturalness, real prerecorded-audio STT, real file-output TTS, Android tool compatibility, provider compatibility, microphone access, speaker output, network, cloud, credentials, hardware or Runtime/API/Dashboard/Driver/AI behavior.
+- Voice Phase 2B has one successful real local/offline whisper.cpp STT file evaluation with `ggml-small.bin` over the `jarvis_input` WAV fixture: transcript present, `failure=null`, detected language `es-MX`, WER `0.0`, technical-term accuracy `1.0`, code-switch handling `1.0`, observed file-pipeline/transcript latency `9290 ms`, local/offline capability true and recommendation `continue`.
+- The whisper.cpp validation uses external local artifacts only; JarvisOS does not commit whisper.cpp binaries, models or personal audio fixtures, and the observed `9290 ms` is machine/run-specific rather than a production latency benchmark.
+- Voice STT provider selection is offline-first and provider-neutral: injected providers are selected deterministically, local providers are preferred by default and Groq cloud fallback is explicit/policy-controlled only.
+- Voice Phase 2B does not provide live microphone STT, streaming STT, wake word, VAD, endpointing, production voice latency, permanent provider selection, Runtime/Planner/Driver execution, API/Dashboard integration or production readiness.
 
 Independent cognitive line:
 
@@ -382,6 +390,8 @@ Current experimental areas:
 - MQTT fake-client validation workflow.
 - Voice Experience Benchmark Harness.
 - Fake STT/TTS providers.
+- Local/offline whisper.cpp STT provider evaluation.
+- Offline-first STT provider selection.
 - Minimal fake Turn Manager.
 - In-memory fake Conversation Session.
 - Simulated voice benchmark metrics.
