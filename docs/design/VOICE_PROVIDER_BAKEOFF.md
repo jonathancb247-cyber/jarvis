@@ -3,7 +3,9 @@
 Status: Current / Design and Test Harness Guide
 
 Voice Phase 2A provides a provider-neutral foundation for future STT and TTS
-provider bake-offs. It does not evaluate any real provider.
+provider bake-offs. Phase 2A itself does not evaluate any real provider;
+later Phase 2B work can record opt-in real-provider evidence against the same
+contracts.
 
 ## Purpose
 
@@ -256,22 +258,47 @@ recommendations remain: continue, promising, poor fit or defer.
 
 ## Voice Phase 2B - First Real STT Provider Validation
 
-The first real STT validation path reuses the existing provider-neutral STT
-contracts and the opt-in Groq STT adapter. It accepts prerecorded local audio
-files only.
+The first real STT validation paths reuse the existing provider-neutral STT
+contracts with opt-in providers. They accept prerecorded local audio files
+only.
 
 The approved Phase 2B STT flow is:
 
 ```text
 local prerecorded audio fixture
 -> STTFixture
--> GroqSTTProvider
+-> STTEvaluationProvider implementation
 -> STTEvaluationResult
 -> ProviderBakeOffReport
 ```
 
 It is not a live voice path and it must never call Runtime, Planner, Runtime
 API, Dashboard, Drivers, Android APIs, applications or hardware.
+
+Validated local/offline evidence now includes one whisper.cpp run using an
+external `whisper-cli` executable and external `ggml-small.bin` model:
+
+- fixture: `jarvis_input`;
+- expected transcript: `Enciende la linterna`;
+- provider: `whisper.cpp`;
+- deployment: local/offline;
+- `evaluation_mode=real_provider`;
+- `local_or_cloud=local`;
+- `final_transcript_present=true`;
+- `failure=null`;
+- detected language: `es-MX`;
+- WER: `0.0`;
+- technical-term accuracy: `1.0`;
+- code-switch handling: `1.0`;
+- observed `provider_file_pipeline_latency_ms=9290`;
+- observed `transcript_latency_ms=9290`;
+- `local_offline=true`;
+- recommendation: `continue`.
+
+The `9290 ms` timing is one observed file-pipeline result for
+`ggml-small.bin` on the validation machine/execution. It is not a universal
+benchmark, live conversational latency, production-readiness evidence or a
+final provider-selection result.
 
 Real Groq STT evaluation may be run manually with an explicitly supplied local
 fixture and process-local `GROQ_API_KEY`:
@@ -316,7 +343,17 @@ tool, app, Runtime capability or Android action executed.
 
 ### STT Candidates
 
-The initial STT candidates are Groq Speech-to-Text models:
+Current STT candidates include a local/offline lane and a cloud lane.
+
+The local/offline candidate is whisper.cpp, configured through external local
+artifacts rather than repository-managed binaries or models:
+
+- executable: supplied by the local environment;
+- model: supplied by the local environment, such as `ggml-small.bin`;
+- language: explicit fixture language hint;
+- invocation: `whisper-cpp-stt`.
+
+The cloud STT candidates are Groq Speech-to-Text models:
 
 - `whisper-large-v3-turbo`;
 - `whisper-large-v3`.
@@ -329,6 +366,11 @@ Groq credentials must be read only from `GROQ_API_KEY` in the active process
 environment. The key must never be committed, logged, printed, persisted, stored
 in RuntimeProfile, included in State Store, sent to AI context or included in
 reports.
+
+STT provider selection remains provider-neutral and offline-first. Local STT is
+preferred by default. Groq cloud fallback may be evaluated only through an
+explicit policy or manual workflow; it must never be silent, default-CI
+required or required for JarvisOS core startup.
 
 ### TTS Candidate
 
@@ -421,12 +463,14 @@ Real evaluation is triggered only through an explicit manual workflow such as:
 ```bash
 python tools/voice_provider_bakeoff.py groq-stt --audio voice-fixtures.local/sample.wav --expected "Jarvis, enciende la lampara de la sala." --language es
 python tools/voice_provider_bakeoff.py groq-stt-compare --audio voice-fixtures.local/sample.wav --expected "Jarvis, enciende la lampara de la sala." --language es
+python tools/voice_provider_bakeoff.py whisper-cpp-stt --audio voice-fixtures.local/sample.wav --expected "Enciende la linterna" --fixture-id jarvis_input --language es
 python tools/voice_provider_bakeoff.py piper-tts --text "Listo." --piper <local-python-path> --voice es_MX-ald-medium --data-dir <local-piper-data-dir>
 ```
 
-Without `GROQ_API_KEY`, local fixture audio or Piper installation, real
-evaluation must fail safely or skip in integration workflows. Default unit tests
-remain deterministic and offline-safe.
+Without required local fixture audio, local whisper.cpp artifacts,
+`GROQ_API_KEY` for Groq, or Piper installation for TTS, real evaluation must
+fail safely or skip in integration workflows. Default unit tests remain
+deterministic and offline-safe.
 
 ### Real Versus Synthetic Reports
 
@@ -456,3 +500,9 @@ Voice Phase 2B still does not prove live voice readiness. It does not include
 microphones, speakers, wake word, VAD, AEC, audio ducking, realtime
 speech-to-speech, Runtime execution, Dashboard integration, hardware validation,
 permanent provider selection or production readiness.
+
+The successful whisper.cpp `jarvis_input` result proves only that one
+prerecorded local WAV fixture can be transcribed through the local/offline
+provider boundary on the validated machine. Local optimization, broader
+fixture/model comparison, live microphone capture and end-to-end voice UX remain
+future work.

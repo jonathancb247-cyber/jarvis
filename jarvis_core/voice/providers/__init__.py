@@ -14,6 +14,12 @@ from .piper_tts import (
     PiperTTSRunner,
     PiperTTSRunResult,
 )
+from .whisper_cpp_stt import (
+    WhisperCppSTTConfig,
+    WhisperCppSTTProvider,
+    WhisperCppSTTRunResult,
+    WhisperCppSTTRunner,
+)
 
 __all__ = [
     "GROQ_STT_MODELS",
@@ -26,4 +32,8 @@ __all__ = [
     "PiperTTSRunner",
     "PiperTTSRunResult",
     "StdlibGroqSTTTransport",
+    "WhisperCppSTTConfig",
+    "WhisperCppSTTProvider",
+    "WhisperCppSTTRunResult",
+    "WhisperCppSTTRunner",
 ]

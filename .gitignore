@@ -3,4 +3,7 @@ state/
 *.state.json
 voice-fixtures.local/
 voice-output.local/
+__pycache__/
+*.py[cod]
+tools/*.local.conf
 
