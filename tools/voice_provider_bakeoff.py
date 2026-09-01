@@ -47,11 +47,13 @@ def main() -> int:
     groq.add_argument("--expected", required=True)
     groq.add_argument("--fixture-id", default="local_stt_fixture")
     groq.add_argument("--model", choices=GROQ_STT_MODELS, default=GROQ_STT_MODELS[0])
+    groq.add_argument("--language", choices=("es", "en"), default="es")
 
     compare = subparsers.add_parser("groq-stt-compare", help="Compare both Groq STT models")
     compare.add_argument("--audio", required=True)
     compare.add_argument("--expected", required=True)
     compare.add_argument("--fixture-id", default="local_stt_fixture")
+    compare.add_argument("--language", choices=("es", "en"), default="es")
 
     piper = subparsers.add_parser("piper-tts", help="Evaluate local Piper TTS")
     piper.add_argument("--text", required=True)
@@ -63,9 +65,21 @@ def main() -> int:
 
     args = parser.parse_args()
     if args.command == "groq-stt":
-        report = _groq_report(args.audio, args.expected, args.fixture_id, (args.model,))
+        report = _groq_report(
+            args.audio,
+            args.expected,
+            args.fixture_id,
+            (args.model,),
+            args.language,
+        )
     elif args.command == "groq-stt-compare":
-        report = _groq_report(args.audio, args.expected, args.fixture_id, GROQ_STT_MODELS)
+        report = _groq_report(
+            args.audio,
+            args.expected,
+            args.fixture_id,
+            GROQ_STT_MODELS,
+            args.language,
+        )
     else:
         report = _piper_report(
             args.text,
@@ -87,18 +101,19 @@ def _groq_report(
     expected: str,
     fixture_id: str,
     models: tuple[str, ...],
+    language: str = "es",
 ) -> ProviderBakeOffReport:
     fixture = STTFixture(
         fixture_id,
-        (
-            FixtureCategory.MEXICAN_SPANISH,
-            FixtureCategory.TECHNICAL_VOCABULARY,
-        ),
+        _stt_categories_for_language(language),
         expected,
+        language_hint=_stt_language_hint(language),
         audio_reference=audio,
     )
     results = tuple(
-        GroqSTTProvider(GroqSTTConfig(model=model)).evaluate_stt(fixture)
+        GroqSTTProvider(GroqSTTConfig(model=model, language=language)).evaluate_stt(
+            fixture
+        )
         for model in models
     )
     return ProviderBakeOffReport(
@@ -111,6 +126,24 @@ def _groq_report(
         recommendation=ProviderRecommendation.CONTINUE,
         synthetic_only=False,
     )
+
+
+def _stt_categories_for_language(language: str) -> tuple[FixtureCategory, ...]:
+    if language == "en":
+        return (
+            FixtureCategory.ENGLISH,
+            FixtureCategory.TECHNICAL_VOCABULARY,
+        )
+    return (
+        FixtureCategory.MEXICAN_SPANISH,
+        FixtureCategory.TECHNICAL_VOCABULARY,
+    )
+
+
+def _stt_language_hint(language: str) -> str:
+    if language == "en":
+        return "en-US"
+    return "es-MX"
 
 
 def _piper_report(
