@@ -25,6 +25,7 @@ class ProviderFailureCategory(str, Enum):
 
 
 class FixtureCategory(str, Enum):
+    ENGLISH = "english"
     MEXICAN_SPANISH = "mexican_spanish"
     NEUTRAL_SPANISH = "neutral_spanish"
     CODE_SWITCHING = "code_switching"

@@ -5,9 +5,15 @@ import unittest
 from unittest.mock import patch
 import wave
 
+from tools import voice_provider_bakeoff
+
 from jarvis_core.voice.provider_contracts import (
     FixtureCategory,
+    ProviderDeployment,
     ProviderFailureCategory,
+    ProviderIdentity,
+    STTCapabilities,
+    STTEvaluationResult,
     STTFixture,
     TTSPhraseFixture,
 )
@@ -141,6 +147,90 @@ class GroqSTTAdapterTests(unittest.TestCase):
         self.assertFalse(payload["synthetic_only"])
         self.assertTrue(payload["stt_metrics"][0]["real_provider_values"])
         self.assertEqual(validate_no_secret_markers(report), ())
+
+    def test_groq_tool_supports_explicit_spanish_fixture_language(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            audio = _audio_fixture(temp_dir)
+            captured = []
+
+            class CapturingProvider:
+                def __init__(self, config):
+                    self.config = config
+                    self.identity = ProviderIdentity(
+                        "groq",
+                        "stt",
+                        ProviderDeployment.CLOUD,
+                        config.model,
+                    )
+                    self.capabilities = STTCapabilities()
+
+                def evaluate_stt(self, fixture):
+                    captured.append((self.config, fixture))
+                    return STTEvaluationResult(
+                        self.identity,
+                        fixture.fixture_id,
+                        self.capabilities,
+                        final_transcript=fixture.expected_transcript,
+                        transcript_latency_ms=1,
+                        metrics={"real_provider_values": 1},
+                    )
+
+            with patch.object(voice_provider_bakeoff, "GroqSTTProvider", CapturingProvider):
+                report = voice_provider_bakeoff._groq_report(
+                    str(audio),
+                    "enciende la linterna",
+                    "spanish_fixture",
+                    ("whisper-large-v3-turbo",),
+                    "es",
+                )
+
+        self.assertEqual(report.as_dict()["evaluation_mode"], "real_provider")
+        self.assertEqual(captured[0][0].language, "es")
+        self.assertEqual(captured[0][1].language_hint, "es-MX")
+        self.assertIn(FixtureCategory.MEXICAN_SPANISH, captured[0][1].categories)
+        self.assertNotIn(str(audio), repr(report.as_dict()))
+
+    def test_groq_tool_supports_explicit_english_fixture_language(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            audio = _audio_fixture(temp_dir)
+            captured = []
+
+            class CapturingProvider:
+                def __init__(self, config):
+                    self.config = config
+                    self.identity = ProviderIdentity(
+                        "groq",
+                        "stt",
+                        ProviderDeployment.CLOUD,
+                        config.model,
+                    )
+                    self.capabilities = STTCapabilities()
+
+                def evaluate_stt(self, fixture):
+                    captured.append((self.config, fixture))
+                    return STTEvaluationResult(
+                        self.identity,
+                        fixture.fixture_id,
+                        self.capabilities,
+                        final_transcript=fixture.expected_transcript,
+                        transcript_latency_ms=1,
+                        metrics={"real_provider_values": 1},
+                    )
+
+            with patch.object(voice_provider_bakeoff, "GroqSTTProvider", CapturingProvider):
+                report = voice_provider_bakeoff._groq_report(
+                    str(audio),
+                    "turn on the flashlight",
+                    "english_fixture",
+                    ("whisper-large-v3-turbo",),
+                    "en",
+                )
+
+        self.assertEqual(report.as_dict()["evaluation_mode"], "real_provider")
+        self.assertEqual(captured[0][0].language, "en")
+        self.assertEqual(captured[0][1].language_hint, "en-US")
+        self.assertIn(FixtureCategory.ENGLISH, captured[0][1].categories)
+        self.assertNotIn(str(audio), repr(report.as_dict()))
 
 
 class PiperTTSAdapterTests(unittest.TestCase):

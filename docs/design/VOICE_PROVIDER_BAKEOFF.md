@@ -254,6 +254,66 @@ authorized.
 Phase 2B is a provider evaluation phase, not provider selection. Valid
 recommendations remain: continue, promising, poor fit or defer.
 
+## Voice Phase 2B - First Real STT Provider Validation
+
+The first real STT validation path reuses the existing provider-neutral STT
+contracts and the opt-in Groq STT adapter. It accepts prerecorded local audio
+files only.
+
+The approved Phase 2B STT flow is:
+
+```text
+local prerecorded audio fixture
+-> STTFixture
+-> GroqSTTProvider
+-> STTEvaluationResult
+-> ProviderBakeOffReport
+```
+
+It is not a live voice path and it must never call Runtime, Planner, Runtime
+API, Dashboard, Drivers, Android APIs, applications or hardware.
+
+Real Groq STT evaluation may be run manually with an explicitly supplied local
+fixture and process-local `GROQ_API_KEY`:
+
+```bash
+python tools/voice_provider_bakeoff.py groq-stt --audio voice-fixtures.local/es_mx_flashlight.wav --expected "enciende la linterna" --fixture-id es_mx_flashlight --language es
+python tools/voice_provider_bakeoff.py groq-stt --audio voice-fixtures.local/en_flashlight.wav --expected "turn on the flashlight" --fixture-id en_flashlight --language en
+python tools/voice_provider_bakeoff.py groq-stt-compare --audio voice-fixtures.local/es_mx_technical.wav --expected "revisando el ESP32 y el estado de MQTT" --fixture-id es_mx_technical --language es
+```
+
+Supported first-pass language hints are `es` and `en`, mapped to benchmark
+fixture hints `es-MX` and `en-US`.
+
+Recommended local fixture corpus:
+
+- Spanish (Mexico) command;
+- English equivalent command;
+- paired bilingual command cases;
+- technical vocabulary: ESP32, STM32, MQTT, Wi-Fi and OBD-II;
+- hesitation;
+- self-correction;
+- genuine ambiguity;
+- code switching.
+
+These local audio fixtures remain ignored/private by default. They must not be
+committed unless a later policy explicitly approves deterministic non-private
+audio artifacts.
+
+Real STT measurements may include:
+
+- final transcript;
+- word error rate or equivalent transcript accuracy;
+- technical-term accuracy;
+- code-switch transcription behavior;
+- provider/file-pipeline latency;
+- normalized STT failure;
+- provider/model identity.
+
+Downstream semantic/tool metrics may consume the transcript later through the
+existing non-executing semantic evaluator, but they are not evidence that any
+tool, app, Runtime capability or Android action executed.
+
 ### STT Candidates
 
 The initial STT candidates are Groq Speech-to-Text models:
@@ -359,8 +419,8 @@ Real provider evaluation must not run during default `python -m unittest`.
 Real evaluation is triggered only through an explicit manual workflow such as:
 
 ```bash
-python tools/voice_provider_bakeoff.py groq-stt --audio voice-fixtures.local/sample.wav --expected "Jarvis, enciende la lampara de la sala."
-python tools/voice_provider_bakeoff.py groq-stt-compare --audio voice-fixtures.local/sample.wav --expected "Jarvis, enciende la lampara de la sala."
+python tools/voice_provider_bakeoff.py groq-stt --audio voice-fixtures.local/sample.wav --expected "Jarvis, enciende la lampara de la sala." --language es
+python tools/voice_provider_bakeoff.py groq-stt-compare --audio voice-fixtures.local/sample.wav --expected "Jarvis, enciende la lampara de la sala." --language es
 python tools/voice_provider_bakeoff.py piper-tts --text "Listo." --piper <local-python-path> --voice es_MX-ald-medium --data-dir <local-piper-data-dir>
 ```
 
