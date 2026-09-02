@@ -1,6 +1,10 @@
 import ast
+import json
 from pathlib import Path
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
+from unittest.mock import patch
 
 from jarvis_core.ai.contracts import (
     AI_RESPONSE_INVALID,
@@ -8,10 +12,14 @@ from jarvis_core.ai.contracts import (
     PLAN_KIND_EXECUTE,
     PLAN_KIND_REFUSE,
 )
+from jarvis_core.ai.ollama import OLLAMA_CHAT_PATH, OllamaHttpResponse
 from jarvis_core.ai.structured_bakeoff import (
     StructuredProviderBakeOff,
     build_default_structured_ai_fixtures,
+    summarize_structured_ai_results,
 )
+from tools.ai_structured_bakeoff import main as bakeoff_cli_main
+from tools.ai_structured_bakeoff import run_ollama_bakeoff
 
 
 class FakeStructuredProvider:
@@ -25,6 +33,45 @@ class FakeStructuredProvider:
         if self.error is not None:
             raise self.error
         return self.outputs.get(context.user_request, _perfect_plan_for_request(context.user_request))
+
+
+class FakeClock:
+    def __init__(self, values):
+        self.values = list(values)
+
+    def __call__(self):
+        if not self.values:
+            raise AssertionError("FakeClock exhausted")
+        return self.values.pop(0)
+
+
+class FakeOllamaStructuredTransport:
+    def __init__(self):
+        self.calls = []
+
+    def post_json(self, host, port, path, payload, timeout_seconds, max_response_bytes):
+        self.calls.append(
+            {
+                "host": host,
+                "port": port,
+                "path": path,
+                "payload": payload,
+                "timeout_seconds": timeout_seconds,
+                "max_response_bytes": max_response_bytes,
+            }
+        )
+        user_content = next(
+            message["content"] for message in payload["messages"] if message["role"] == "user"
+        )
+        user_request = json.loads(user_content)["user_request"]
+        body = {
+            "message": {
+                "role": "assistant",
+                "content": json.dumps(_perfect_plan_for_request(user_request)),
+            },
+            "done": True,
+        }
+        return OllamaHttpResponse(200, body)
 
 
 class StructuredAIBakeOffTests(unittest.TestCase):
@@ -195,6 +242,8 @@ class StructuredAIBakeOffTests(unittest.TestCase):
         self.assertEqual(missing_field.metrics.ai_action_plan_valid, 1.0)
         self.assertEqual(missing_field.metrics.kind_accuracy, 1.0)
         self.assertEqual(missing_field.metrics.clarification_correctness, 0.0)
+        self.assertEqual(wrong_reason.clarification_reason_code, "missing_parameter")
+        self.assertEqual(wrong_reason.clarification_missing_fields, ("device_id",))
 
     def test_refusal_correct_and_incorrect_are_scored(self):
         fixture = _fixture("unsupported_destructive_refusal")
@@ -228,6 +277,31 @@ class StructuredAIBakeOffTests(unittest.TestCase):
         self.assertEqual(result.metrics.ai_action_plan_valid, 1.0)
         self.assertEqual(result.metrics.kind_accuracy, 1.0)
         self.assertEqual(result.metrics.refusal_correctness, 0.0)
+        self.assertEqual(result.refusal_reason_code, "unsupported_operation")
+
+    def test_result_serializes_observed_plan_details_for_audit(self):
+        fixture = _fixture("absolute_time_read")
+        result = StructuredProviderBakeOff(
+            FakeStructuredProvider(
+                {
+                    fixture.user_request: _execute_plan(
+                        "device read lamp_1 status.read schedule_at=2026-09-01T12:05:00Z",
+                    )
+                }
+            ),
+            provider_name="audit",
+            fixtures=(fixture,),
+        ).run()[0]
+
+        payload = result.as_dict()
+
+        self.assertEqual(payload["target_device_id"], "lamp_1")
+        self.assertEqual(payload["capability_name"], "status.read")
+        self.assertEqual(payload["action_kind"], "read")
+        self.assertEqual(payload["arguments"], {"schedule_at": "2026-09-01T12:05:00Z"})
+        self.assertIsNone(payload["clarification_reason_code"])
+        self.assertEqual(payload["clarification_missing_fields"], [])
+        self.assertIsNone(payload["refusal_reason_code"])
 
     def test_provider_exception_is_normalized(self):
         fixture = _fixture("spanish_simple_read")
@@ -270,6 +344,151 @@ class StructuredAIBakeOffTests(unittest.TestCase):
         second = tuple(result.as_dict() for result in StructuredProviderBakeOff(FakeStructuredProvider()).run())
 
         self.assertEqual(first, second)
+
+    def test_latency_is_measured_only_when_clock_is_injected(self):
+        fixture = _fixture("spanish_simple_read")
+        timed = StructuredProviderBakeOff(
+            FakeStructuredProvider(),
+            provider_name="timed",
+            fixtures=(fixture,),
+            clock=FakeClock([1.0, 1.125]),
+        ).run()[0]
+        untimed = StructuredProviderBakeOff(
+            FakeStructuredProvider(),
+            provider_name="untimed",
+            fixtures=(fixture,),
+        ).run()[0]
+
+        self.assertEqual(timed.latency_ms, 125)
+        self.assertIsNone(untimed.latency_ms)
+
+    def test_summary_aggregates_fixture_metrics_and_latency(self):
+        fixtures = (_fixture("spanish_simple_read"), _fixture("relative_time_two_minutes"))
+        provider = FakeStructuredProvider(
+            {
+                fixtures[1].user_request: _execute_plan(
+                    "device read lamp_1 status.read schedule_at=2026-09-01T12:01:00Z",
+                )
+            }
+        )
+        results = StructuredProviderBakeOff(
+            provider,
+            provider_name="mixed",
+            fixtures=fixtures,
+            clock=FakeClock([1.0, 1.100, 2.0, 2.200]),
+        ).run()
+
+        summary = summarize_structured_ai_results(
+            results,
+            provider_name="mixed",
+            fixtures=fixtures,
+        )
+
+        self.assertEqual(summary.fixture_count, 2)
+        self.assertEqual(summary.valid_plan_count, 2)
+        self.assertEqual(summary.failure_count, 0)
+        self.assertEqual(summary.average_latency_ms, 150)
+        self.assertEqual(summary.average_metrics["ai_action_plan_valid"], 1.0)
+        self.assertEqual(summary.average_metrics["relative_time_reasoning"], 0.5)
+        self.assertEqual(summary.applicable_metric_counts["relative_time_reasoning"], 1)
+        self.assertEqual(summary.applicable_average_metrics["relative_time_reasoning"], 0.0)
+        self.assertEqual(summary.applicable_metric_counts["argument_accuracy"], 1)
+        self.assertEqual(summary.applicable_average_metrics["argument_accuracy"], 0.0)
+        self.assertEqual(summary.applicable_metric_counts["canonical_command_accuracy"], 2)
+
+    def test_summary_can_remain_result_only_without_fixture_applicability(self):
+        results = StructuredProviderBakeOff(FakeStructuredProvider()).run()
+
+        summary = summarize_structured_ai_results(results, provider_name="no-fixtures")
+
+        self.assertEqual(summary.fixture_count, 6)
+        self.assertEqual(summary.applicable_metric_counts, {})
+        self.assertEqual(summary.applicable_average_metrics, {})
+
+    def test_ollama_cli_uses_real_provider_with_fake_transport(self):
+        progress = StringIO()
+        transport = FakeOllamaStructuredTransport()
+        payload = run_ollama_bakeoff(
+            "qwen3:4b",
+            transport=transport,
+            maximum_output_tokens=128,
+            progress_stream=progress,
+            clock=FakeClock([1.0, 1.010] * 6),
+        )
+
+        self.assertEqual(payload["provider"], "ollama")
+        self.assertEqual(payload["model"], "qwen3:4b")
+        self.assertEqual(payload["maximum_output_tokens"], 128)
+        self.assertEqual(payload["fixed_temporal_context"], "current_time=2026-09-01T12:00:00Z")
+        self.assertFalse(payload["execution"]["runtime"])
+        self.assertFalse(payload["execution"]["drivers"])
+        self.assertFalse(payload["execution"]["stt"])
+        self.assertFalse(payload["execution"]["ai_action_plan_execution"])
+        self.assertFalse(payload["execution"]["cloud_fallback"])
+        self.assertEqual(len(payload["results"]), 6)
+        self.assertEqual(payload["summary"]["fixture_count"], 6)
+        self.assertEqual(payload["summary"]["failure_count"], 0)
+        self.assertEqual(payload["summary"]["average_latency_ms"], 10)
+        self.assertEqual(payload["summary"]["applicable_metric_counts"]["relative_time_reasoning"], 1)
+        self.assertEqual(payload["summary"]["applicable_average_metrics"]["relative_time_reasoning"], 1.0)
+        self.assertEqual(len(transport.calls), 6)
+        for call in transport.calls:
+            request = call["payload"]
+            self.assertEqual(call["host"], "127.0.0.1")
+            self.assertEqual(call["path"], OLLAMA_CHAT_PATH)
+            self.assertEqual(request["model"], "qwen3:4b")
+            self.assertIs(request["think"], False)
+            self.assertIs(request["stream"], False)
+            self.assertEqual(request["format"]["type"], "object")
+            self.assertEqual(request["options"]["num_predict"], 128)
+        progress_lines = progress.getvalue().splitlines()
+        self.assertEqual(len(progress_lines), 12)
+        self.assertEqual(progress_lines[0], "[1/6] running spanish_simple_read")
+        self.assertIn("[6/6] finished unsupported_destructive_refusal: ok, 10ms", progress_lines)
+
+    def test_ollama_cli_main_prints_canonical_json_report(self):
+        class FakeProvider:
+            def __init__(self, config, transport=None):
+                self.config = config
+
+            def generate_plan(self, context):
+                return _perfect_plan_for_request(context.user_request)
+
+        output = StringIO()
+        progress = StringIO()
+        with patch("tools.ai_structured_bakeoff.OllamaAIProvider", FakeProvider):
+            with redirect_stdout(output), redirect_stderr(progress):
+                result = bakeoff_cli_main(["ollama", "--model", "qwen3:4b"])
+
+        payload = json.loads(output.getvalue())
+        self.assertEqual(result, 0)
+        self.assertEqual(payload["provider"], "ollama")
+        self.assertEqual(payload["summary"]["fixture_count"], 6)
+        self.assertEqual(payload["summary"]["valid_plan_count"], 6)
+        self.assertIn("[1/6] running spanish_simple_read", progress.getvalue())
+
+    def test_cli_tool_does_not_import_execution_boundaries(self):
+        source = Path("tools/ai_structured_bakeoff.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        imported_modules = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported_modules.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported_modules.append(node.module)
+
+        forbidden = (
+            "jarvis_core.runtime",
+            "jarvis_core.drivers",
+            "jarvis_core.device_state",
+            "jarvis_core.api",
+            "jarvis_core.dashboard",
+            "jarvis_core.voice",
+        )
+        self.assertFalse(
+            any(module.startswith(forbidden) for module in imported_modules),
+            imported_modules,
+        )
 
 
 def _fixture(fixture_id):
