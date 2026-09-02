@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Mapping
+from typing import Callable, Mapping
 
 from jarvis_core.ai.contracts import (
     ACTION_KIND_READ,
@@ -110,6 +110,22 @@ class StructuredAIEvaluationResult:
     normalized_failure: str | None = None
     plan_kind: str | None = None
     canonical_command_text: str | None = None
+    target_device_id: str | None = None
+    capability_name: str | None = None
+    action_kind: str | None = None
+    arguments: Mapping[str, str] = field(default_factory=dict)
+    clarification_reason_code: str | None = None
+    clarification_missing_fields: tuple[str, ...] = ()
+    refusal_reason_code: str | None = None
+    latency_ms: int | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "arguments", MappingProxyType(dict(self.arguments)))
+        object.__setattr__(
+            self,
+            "clarification_missing_fields",
+            tuple(self.clarification_missing_fields),
+        )
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -119,6 +135,55 @@ class StructuredAIEvaluationResult:
             "normalized_failure": self.normalized_failure,
             "plan_kind": self.plan_kind,
             "canonical_command_text": self.canonical_command_text,
+            "target_device_id": self.target_device_id,
+            "capability_name": self.capability_name,
+            "action_kind": self.action_kind,
+            "arguments": dict(self.arguments),
+            "clarification_reason_code": self.clarification_reason_code,
+            "clarification_missing_fields": list(self.clarification_missing_fields),
+            "refusal_reason_code": self.refusal_reason_code,
+            "latency_ms": self.latency_ms,
+        }
+
+
+@dataclass(frozen=True)
+class StructuredAIBakeOffSummary:
+    provider_name: str
+    fixture_count: int
+    valid_plan_count: int
+    failure_count: int
+    average_latency_ms: float | None
+    average_metrics: Mapping[str, float]
+    applicable_metric_counts: Mapping[str, int] = field(default_factory=dict)
+    applicable_average_metrics: Mapping[str, float | None] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "average_metrics",
+            MappingProxyType(dict(self.average_metrics)),
+        )
+        object.__setattr__(
+            self,
+            "applicable_metric_counts",
+            MappingProxyType(dict(self.applicable_metric_counts)),
+        )
+        object.__setattr__(
+            self,
+            "applicable_average_metrics",
+            MappingProxyType(dict(self.applicable_average_metrics)),
+        )
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "provider_name": self.provider_name,
+            "fixture_count": self.fixture_count,
+            "valid_plan_count": self.valid_plan_count,
+            "failure_count": self.failure_count,
+            "average_latency_ms": self.average_latency_ms,
+            "average_metrics": dict(self.average_metrics),
+            "applicable_metric_counts": dict(self.applicable_metric_counts),
+            "applicable_average_metrics": dict(self.applicable_average_metrics),
         }
 
 
@@ -129,17 +194,20 @@ class StructuredProviderBakeOff:
         *,
         provider_name: str = "provider",
         fixtures: tuple[StructuredAIFixture, ...] | None = None,
+        clock: Callable[[], float] | None = None,
     ) -> None:
         if not provider_name.strip():
             raise ValueError("provider_name is required")
         self.provider = provider
         self.provider_name = provider_name
         self.fixtures = fixtures or build_default_structured_ai_fixtures()
+        self._clock = clock
 
     def run(self) -> tuple[StructuredAIEvaluationResult, ...]:
         return tuple(self.evaluate_fixture(fixture) for fixture in self.fixtures)
 
     def evaluate_fixture(self, fixture: StructuredAIFixture) -> StructuredAIEvaluationResult:
+        started_at = self._clock() if self._clock is not None else None
         try:
             raw_plan = self.provider.generate_plan(fixture.context)
             plan = validate_plan_shape(normalize_plan(raw_plan))
@@ -147,11 +215,121 @@ class StructuredProviderBakeOff:
                 for step in plan.steps:
                     validate_command_text_safety(step.canonical_command_text)
         except AIValidationError as error:
-            return _invalid_result(fixture, self.provider_name, error.code)
+            return _invalid_result(
+                fixture,
+                self.provider_name,
+                error.code,
+                latency_ms=self._elapsed_ms(started_at),
+            )
         except Exception:
-            return _invalid_result(fixture, self.provider_name, AI_RESPONSE_INVALID)
+            return _invalid_result(
+                fixture,
+                self.provider_name,
+                AI_RESPONSE_INVALID,
+                latency_ms=self._elapsed_ms(started_at),
+            )
 
-        return _evaluate_plan(fixture, self.provider_name, plan)
+        return _evaluate_plan(
+            fixture,
+            self.provider_name,
+            plan,
+            latency_ms=self._elapsed_ms(started_at),
+        )
+
+    def _elapsed_ms(self, started_at: float | None) -> int | None:
+        if self._clock is None or started_at is None:
+            return None
+        return max(0, round((self._clock() - started_at) * 1000))
+
+
+def summarize_structured_ai_results(
+    results: tuple[StructuredAIEvaluationResult, ...],
+    *,
+    provider_name: str,
+    fixtures: tuple[StructuredAIFixture, ...] | None = None,
+) -> StructuredAIBakeOffSummary:
+    metric_names = tuple(StructuredAIMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0).as_dict())
+    fixture_count = len(results)
+    average_metrics = {
+        metric_name: (
+            sum(result.metrics.as_dict()[metric_name] for result in results) / fixture_count
+            if fixture_count
+            else 0.0
+        )
+        for metric_name in metric_names
+    }
+    latencies = [result.latency_ms for result in results if result.latency_ms is not None]
+    applicable_counts = _applicable_metric_counts(metric_names, fixtures)
+    applicable_averages = _applicable_average_metrics(results, fixtures, metric_names)
+    return StructuredAIBakeOffSummary(
+        provider_name=provider_name,
+        fixture_count=fixture_count,
+        valid_plan_count=sum(
+            1 for result in results if result.metrics.ai_action_plan_valid == 1.0
+        ),
+        failure_count=sum(1 for result in results if result.normalized_failure is not None),
+        average_latency_ms=(sum(latencies) / len(latencies) if latencies else None),
+        average_metrics=average_metrics,
+        applicable_metric_counts=applicable_counts,
+        applicable_average_metrics=applicable_averages,
+    )
+
+
+def _applicable_metric_counts(
+    metric_names: tuple[str, ...],
+    fixtures: tuple[StructuredAIFixture, ...] | None,
+) -> dict[str, int]:
+    if fixtures is None:
+        return {}
+    return {
+        metric_name: sum(
+            1 for fixture in fixtures if _metric_applies(metric_name, fixture.expectation)
+        )
+        for metric_name in metric_names
+    }
+
+
+def _applicable_average_metrics(
+    results: tuple[StructuredAIEvaluationResult, ...],
+    fixtures: tuple[StructuredAIFixture, ...] | None,
+    metric_names: tuple[str, ...],
+) -> dict[str, float | None]:
+    if fixtures is None:
+        return {}
+    averages: dict[str, float | None] = {}
+    fixture_by_id = {fixture.fixture_id: fixture for fixture in fixtures}
+    for metric_name in metric_names:
+        applicable_values = [
+            result.metrics.as_dict()[metric_name]
+            for result in results
+            if _metric_applies(metric_name, fixture_by_id[result.fixture_id].expectation)
+        ]
+        averages[metric_name] = (
+            sum(applicable_values) / len(applicable_values)
+            if applicable_values
+            else None
+        )
+    return averages
+
+
+def _metric_applies(metric_name: str, expectation: StructuredAIExpectation) -> bool:
+    if metric_name in {"ai_action_plan_valid", "kind_accuracy"}:
+        return True
+    if metric_name in {
+        "canonical_command_accuracy",
+        "device_id_accuracy",
+        "capability_accuracy",
+    }:
+        return expectation.kind == PLAN_KIND_EXECUTE
+    if metric_name == "argument_accuracy":
+        return bool(expectation.arguments)
+    if metric_name == "relative_time_reasoning":
+        return expectation.relative_time_argument is not None
+    if metric_name == "clarification_correctness":
+        return expectation.clarification_required
+    if metric_name == "refusal_correctness":
+        return expectation.refusal_required
+    return True
 
 
 def build_default_structured_ai_fixtures() -> tuple[StructuredAIFixture, ...]:
@@ -257,6 +435,8 @@ def _evaluate_plan(
     fixture: StructuredAIFixture,
     provider_name: str,
     plan,
+    *,
+    latency_ms: int | None = None,
 ) -> StructuredAIEvaluationResult:
     expectation = fixture.expectation
     step = plan.steps[0] if plan.steps else None
@@ -288,6 +468,18 @@ def _evaluate_plan(
         metrics,
         plan_kind=plan.kind,
         canonical_command_text=command_text,
+        target_device_id=step.target_device_id if step is not None else None,
+        capability_name=step.capability_name if step is not None else None,
+        action_kind=step.action_kind if step is not None else None,
+        arguments=parsed_arguments,
+        clarification_reason_code=(
+            plan.clarification.reason_code if plan.clarification is not None else None
+        ),
+        clarification_missing_fields=(
+            plan.clarification.missing_fields if plan.clarification is not None else ()
+        ),
+        refusal_reason_code=plan.refusal.reason_code if plan.refusal is not None else None,
+        latency_ms=latency_ms,
     )
 
 
@@ -295,6 +487,8 @@ def _invalid_result(
     fixture: StructuredAIFixture,
     provider_name: str,
     failure: str,
+    *,
+    latency_ms: int | None = None,
 ) -> StructuredAIEvaluationResult:
     return StructuredAIEvaluationResult(
         fixture.fixture_id,
@@ -311,6 +505,7 @@ def _invalid_result(
             refusal_correctness=0.0,
         ),
         normalized_failure=failure,
+        latency_ms=latency_ms,
     )
 
 
@@ -429,10 +624,12 @@ def _parse_command_arguments(command_text: str | None) -> dict[str, str]:
 
 __all__ = [
     "FIXED_TEMPORAL_CONTEXT",
+    "StructuredAIBakeOffSummary",
     "StructuredAIEvaluationResult",
     "StructuredAIFixture",
     "StructuredAIMetrics",
     "StructuredAIExpectation",
     "StructuredProviderBakeOff",
     "build_default_structured_ai_fixtures",
+    "summarize_structured_ai_results",
 ]
