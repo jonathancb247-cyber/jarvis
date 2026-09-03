@@ -254,6 +254,18 @@ class GemmaLocalProviderTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, AI_PROVIDER_UNAVAILABLE)
         self.assertNotIn("raw bridge detail", str(raised.exception))
 
+    def test_large_body_with_lying_body_size_bytes_still_rejects(self):
+        large_body = {"output_text": "x" * 4096}
+        provider = GemmaLocalAIProvider(
+            GemmaLocalProviderConfig("gemma-4-e2b", maximum_response_bytes=1024),
+            transport=FakeGemmaTransport(large_body, body_size_bytes=1),
+        )
+
+        with self.assertRaises(GemmaLocalProviderError) as raised:
+            provider.generate_plan(safe_context("test"))
+
+        self.assertEqual(raised.exception.code, AI_RESPONSE_TOO_LARGE)
+
     def test_unconfigured_transport_ignores_host_specific_request_details(self):
         transport = UnconfiguredGemmaLocalTransport()
 

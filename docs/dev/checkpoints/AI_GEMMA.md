@@ -63,9 +63,9 @@ Return path: Gemma output -> raw AIActionPlan-compatible payload -> existing nor
 
 ## Verification
 
-- Gemma provider: 14 tests OK
-- Android bridge: 13 tests OK
-- Full suite: 794 tests OK
+- Gemma provider: 15 tests OK
+- Android bridge: 17 tests OK
+- Full suite: 799 tests OK
 - `python -m jarvis_core`: safe exit
 
 ---

@@ -1,9 +1,14 @@
-"""Lab-only HTTP transport for a future Android Gemma companion bridge."""
+"""Lab-only HTTP transport for a future Android Gemma companion bridge.
 
+The bridge is intentionally cleartext and restricted to local/private network
+destinations.  Public Internet hosts are rejected at configuration time.
+This boundary must not be relaxed without explicit security approval.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
 import http.client
+import ipaddress
 import json
 import socket
 
@@ -164,6 +169,30 @@ def _require_host(host: str) -> None:
     forbidden = ("://", "/", "\\", "?", "#", "@", " ", "\t", "\r", "\n")
     if any(token in host for token in forbidden):
         raise ValueError("Gemma Android bridge host is invalid")
+    if not _is_local_host(host):
+        raise ValueError(
+            "Gemma Android bridge host must be a local/private address; "
+            "public Internet destinations are not allowed"
+        )
+
+
+def _is_local_host(host: str) -> bool:
+    normalized = host.strip().lower()
+    if normalized in ("localhost", "127.0.0.1", "::1"):
+        return True
+    try:
+        addr = ipaddress.ip_address(normalized)
+    except ValueError:
+        return False
+    if isinstance(addr, ipaddress.IPv4Address):
+        return (
+            addr.is_loopback
+            or addr.is_private
+            or addr.is_link_local
+        )
+    if isinstance(addr, ipaddress.IPv6Address):
+        return addr.is_loopback or addr.is_link_local
+    return False
 
 
 def _require_int(value: int, label: str, *, minimum: int, maximum: int) -> None:

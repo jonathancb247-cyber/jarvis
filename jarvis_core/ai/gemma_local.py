@@ -136,7 +136,11 @@ class GemmaLocalAIProvider:
 
         if not isinstance(response, GemmaLocalResponse):
             raise GemmaLocalProviderError(AI_PROVIDER_PROTOCOL_ERROR)
-        if _response_size_bytes(response) > self.config.maximum_response_bytes:
+        actual_size = _response_size_bytes(response)
+        reported_size = response.body_size_bytes
+        if actual_size > self.config.maximum_response_bytes:
+            raise GemmaLocalProviderError(AI_RESPONSE_TOO_LARGE)
+        if reported_size is not None and reported_size > self.config.maximum_response_bytes:
             raise GemmaLocalProviderError(AI_RESPONSE_TOO_LARGE)
         return self._extract_structured_plan(response.body)
 
@@ -243,8 +247,7 @@ def _device_payload(device) -> dict[str, object]:
 
 
 def _response_size_bytes(response: GemmaLocalResponse) -> int:
-    if response.body_size_bytes is not None:
-        return response.body_size_bytes
+    """Return the actual serialized body size (not the reported size)."""
     try:
         if isinstance(response.body, str):
             return len(response.body.encode("utf-8"))

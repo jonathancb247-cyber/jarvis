@@ -37,6 +37,38 @@ class GemmaAndroidBridgeConfigTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             GemmaAndroidBridgeConfig("192.168.1.44", port=0)
 
+    def test_localhost_and_loopback_are_allowed(self):
+        for host in ("localhost", "127.0.0.1", "::1"):
+            with self.subTest(host=host):
+                config = GemmaAndroidBridgeConfig(host)
+                self.assertEqual(config.host, host)
+
+    def test_private_ipv4_addresses_are_allowed(self):
+        for host in (
+            "10.0.0.1",
+            "10.255.255.255",
+            "172.16.0.1",
+            "172.31.255.255",
+            "192.168.0.1",
+            "192.168.255.255",
+            "169.254.0.1",
+        ):
+            with self.subTest(host=host):
+                config = GemmaAndroidBridgeConfig(host)
+                self.assertEqual(config.host, host)
+
+    def test_public_ipv4_addresses_are_rejected(self):
+        for host in ("8.8.8.8", "1.1.1.1", "9.9.9.9", "104.16.0.1"):
+            with self.subTest(host=host):
+                with self.assertRaises(ValueError):
+                    GemmaAndroidBridgeConfig(host)
+
+    def test_public_hostnames_are_rejected(self):
+        for host in ("example.com", "google.com", "api.openai.com"):
+            with self.subTest(host=host):
+                with self.assertRaises(ValueError):
+                    GemmaAndroidBridgeConfig(host)
+
 
 class GemmaAndroidBridgeTransportTests(unittest.TestCase):
     def test_transport_posts_provider_request_to_fixed_generate_path(self):
