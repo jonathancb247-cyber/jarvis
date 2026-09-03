@@ -1,6 +1,6 @@
 # AI Gemma Local Provider — Checkpoint
 
-Branch: `feat/gemma-local-provider`
+Branch: `feat/android-gemma-companion`
 
 ---
 
@@ -9,13 +9,13 @@ Branch: `feat/gemma-local-provider`
 - AIProvider / AIActionPlan architecture
 - Structured AI Bake-Off
 - Ollama/Qwen baseline
+- Local Gemma provider + Android bridge (merged into main via PR #88)
 
 ---
 
-## Gemma Files (committed)
+## Gemma Files (merged into main)
 
-Commit: `0c287ff`
-PR: #88
+PR #88: merged
 
 - `jarvis_core/ai/gemma_local.py`
 - `jarvis_core/ai/gemma_android_bridge.py`
@@ -65,15 +65,42 @@ Return path: Gemma output -> raw AIActionPlan-compatible payload -> existing nor
 
 - Gemma provider: 15 tests OK
 - Android bridge: 17 tests OK
-- Full suite: 799 tests OK
+- Full suite: 799 OK
 - `python -m jarvis_core`: safe exit
+
+### Gate 1 Android companion — physical bridge validation (passed)
+
+The first real Android companion implementation at `companion/android/` (Gate 1,
+fake-first) was built and physically validated on a POCO F5:
+
+- Companion app runs on device `127.0.0.1:8767`; NanoHTTPD bound to loopback only.
+- `adb forward tcp:8767 tcp:8767` active.
+- Real `curl POST /generate -> HTTP 200` returning the fixed schema-valid
+  `clarify` AIActionPlan.
+- Python end-to-end smoke:
+  `GemmaLocalAIProvider -> GemmaAndroidBridgeTransport(127.0.0.1:8767)
+  -> adb forward -> companion -> fixed clarify plan -> existing JarvisOS
+  normalization/validation` accepted the plan (`normalize_plan` + `validate_plan_shape`),
+  latency ~26 ms.
+- Request-body bug fixed: server now reads exactly `Content-Length` bytes via
+  NanoHTTPD `session.parseBody` (not until EOF); regression test
+  `postBodyWithContentLengthIsConsumedWithoutEofWait` added.
+- Android unit tests: 14 OK.
+
+Decisions recorded for Gate 1: loopback-only binding; NanoHTTPD embedded server;
+minimal visible Activity (no foreground Service); no LiteRT-LM/model in Gate 1;
+request limit 24 KiB. Gradle wrapper committed; `local.properties` ignored.
 
 ---
 
 ## Next Gate
 
-Review and merge PR #88.
-After merge, create separate workstream for Android LiteRT-LM companion.
+Active workstream: **Android LiteRT-LM companion**.
+
+Define and implement the minimal Android companion app that:
+- satisfies `POST /generate`;
+- runs Gemma local/offline;
+- automatic tool execution disabled.
 
 ---
 

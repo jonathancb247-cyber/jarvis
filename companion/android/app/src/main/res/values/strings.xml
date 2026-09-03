@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">JarvisOS Companion</string>
+    <string name="status_format">Companion server: %1$s\nEndpoint: %2$s</string>
+    <string name="status_running">running</string>
+    <string name="status_stopped">stopped</string>
+    <string name="status_none">not listening</string>
+</resources>

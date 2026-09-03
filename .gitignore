@@ -7,3 +7,15 @@ __pycache__/
 *.py[cod]
 tools/*.local.conf
 
+# Android companion (companion/android/)
+local.properties
+**/.gradle/
+**/build/
+*.apk
+*.aab
+captures/
+.externalNativeBuild/
+.cxx/
+*.keystore
+!debug.keystore
+
