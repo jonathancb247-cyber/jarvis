@@ -7,8 +7,12 @@ import fi.iki.elonen.NanoHTTPD
 /**
  * Application-level holder for the fake companion server.
  *
- * The server is started/stopped from [MainActivity] and exposed here so the
- * activity can reflect its running state across configuration changes.
+ * The [GenerateServer] instance lives in the process and is exposed through
+ * this Application singleton so [MainActivity] can start it and reflect its
+ * running state across configuration changes. [MainActivity] calls
+ * [startServer] in `onCreate`; [stopServer] is provided for lifecycle shutdown
+ * on the same activity/process boundary. Gate 1 deliberately avoids a
+ * foreground Service; no lifecycle redesign is underway.
  */
 class CompanionApplication : Application() {
 

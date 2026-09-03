@@ -67,6 +67,34 @@ class GenerateServer(
         )
 
         /**
+         * Gate 1 requires a valid, non-negative `Content-Length` header on
+         * `POST /generate`. A missing, malformed, or negative length would
+         * otherwise bypass the 24 KiB pre-read bound, so it is rejected here
+         * before the body is read.
+         *
+         * @param contentLengthHeader raw value of the Content-Length header
+         * @return null when the header is acceptable (caller proceeds to read
+         *   the bounded body), or the `RequestResult` to return instead.
+         */
+        fun validateContentLength(contentLengthHeader: String?): RequestResult? {
+            val raw = contentLengthHeader?.trim()
+            if (raw.isNullOrEmpty()) {
+                return errorResult(400, "bad_request", "Content-Length header is required.")
+            }
+            val length = raw.toLongOrNull()
+            if (length == null) {
+                return errorResult(400, "bad_request", "Content-Length must be a valid integer.")
+            }
+            if (length < 0) {
+                return errorResult(400, "bad_request", "Content-Length must be non-negative.")
+            }
+            if (length > MAX_REQUEST_BYTES.toLong()) {
+                return errorResult(413, "request_too_large", "Request body exceeds maximum size.")
+            }
+            return null
+        }
+
+        /**
          * Route and validate a `POST /generate` request body.
          *
          * @param contentType value of the Content-Type request header
@@ -112,10 +140,9 @@ class GenerateServer(
             return jsonError(404, "not_found", "Only POST " + GENERATE_PATH + " is supported.")
         }
 
-        val contentLength = session.headers["content-length"]?.trim()?.toLongOrNull() ?: 0L
-        if (contentLength > MAX_REQUEST_BYTES.toLong()) {
-            return jsonError(413, "request_too_large", "Request body exceeds maximum size.")
-        }
+        // Reject a missing/malformed/negative/oversized Content-Length before
+        // reading the body, so the 24 KiB pre-read bound is actually enforced.
+        validateContentLength(session.headers["content-length"])?.let { return respond(it) }
 
         // NanoHTTPD reads exactly Content-Length bytes (never until EOF), for
         // application/json the raw body is stored under the "postData" key.
@@ -128,7 +155,10 @@ class GenerateServer(
             return jsonError(400, "bad_request", "Unable to read request body.")
         }
 
-        val result = evaluate(session.headers["content-type"], rawBody)
+        return respond(evaluate(session.headers["content-type"], rawBody))
+    }
+
+    private fun respond(result: RequestResult): Response {
         return newFixedLengthResponse(
             Response.Status.lookup(result.statusCode),
             "application/json",

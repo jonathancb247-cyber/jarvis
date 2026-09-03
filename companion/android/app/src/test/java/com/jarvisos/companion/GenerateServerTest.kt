@@ -8,6 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.OutputStream
 import java.net.HttpURLConnection
+import java.net.Socket
 import java.net.URL
 
 class GenerateServerTest {
@@ -135,6 +136,47 @@ class GenerateServerTest {
         assertTrue("loopback host must be set (not null) so NanoHTTPD binds 127.0.0.1", server.hostname != null)
     }
 
+    @Test
+    fun validContentLengthReturnsNull() {
+        val result = GenerateServer.validateContentLength("1234")
+        assertEquals("a bounded, valid Content-Length must be accepted", null, result)
+    }
+
+    @Test
+    fun missingContentLengthRejected400() {
+        val result = GenerateServer.validateContentLength(null)
+        assertEquals(400, result?.statusCode)
+        assertEquals("bad_request", result?.payload?.getString("error"))
+    }
+
+    @Test
+    fun blankContentLengthRejected400() {
+        val result = GenerateServer.validateContentLength("   ")
+        assertEquals(400, result?.statusCode)
+        assertEquals("bad_request", result?.payload?.getString("error"))
+    }
+
+    @Test
+    fun malformedContentLengthRejected400() {
+        val result = GenerateServer.validateContentLength("abc")
+        assertEquals(400, result?.statusCode)
+        assertEquals("bad_request", result?.payload?.getString("error"))
+    }
+
+    @Test
+    fun negativeContentLengthRejected400() {
+        val result = GenerateServer.validateContentLength("-5")
+        assertEquals(400, result?.statusCode)
+        assertEquals("bad_request", result?.payload?.getString("error"))
+    }
+
+    @Test
+    fun oversizedContentLengthRejected413() {
+        val result = GenerateServer.validateContentLength((GenerateServer.MAX_REQUEST_BYTES + 1).toString())
+        assertEquals(413, result?.statusCode)
+        assertEquals("request_too_large", result?.payload?.getString("error"))
+    }
+
     /**
      * Regression: a normal POST body with a Content-Length is consumed without
      * waiting for EOF. The client keeps the connection open (HTTP/1.1), so a
@@ -143,9 +185,8 @@ class GenerateServerTest {
      */
     @Test
     fun postBodyWithContentLengthIsConsumedWithoutEofWait() {
-        val server = GenerateServer()
+        val server = startServerOnEphemeralPort()
         try {
-            server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false)
             val port = server.listeningPort
             val connection = URL("http://127.0.0.1:$port" + GenerateServer.GENERATE_PATH).openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
@@ -170,6 +211,102 @@ class GenerateServerTest {
             assertEquals("clarify", plan.getString("kind"))
         } finally {
             server.stop()
+        }
+    }
+
+    /**
+     * Regression: a declared oversized Content-Length must return 413 before
+     * the body is read. The client advertises a large Content-Length but sends
+     * no body; the server must reject it promptly (we assert the response
+     * status line arrives, which would time out if the handler waited for the
+     * declared body bytes).
+     */
+    @Test
+    fun oversizedContentLengthReturns413WithoutReadingBody() {
+        val server = startServerOnEphemeralPort()
+        try {
+            val port = server.listeningPort
+            val statusCode = rawPostStatusCode(
+                port,
+                contentLength = (GenerateServer.MAX_REQUEST_BYTES + 1).toString(),
+                body = "",
+            )
+            assertEquals(413, statusCode)
+        } finally {
+            server.stop()
+        }
+    }
+
+    /**
+     * Regression: a POST without a Content-Length header must be rejected with
+     * 400 rather than silently treated as a zero-length body.
+     */
+    @Test
+    fun missingContentLengthRejectedByServer() {
+        val server = startServerOnEphemeralPort()
+        try {
+            val port = server.listeningPort
+            val statusCode = rawPostStatusCode(port, contentLength = null, body = validRequest)
+            assertEquals(400, statusCode)
+        } finally {
+            server.stop()
+        }
+    }
+
+    /**
+     * Regression: a malformed Content-Length header (non-numeric) must be
+     * rejected with 400 rather than bypassing the pre-read size bound.
+     */
+    @Test
+    fun malformedContentLengthRejectedByServer() {
+        val server = startServerOnEphemeralPort()
+        try {
+            val port = server.listeningPort
+            val statusCode = rawPostStatusCode(port, contentLength = "not-a-number", body = validRequest)
+            assertEquals(400, statusCode)
+        } finally {
+            server.stop()
+        }
+    }
+
+    /**
+     * Starts the server on an ephemeral loopback port so socket-based tests do
+     * not collide with the fixed device port 8767 (which a lab adb forward may
+     * already hold open on the host).
+     */
+    private fun startServerOnEphemeralPort(): GenerateServer {
+        val server = GenerateServer(hostname = GenerateServer.LOOPBACK_HOST, port = 0)
+        server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false)
+        return server
+    }
+
+    /**
+     * Sends a raw HTTP/1.1 POST to the loopback server and returns the response
+     * status code parsed from the status line. Lets tests control the exact
+     * Content-Length header value, which HttpURLConnection would otherwise
+     * manage, without depending on a provider's reason phrase.
+     */
+    private fun rawPostStatusCode(port: Int, contentLength: String?, body: String): Int {
+        val socket = Socket("127.0.0.1", port)
+        try {
+            socket.soTimeout = 5000
+            val request = buildString {
+                append("POST ${GenerateServer.GENERATE_PATH} HTTP/1.1\r\n")
+                append("Host: 127.0.0.1:$port\r\n")
+                append("Content-Type: application/json\r\n")
+                if (contentLength != null) {
+                    append("Content-Length: $contentLength\r\n")
+                }
+                append("\r\n")
+                append(body)
+            }
+            val out = socket.getOutputStream()
+            out.write(request.toByteArray(Charsets.UTF_8))
+            out.flush()
+            val statusLine = socket.getInputStream().bufferedReader().readLine()
+            return statusLine.split(" ")[1].toInt()
+        } finally {
+            socket.close()
         }
     }
 }
