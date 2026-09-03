@@ -12,7 +12,10 @@ Branch: `feat/gemma-local-provider`
 
 ---
 
-## Uncommitted Gemma Files
+## Gemma Files (committed)
+
+Commit: `0c287ff`
+PR: #88
 
 - `jarvis_core/ai/gemma_local.py`
 - `jarvis_core/ai/gemma_android_bridge.py`
@@ -69,7 +72,7 @@ Return path: Gemma output -> raw AIActionPlan-compatible payload -> existing nor
 
 ## Next Gate
 
-Commit/review current Gemma provider + bridge work.
+Review and merge PR #88.
 After merge, create separate workstream for Android LiteRT-LM companion.
 
 ---
