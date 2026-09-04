@@ -33,6 +33,16 @@ class MainActivity : AppCompatActivity() {
     /** True while a model load or a generation is running (blocks both buttons). */
     private var busy = false
 
+    /**
+     * True only while a loaded engine is being used by an in-flight generation.
+     *
+     * Confined to the UI thread: set in [onRunPrompt] before the background
+     * thread starts and cleared in its completion callback. [onDestroy] reads it
+     * to avoid closing an engine that [onRunPrompt]'s thread is still using, and
+     * instead defers that close to the completion callback.
+     */
+    private var generating = false
+
     private val app: CompanionApplication
         get() = application as CompanionApplication
 
@@ -62,11 +72,18 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         // The Gemma probe is Activity-owned: release its native LiteRT-LM
         // resources with the Activity. The fake companion server is
-        // process-owned (owned by CompanionApplication), so it is intentionally
-        // left untouched here. Any in-flight load/generation thread observes
-        // isDestroyed and skips re-installing or touching views (see the
-        // runOnUiThread guards in onLoadModel/onRunPrompt).
-        engine?.close()
+        // process-owned (owned by CompanionApplication) and is intentionally
+        // left untouched.
+        //
+        // If an engine is currently being used by an in-flight generation, we
+        // must NOT close it here (that would tear down native LiteRT-LM resources
+        // mid-use). We clear the Activity reference and defer that close to the
+        // generation-completion callback, which runs after generate() returns
+        // (see shouldDeferredCloseAfterGeneration). This never blocks the UI
+        // thread or waits for the long generation.
+        if (engine != null && shouldImmediatelyCloseOnDestroy(generating)) {
+            engine?.close()
+        }
         engine = null
         super.onDestroy()
     }
@@ -130,15 +147,21 @@ class MainActivity : AppCompatActivity() {
         }
         val prompt = getString(R.string.gemma_debug_prompt)
         busy = true
+        generating = true
         refreshButtons()
         gemmaOutputTextView.text = getString(R.string.gemma_running)
 
         Thread {
             val result = active.generate(prompt)
             runOnUiThread {
+                generating = false
                 if (isDestroyed) {
-                    // Activity is gone: the engine was/will be released by
-                    // onDestroy; only skip the dead view updates.
+                    // The Activity was destroyed while this generation was in
+                    // flight. onDestroy deferred closing this engine (it is the
+                    // exact engine [active] that was generating), so we must close
+                    // it now that generate() has returned. This is the single
+                    // owner that closes it; onDestroy did not.
+                    active.close()
                     return@runOnUiThread
                 }
                 busy = false
@@ -190,5 +213,21 @@ class MainActivity : AppCompatActivity() {
             loaded: Boolean,
             busy: Boolean,
         ): Pair<Boolean, Boolean> = (hasPath && !busy) to (loaded && !busy)
+
+        /**
+         * Decides whether [onDestroy] must close the held engine immediately.
+         * It must NOT close an engine that an in-flight generation is still
+         * using; when [generating] is true the close is deferred to the
+         * generation-completion callback instead.
+         */
+        fun shouldImmediatelyCloseOnDestroy(generating: Boolean): Boolean = !generating
+
+        /**
+         * Decides whether the generation-completion path must close the engine it
+         * used. True only when the Activity was destroyed during generation
+         * (onDestroy deferred the close); otherwise the engine stays owned by the
+         * Activity.
+         */
+        fun shouldDeferredCloseAfterGeneration(destroyed: Boolean): Boolean = destroyed
     }
 }

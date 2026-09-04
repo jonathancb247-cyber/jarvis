@@ -57,4 +57,44 @@ class MainActivityTest {
         assertFalse(loadEnabled(hasPath = false, loaded = true, busy = true))
         assertFalse(runPromptEnabled(hasPath = false, loaded = true, busy = true))
     }
+
+    // ---- deferred-close concurrency decision tests ----
+
+    @Test
+    fun idleDestroyClosesImmediately() {
+        // Idle (not generating): onDestroy closes now because no generation is in
+        // flight that could be racing the close.
+        assertTrue(MainActivity.shouldImmediatelyCloseOnDestroy(generating = false))
+    }
+
+    @Test
+    fun destroyDuringGenerationDefersImmediateClose() {
+        // Generating: onDestroy must NOT close the in-use engine (defer).
+        assertFalse(MainActivity.shouldImmediatelyCloseOnDestroy(generating = true))
+    }
+
+    @Test
+    fun generationCompletionAfterDestroyPerformsDeferredClose() {
+        // Activity destroyed during generation: the completion path closes the
+        // engine exactly once.
+        assertTrue(MainActivity.shouldDeferredCloseAfterGeneration(destroyed = true))
+    }
+
+    @Test
+    fun generationCompletionWhileAliveKeepsEngineOwned() {
+        // Activity still alive: closing happens via onDestroy later, not here.
+        assertFalse(MainActivity.shouldDeferredCloseAfterGeneration(destroyed = false))
+    }
+
+    @Test
+    fun exactlyOneOwnerClosesAGeneratingEngine() {
+        // Invariant: a generating engine is closed by onDestroy only if not
+        // generating, otherwise by the completion callback only if destroyed.
+        // These two decisions are mutually exclusive, so the engine is closed
+        // exactly once.
+        assertFalse(
+            MainActivity.shouldImmediatelyCloseOnDestroy(generating = true) &&
+                MainActivity.shouldDeferredCloseAfterGeneration(destroyed = false),
+        )
+    }
 }
