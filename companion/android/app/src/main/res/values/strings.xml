@@ -5,4 +5,17 @@
     <string name="status_running">running</string>
     <string name="status_stopped">stopped</string>
     <string name="status_none">not listening</string>
+
+    <!-- Gate 2A debug-only Gemma probe (separate from the fake /generate server) -->
+    <string name="gemma_debug_label">Gemma debug probe (CPU)</string>
+    <string name="gemma_model_path_hint">Absolute path to a .litertlm model file</string>
+    <string name="gemma_load">Load</string>
+    <string name="gemma_run_prompt">Run prompt</string>
+    <string name="gemma_debug_prompt">Reply exactly with: OK</string>
+    <string name="gemma_not_loaded">No model loaded.</string>
+    <string name="gemma_load_failed">Load failed: %1$s</string>
+    <string name="gemma_generate_failed">Generation failed: %1$s</string>
+    <string name="gemma_output_format">Prompt: %1$s\n\nOutput:\n%2$s</string>
+    <string name="gemma_loading">Loading model, please wait\u2026</string>
+    <string name="gemma_running">Generating, please wait\u2026</string>
 </resources>
