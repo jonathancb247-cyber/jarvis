@@ -211,5 +211,28 @@ class GemmaEngineTest {
         }
     }
 
+    @Test
+    fun loadWhenRuntimeConstructionThrowsFailsSafelyWithoutLeakingRuntime() {
+        val realFile = File.createTempFile("gemma-engine", ".litertlm")
+        try {
+            val engine = GemmaEngine(modelPath = realFile.absolutePath) { params ->
+                throw IllegalStateException("native engine could not be created")
+            }
+            val result = engine.load()
+            assertTrue(result is GemmaEngine.LoadResult.Failure)
+            val failure = result as GemmaEngine.LoadResult.Failure
+            assertEquals(GemmaEngine.LoadError.LOAD_FAILED, failure.error)
+            assertFalse(engine.isLoaded)
+            // After a failed construction the wrapper must not hold a runtime.
+            assertEquals(
+                "a throwing runtime factory must leave the wrapper unloaded",
+                GemmaEngine.GenerateError.NOT_LOADED,
+                (engine.generate("hello") as GemmaEngine.GenerateResult.Failure).error,
+            )
+        } finally {
+            realFile.delete()
+        }
+    }
+
     // ---- helpers ----
 }

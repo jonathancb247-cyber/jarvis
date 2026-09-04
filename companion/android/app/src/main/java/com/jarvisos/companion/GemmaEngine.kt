@@ -150,11 +150,25 @@ class LiteRtRuntime(
             backend = Backend.CPU(),
             cacheDir = params.cacheDir,
         )
-        val engine = Engine(config)
-        engine.initialize()
-        val session = engine.createSession(SessionConfig())
-        this.engine = engine
-        this.session = session
+        val createdEngine = Engine(config)
+        var createdSession: Session? = null
+        try {
+            createdEngine.initialize()
+            createdSession = createdEngine.createSession(SessionConfig())
+        } catch (error: Exception) {
+            // Release any native resources created before the failure so they are
+            // not leaked. LiteRT-LM Engine.close() only deletes the native handle
+            // when the engine is initialized (handle != null) and throws otherwise,
+            // so we guard with isInitialized(). A failed initialize() leaves the
+            // engine uninitialized with no public native cleanup available.
+            createdSession?.close()
+            if (createdEngine.isInitialized()) {
+                createdEngine.close()
+            }
+            throw error
+        }
+        this.engine = createdEngine
+        this.session = createdSession
     }
 
     override fun generate(prompt: String): String {
