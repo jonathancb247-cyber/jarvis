@@ -59,6 +59,18 @@ class MainActivity : AppCompatActivity() {
         refreshStatus()
     }
 
+    override fun onDestroy() {
+        // The Gemma probe is Activity-owned: release its native LiteRT-LM
+        // resources with the Activity. The fake companion server is
+        // process-owned (owned by CompanionApplication), so it is intentionally
+        // left untouched here. Any in-flight load/generation thread observes
+        // isDestroyed and skips re-installing or touching views (see the
+        // runOnUiThread guards in onLoadModel/onRunPrompt).
+        engine?.close()
+        engine = null
+        super.onDestroy()
+    }
+
     private fun refreshStatus() {
         val server = app.generateServer
         val running = server != null
@@ -86,6 +98,12 @@ class MainActivity : AppCompatActivity() {
             )
             val result = newEngine.load()
             runOnUiThread {
+                if (isDestroyed) {
+                    // Activity is gone: never install a new engine after onDestroy
+                    // (it would leak native LiteRT-LM resources); just release it.
+                    newEngine.close()
+                    return@runOnUiThread
+                }
                 busy = false
                 engine?.close()
                 if (result is GemmaEngine.LoadResult.Success) {
@@ -118,6 +136,11 @@ class MainActivity : AppCompatActivity() {
         Thread {
             val result = active.generate(prompt)
             runOnUiThread {
+                if (isDestroyed) {
+                    // Activity is gone: the engine was/will be released by
+                    // onDestroy; only skip the dead view updates.
+                    return@runOnUiThread
+                }
                 busy = false
                 when (result) {
                     is GemmaEngine.GenerateResult.Success -> {
