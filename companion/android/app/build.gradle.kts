@@ -29,8 +29,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     testOptions {
@@ -39,6 +41,11 @@ android {
 }
 
 dependencies {
+    // LiteRT-LM Kotlin API for Android (Google Maven). Pinned to the exact
+    // version verified during Gate 2 discovery; do NOT use "latest.release" in
+    // committed code. CPU backend only for Gate 2A.
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
+
     implementation("org.nanohttpd:nanohttpd:2.3.1")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
