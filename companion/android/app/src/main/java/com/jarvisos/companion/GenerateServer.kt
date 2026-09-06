@@ -7,16 +7,20 @@ import org.json.JSONObject
 /**
  * Minimal local-only HTTP companion server for the JarvisOS Gemma bridge.
  *
- * Gate 1 is fake-first: it accepts the exact `POST /generate` request produced
- * by `GemmaLocalAIProvider.build_request()` and returns a fixed,
- * schema-valid AIActionPlan-compatible envelope. No inference, no tools, no
- * Runtime, no Drivers, no cloud.
+ * It accepts the exact `POST /generate` request produced by
+ * `GemmaLocalAIProvider.build_request()` and returns **real on-device Gemma
+ * inference** (via the process-owned [GemmaModelController]) as an
+ * AIActionPlan-compatible JSON body. No Runtime, no Drivers, no tool execution,
+ * no cloud. [GemmaModelController] owns the model and serializes inference, so
+ * this server never constructs or owns a model directly and does not depend on
+ * any Activity being open.
  *
  * It binds to the device loopback interface only. The PC reaches it via:
  *     adb forward tcp:8767 tcp:8767
  * and uses host=127.0.0.1, port=8767.
  */
 class GenerateServer(
+    private val modelController: GemmaModelController,
     hostname: String = LOOPBACK_HOST,
     port: Int = DEFAULT_PORT,
 ) : NanoHTTPD(hostname, port) {
@@ -28,33 +32,6 @@ class GenerateServer(
         const val GENERATE_PATH = "/generate"
 
         const val MAX_REQUEST_BYTES = 24 * 1024
-
-        /**
-         * Fixed, schema-valid AIActionPlan-compatible `clarify` envelope.
-         *
-         * Mirror of the structure validated by `ai_action_plan_schema()` in
-         * JarvisOS. `kind = clarify` requires no devices and no execution, so it
-         * is a safe, always-valid response for the fake-first gate.
-         */
-        val FAKE_PLAN_JSON: JSONObject = JSONObject(
-            """
-            {
-              "schema_version": 1,
-              "kind": "clarify",
-              "steps": [],
-              "safe_summary": "Companion fake plan.",
-              "clarification": {
-                "question": "Android companion is running but no Gemma model is loaded yet.",
-                "reason_code": "ambiguous_device",
-                "missing_fields": ["device_id"],
-                "candidate_options": []
-              },
-              "refusal": null,
-              "confirmation_required": false,
-              "policy_flags": []
-            }
-            """.trimIndent(),
-        )
 
         /**
          * Result of evaluating a request. Deliberately independent of the HTTP
@@ -95,14 +72,17 @@ class GenerateServer(
         }
 
         /**
-         * Route and validate a `POST /generate` request body.
+         * Route and validate a `POST /generate` request body, then run inference
+         * through the process-owned [GemmaModelController].
          *
          * @param contentType value of the Content-Type request header
          * @param rawBody raw UTF-8 request body string
+         * @param modelController process-owned inference holder to use
          */
         fun evaluate(
             contentType: String?,
             rawBody: String?,
+            modelController: GemmaModelController,
         ): RequestResult {
             val mediaType = (contentType ?: "").split(";")[0].trim().lowercase()
             if (mediaType != "application/json") {
@@ -124,14 +104,23 @@ class GenerateServer(
                 return errorResult(400, "invalid_json", "Request body must be a non-empty JSON object.")
             }
 
-            return RequestResult(200, FAKE_PLAN_JSON)
+            return when (val outcome = modelController.generateForRequest(request)) {
+                is GemmaModelController.GenerateOutcome.Success ->
+                    RequestResult(200, outcome.responseBody)
+                is GemmaModelController.GenerateOutcome.Failure ->
+                    errorResult(outcome.statusCode, outcome.code, outcome.message)
+            }
         }
 
         private fun errorResult(status: Int, code: String, message: String): RequestResult {
+            return RequestResult(status, errorPayload(code, message))
+        }
+
+        private fun errorPayload(code: String, message: String): JSONObject {
             val payload = JSONObject()
             payload.put("error", code)
             payload.put("message", message)
-            return RequestResult(status, payload)
+            return payload
         }
     }
 
@@ -155,12 +144,17 @@ class GenerateServer(
             return jsonError(400, "bad_request", "Unable to read request body.")
         }
 
-        return respond(evaluate(session.headers["content-type"], rawBody))
+        return respond(evaluate(session.headers["content-type"], rawBody, modelController))
     }
 
     private fun respond(result: RequestResult): Response {
+        // NanoHTTPD throws a fatal Error if a Response is sent with a null
+        // status, and Status.lookup(...) returns null for any code not in its
+        // enum (e.g. 502). Guard against an unsupported status so the handler
+        // can never crash the whole process; degrade to 500 instead.
+        val status = Response.Status.lookup(result.statusCode) ?: Response.Status.INTERNAL_ERROR
         return newFixedLengthResponse(
-            Response.Status.lookup(result.statusCode),
+            status,
             "application/json",
             result.payload.toString(),
         )

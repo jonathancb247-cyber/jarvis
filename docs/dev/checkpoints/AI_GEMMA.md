@@ -132,23 +132,62 @@ Decisions recorded for Gate 2A: CPU-only for inference probe; LiteRT-LM `Session
 
 ---
 
+### Gate 2B Android `/generate` real inference bridge (passed)
+
+The companion `POST /generate` path was wired to the process-owned
+`GemmaModelController` and physically validated on the POCO F5.
+
+Validated infrastructure:
+- real Android `/generate` bridge works through `adb forward tcp:8767 tcp:8767`;
+- `GemmaModelController` owns the process-wide model/Engine;
+- `GemmaJsonExtractor` conservatively accepts exactly one JSON object and rejects
+  malformed, empty, multi-object or ambiguous model output;
+- the LiteRT-LM Engine remains loaded process-wide;
+- a fresh LiteRT-LM `Session` is created and closed for every `generate()`;
+- inference access is serialized;
+- safe HTTP errors are returned for missing model, bad request, invalid
+  generation, oversized output and inference failure;
+- loopback-only NanoHTTPD behavior remains unchanged;
+- Android never executes tools, Runtime, Drivers or Android actions.
+
+Physical result:
+- fresh per-request sessions eliminated the previous warm-session
+  `FAILED_PRECONDITION` / KV accumulation failure;
+- warm physical latency was roughly 7-15 seconds for one inference after the
+  Engine was loaded;
+- Python `normalize_plan` / `validate_plan_shape` remains the final authority
+  for AIActionPlan acceptance.
+
+### Gate 2C Gemma 3 1B structured planning (failed / rejected)
+
+Gemma 3 1B int4 was evaluated as the first local structured planner through the
+validated Android bridge. It is not accepted as a JarvisOS structured planner.
+
+Observed failure modes:
+- one-shot prompt with a concrete clarify-only example anchored all responses to
+  `clarify`;
+- one-shot prompt with execute-first examples anchored responses to `execute`;
+- one-shot prompt without examples lost the AIActionPlan structure and emitted
+  irrelevant or context-derived JSON structures;
+- a minimal two-stage experiment was tried and rejected:
+  - `spanish_simple_read` classified as `refuse` instead of `execute`;
+  - `ambiguous_device_clarify` classified as `execute` instead of `clarify`;
+  - two-stage total latency was roughly 40 seconds for the first fixture.
+
+Conclusion:
+- Gate 2B infrastructure is successful and should be retained.
+- Gate 2C structured planning with Gemma 3 1B failed semantically.
+- Do not continue one-shot or two-stage prompt tuning for this model as a
+  JarvisOS planner.
+- Next recommendation: evaluate a different local planner model while reusing
+  the validated Android bridge, process-owned Engine, fresh-session lifecycle,
+  serialized access, conservative JSON extraction and Python validation
+  authority.
+
 ## Next Gate
 
-Gate 2A (isolated real Gemma inference probe) is closed. The real LiteRT-LM
-inference has been physically proven on-device, but it is **not yet connected**
-to `POST /generate`.
-
-Next step (Not Yet Implemented): wire the real `GemmaEngine` inference into the
-companion so `POST /generate` returns live Gemma output instead of the current
-fixed/clarify plan. This remains the fake `/generate` contract until that work
-is explicitly opened. The current `/generate` endpoint is still fake and
-untouched.
-
-Active workstream: **Android LiteRT-LM companion**.
-Define and implement the minimal Android companion app that:
-- satisfies `POST /generate`;
-- runs Gemma local/offline (LiteRT-LM inference proven in Gate 2A);
-- automatic tool execution disabled.
+Gate 2B is closed as infrastructure. The next local-AI planner gate should be a
+different model evaluation, not more prompt tuning of Gemma 3 1B.
 
 ---
 

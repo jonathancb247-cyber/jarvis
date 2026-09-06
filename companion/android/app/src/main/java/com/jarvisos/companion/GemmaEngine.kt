@@ -5,6 +5,7 @@ import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.InputData
+import com.google.ai.edge.litertlm.SamplerConfig
 import com.google.ai.edge.litertlm.Session
 import com.google.ai.edge.litertlm.SessionConfig
 import java.io.File
@@ -130,20 +131,50 @@ class GemmaEngine(
     companion object {
         const val TAG = "JarvisOSGemma"
         const val DEBUG_PROMPT = "Reply exactly with: OK"
+
+        // Deterministic decoding. The LiteRT-LM 0.16 API exposes no separate
+        // output-token/max-generation knob (a run is bounded by the fixed KV
+        // capacity), so none is configured; the temperature is made explicit so
+        // decoding is greedy regardless of any native default sampler.
+        const val SAMPLER_TOP_K = 40
+        const val SAMPLER_TOP_P = 1.0
+        const val SAMPLER_TEMPERATURE = 0.0
+        const val SAMPLER_SEED = 0
+
+        fun sessionConfig(): SessionConfig = SessionConfig(
+            samplerConfig = SamplerConfig(
+                SAMPLER_TOP_K,
+                SAMPLER_TOP_P,
+                SAMPLER_TEMPERATURE,
+                SAMPLER_SEED,
+            ),
+        )
     }
 }
 
-/** Production runtime that delegates directly to the official LiteRT-LM API. */
+/**
+ * Production runtime that delegates directly to the official LiteRT-LM API.
+ *
+ * Session lifecycle: the [Engine] (model weights) is loaded once and kept for
+ * the process lifetime, but a brand-new [Session] is created for every
+ * [generate] call and closed when the call finishes (success or failure). This
+ * never reuses conversational/KV state across independent JarvisOS `/generate`
+ * calls, which is what previously let a warm session accumulate state and later
+ * fail prefill with `FAILED_PRECONDITION ... available state entries (N)`.
+ *
+ * The controller serializes inference (see `GemmaModelController`), so only
+ * one session exists at a time. Session recreation adds no per-request Engine
+ * reload and no UI dependency.
+ */
 class LiteRtRuntime(
     private val params: GemmaEngine.RuntimeFactoryParams,
 ) : GemmaEngine.Runtime {
 
     private var engine: Engine? = null
-    private var session: Session? = null
     override val isLoaded: Boolean
-        get() = engine != null && session != null
+        get() = engine?.isInitialized() == true
 
-    /** Loads the model. Must run off the UI thread. Backend is CPU-only (Gate 2A). */
+    /** Loads the model once. Must run off the UI thread. Backend is CPU-only (Gate 2A). */
     init {
         val config = EngineConfig(
             modelPath = params.modelPath,
@@ -151,35 +182,43 @@ class LiteRtRuntime(
             cacheDir = params.cacheDir,
         )
         val createdEngine = Engine(config)
-        var createdSession: Session? = null
         try {
             createdEngine.initialize()
-            createdSession = createdEngine.createSession(SessionConfig())
         } catch (error: Exception) {
             // Release any native resources created before the failure so they are
             // not leaked. LiteRT-LM Engine.close() only deletes the native handle
             // when the engine is initialized (handle != null) and throws otherwise,
             // so we guard with isInitialized(). A failed initialize() leaves the
             // engine uninitialized with no public native cleanup available.
-            createdSession?.close()
             if (createdEngine.isInitialized()) {
                 createdEngine.close()
             }
             throw error
         }
         this.engine = createdEngine
-        this.session = createdSession
     }
 
+    /**
+     * Runs one prompt on a fresh session and releases the session afterwards.
+     * Must run off the UI thread. A failure closes the session too, keeping the
+     * engine alive for the next request.
+     */
     override fun generate(prompt: String): String {
-        val session = session ?: throw IllegalStateException("Session is not initialized.")
-        return session.generateContent(listOf(InputData.Text(prompt)))
+        val active = engine ?: throw IllegalStateException("Engine is not initialized.")
+        var session: Session? = null
+        try {
+            session = active.createSession(GemmaEngine.sessionConfig())
+            return session.generateContent(listOf(InputData.Text(prompt)))
+        } finally {
+            session?.close()
+        }
     }
 
     override fun close() {
-        session?.close()
-        session = null
-        engine?.close()
+        val active = engine
         engine = null
+        if (active != null && active.isInitialized()) {
+            active.close()
+        }
     }
 }
