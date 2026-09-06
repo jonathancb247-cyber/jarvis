@@ -234,5 +234,37 @@ class GemmaEngineTest {
         }
     }
 
+    @Test
+    fun samplerConstantsUseExplicitGreedyDecoding() {
+        // Host-unit tests run on the local JVM, while litertlm-android classes
+        // may require a newer Java classfile version. Keep this test focused on
+        // our deterministic constants; Android/runtime validation covers the
+        // actual SessionConfig construction path.
+        assertEquals(0.0, GemmaEngine.SAMPLER_TEMPERATURE, 0.0001)
+        assertEquals(40, GemmaEngine.SAMPLER_TOP_K)
+        assertEquals(1.0, GemmaEngine.SAMPLER_TOP_P, 0.0001)
+        assertEquals(0, GemmaEngine.SAMPLER_SEED)
+    }
+
+    @Test
+    fun repeatedGeneratesReuseSingleCreatedRuntime() {
+        val realFile = File.createTempFile("gemma-engine", ".litertlm")
+        try {
+            val probe = FactoryProbe()
+            val engine = GemmaEngine(modelPath = realFile.absolutePath, runtimeFactory = probe.factory)
+            val loadResult = engine.load()
+            assertTrue(loadResult is GemmaEngine.LoadResult.Success)
+            engine.generate("first")
+            engine.generate("second")
+            assertEquals(
+                "runtime (and underlying Engine) must be created exactly once across generations",
+                1,
+                probe.createCount,
+            )
+        } finally {
+            realFile.delete()
+        }
+    }
+
     // ---- helpers ----
 }
