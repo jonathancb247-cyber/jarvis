@@ -38,14 +38,12 @@ class GemmaModelController(
         const val DEFAULT_MODEL_FILENAME = "gemma3-1b-it-int4.litertlm"
 
         private const val TAG = "JarvisOSGemma"
-
-        /** Bounds for the raw-output debug capture to keep logs small. */
-        private const val RAW_OUTPUT_LOG_LIMIT = 4096
     }
 
     private val lock = Any()
     private var modelPath: String? = null
     private var engine: GemmaEngine? = null
+    private var loadedPath: String? = null
 
     @Volatile
     private var generating = false
@@ -60,9 +58,22 @@ class GemmaModelController(
     val currentModelPath: String?
         get() = synchronized(lock) { modelPath }
 
-    /** Set the model path the controller should load. Thread-safe. */
+    /**
+     * Set the model path the controller should load. Thread-safe.
+     *
+     * If the new path differs from the path of the currently loaded engine, the
+     * loaded engine is safely closed and released so the next [generateForRequest]
+     * lazily loads the new path. Setting the same path does not touch the engine.
+     */
     fun setModelPath(path: String) {
-        synchronized(lock) { modelPath = path }
+        synchronized(lock) {
+            modelPath = path
+            if (path != loadedPath) {
+                engine?.close()
+                engine = null
+                loadedPath = null
+            }
+        }
     }
 
     /** Configure the path to `filesDir/<DEFAULT_MODEL_FILENAME>`. */
@@ -87,6 +98,7 @@ class GemmaModelController(
         synchronized(lock) {
             engine?.close()
             engine = null
+            loadedPath = null
         }
     }
 
@@ -139,7 +151,7 @@ class GemmaModelController(
             is GemmaJsonExtractor.ExtractionResult.Success ->
                 GenerateOutcome.Success(extracted.json)
             is GemmaJsonExtractor.ExtractionResult.Rejected -> {
-                logRejectedRawOutput(trimmed, extracted.reason)
+                Log.i(TAG, "Rejected model output: ${extracted.reason}, ${trimmed.length} chars")
                 GenerateOutcome.Failure(
                     500,
                     "invalid_generation",
@@ -147,17 +159,6 @@ class GemmaModelController(
                 )
             }
         }
-    }
-
-    /**
-     * Debug-only capture of the raw model output that the extractor rejected.
-     * Logs nothing on success and never includes request context beyond what
-     * the model echoed back. Useful for classifying real device output shapes.
-     */
-    private fun logRejectedRawOutput(text: String, reason: String) {
-        val bounded = if (text.length <= RAW_OUTPUT_LOG_LIMIT) text else text.substring(0, RAW_OUTPUT_LOG_LIMIT)
-        Log.i(TAG, "Rejected raw model output (${text.length} chars): $reason")
-        Log.d(TAG, "Raw.generate=${bounded.replace("\n", "\\n").replace("\r", "\\r")}")
     }
 
     /** Loads the model once. Caller must already hold [lock]. */
@@ -177,6 +178,7 @@ class GemmaModelController(
             is GemmaEngine.LoadResult.Success -> {
                 engine?.close()
                 engine = candidate
+                loadedPath = path
                 LoadOutcome.Ready
             }
             is GemmaEngine.LoadResult.Failure -> {

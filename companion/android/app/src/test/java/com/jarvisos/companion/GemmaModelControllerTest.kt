@@ -247,4 +247,98 @@ class GemmaModelControllerTest {
             file.delete()
         }
     }
+
+    // ---- setModelPath lifecycle ----
+
+    /**
+     * Records how many engines are created and closed, keyed by model path, by
+     * injecting a fresh runtime per created engine. Used to observe reload
+     * behavior across [GemmaModelController.setModelPath].
+     */
+    private class EngineLoadProbe {
+        val createdByPath = java.util.concurrent.ConcurrentHashMap<String, Int>()
+        val closedRuntimes = java.util.concurrent.ConcurrentLinkedQueue<GemmaTestFixtures.FakeRuntime>()
+        var openRuntimes = 0L
+
+        fun controllerFor(path: String): GemmaModelController = GemmaModelController(
+            engineFactory = { enginePath ->
+                val runtime = GemmaTestFixtures.FakeRuntime(output = GemmaTestFixtures.clarifyPlanText)
+                synchronized(this) {
+                    createdByPath.merge(enginePath, 1, Int::plus)
+                    openRuntimes++
+                }
+                val trackingRuntime = object : GemmaEngine.Runtime by runtime {
+                    override fun close() {
+                        synchronized(this@EngineLoadProbe) { openRuntimes-- }
+                        closedRuntimes.add(runtime)
+                        runtime.close()
+                    }
+                }
+                GemmaEngine(modelPath = enginePath) { trackingRuntime }
+            },
+        ).also { it.setModelPath(path) }
+    }
+
+    @Test
+    fun sameModelPathDoesNotReload() {
+        val file = GemmaTestFixtures.tempModelFile()
+        val probe = EngineLoadProbe()
+        val controller = probe.controllerFor(file.absolutePath)
+        try {
+            assertTrue(controller.generateForRequest(GemmaTestFixtures.validRequest) is GemmaModelController.GenerateOutcome.Success)
+            assertEquals("initial load must create one engine", 1, probe.createdByPath[file.absolutePath])
+
+            controller.setModelPath(file.absolutePath)
+            assertTrue("same path must keep engine loaded", controller.isLoaded)
+            assertTrue(controller.generateForRequest(GemmaTestFixtures.validRequest) is GemmaModelController.GenerateOutcome.Success)
+            assertEquals("same path must not create a new engine", 1, probe.createdByPath[file.absolutePath])
+        } finally {
+            controller.close()
+            file.delete()
+        }
+    }
+
+    @Test
+    fun changedModelPathReleasesOldEngine() {
+        val oldFile = GemmaTestFixtures.tempModelFile()
+        val newFile = GemmaTestFixtures.tempModelFile()
+        val probe = EngineLoadProbe()
+        val controller = probe.controllerFor(oldFile.absolutePath)
+        try {
+            assertTrue(controller.generateForRequest(GemmaTestFixtures.validRequest) is GemmaModelController.GenerateOutcome.Success)
+            val openedBefore = probe.openRuntimes
+            assertTrue("engine must be loaded after first request", openedBefore >= 1)
+
+            controller.setModelPath(newFile.absolutePath)
+            assertFalse("changed path must release the old loaded engine", controller.isLoaded)
+            assertTrue("old engine runtime must be closed on path change", probe.openRuntimes < openedBefore)
+        } finally {
+            controller.close()
+            oldFile.delete()
+            newFile.delete()
+        }
+    }
+
+    @Test
+    fun nextRequestAfterPathChangeLoadsNewPath() {
+        val oldFile = GemmaTestFixtures.tempModelFile()
+        val newFile = GemmaTestFixtures.tempModelFile()
+        val probe = EngineLoadProbe()
+        val controller = probe.controllerFor(oldFile.absolutePath)
+        try {
+            assertTrue(controller.generateForRequest(GemmaTestFixtures.validRequest) is GemmaModelController.GenerateOutcome.Success)
+            assertEquals(1, probe.createdByPath[oldFile.absolutePath])
+
+            controller.setModelPath(newFile.absolutePath)
+            assertTrue("next request must load the new path", controller.generateForRequest(GemmaTestFixtures.validRequest) is GemmaModelController.GenerateOutcome.Success)
+
+            assertEquals("old engine must not be re-loaded", 1, probe.createdByPath[oldFile.absolutePath])
+            assertEquals("new path must be loaded once", 1, probe.createdByPath[newFile.absolutePath])
+            assertEquals("new path's model must now be loaded", newFile.absolutePath, controller.currentModelPath)
+        } finally {
+            controller.close()
+            oldFile.delete()
+            newFile.delete()
+        }
+    }
 }
