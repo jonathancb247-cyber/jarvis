@@ -162,9 +162,9 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
         self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
         self.assertEqual(plan.steps, ())
 
-    def test_valid_id_and_unknown_text_resolves_clarify(self):
+    def test_valid_id_and_unknown_text_resolves_execute(self):
         plan = resolver().resolve(
-            safe_context(),
+            safe_context(user_request="Lee el estado de lamp_1."),
             AIUnderstandingProposal(
                 intent="read",
                 referenced_device_id="lamp_1",
@@ -173,8 +173,29 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
             ),
         )
 
-        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
-        self.assertEqual(plan.steps, ())
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_valid_id_and_ungrounded_display_name_resolves_execute(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende power.switch del dispositivo lamp_1 con state true."
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                referenced_device_text="Lamp",
+                capability_hint="power.switch",
+                operation_hint="apply",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(
+            plan.steps[0].canonical_command_text,
+            "device apply lamp_1 power.switch state=true",
+        )
 
     def test_valid_id_and_ambiguous_text_resolves_clarify(self):
         plan = resolver().resolve(
@@ -653,6 +674,22 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
         self.assertEqual(plan.kind, PLAN_KIND_REFUSE)
         self.assertEqual(plan.refusal.reason_code, "forbidden_operation")
         self.assertEqual(plan.steps, ())
+
+    def test_refusal_precheck_refuses_destructive_request_without_proposal(self):
+        plan = resolver().refusal_precheck(
+            safe_context(user_request="Borra todos los dispositivos.")
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_REFUSE)
+        self.assertEqual(plan.refusal.reason_code, "forbidden_operation")
+        self.assertEqual(plan.steps, ())
+
+    def test_refusal_precheck_returns_none_for_normal_request(self):
+        plan = resolver().refusal_precheck(
+            safe_context(user_request="Lee el estado de lamp_1.")
+        )
+
+        self.assertIsNone(plan)
 
     def test_llm_clarify_hint_cannot_override_sufficient_context(self):
         plan = resolver().resolve(

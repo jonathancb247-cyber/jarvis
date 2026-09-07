@@ -97,6 +97,19 @@ class DeterministicUnderstandingResolver:
         action_kind = classify_command(command, safe_context)
         return recompute_plan(plan, (recompute_step(step, action_kind),))
 
+    def refusal_precheck(self, safe_context):
+        """Return a validated refuse plan for destructive requests.
+
+        This never depends on model proposal normalization. Destructive
+        requests refuse with forbidden_operation before any proposal value
+        is trusted; non-destructive requests return None so downstream
+        behavior stays fail-closed.
+        """
+        if not _is_destructive_request(safe_context.user_request):
+            return None
+        raw_plan = _refuse_plan("forbidden_operation", "That request is not allowed.")
+        return validate_plan_shape(normalize_plan(raw_plan))
+
     def resolve_to_raw_plan(self, safe_context, proposal):
         if not isinstance(proposal, AIUnderstandingProposal):
             raise TypeError("proposal must be an AIUnderstandingProposal")
@@ -214,17 +227,18 @@ def _resolve_device_candidates(safe_context, proposal):
     id_grounded = _device_id_is_grounded(user_request, proposal.referenced_device_id)
     text_grounded = _device_text_is_grounded(user_request, proposal.referenced_device_text)
 
-    if proposal.referenced_device_id and proposal.referenced_device_text:
-        if len(id_candidates) != 1:
-            return ()
-        if not text_grounded or len(text_candidates) != 1:
-            return ()
-        if id_candidates[0].device_id != text_candidates[0].device_id:
-            return ()
+    if proposal.referenced_device_id and len(id_candidates) == 1 and id_grounded:
+        if proposal.referenced_device_text:
+            if not text_grounded:
+                return id_candidates
+            if len(text_candidates) != 1:
+                return ()
+            if id_candidates[0].device_id != text_candidates[0].device_id:
+                return ()
         return id_candidates
     if proposal.referenced_device_id:
-        if id_grounded:
-            return id_candidates
+        if proposal.referenced_device_text and text_grounded:
+            return text_candidates
         return ()
     if not text_grounded:
         return ()
