@@ -21,6 +21,9 @@ class GemmaPromptBuilderTest {
         return request
     }
 
+    private fun understandingRequest(): JSONObject =
+        JSONObject(GemmaTestFixtures.understandingRequest.toString())
+
     private fun build(request: JSONObject): GemmaPromptBuilder.PromptBuildResult =
         GemmaPromptBuilder.build(request)
 
@@ -29,6 +32,8 @@ class GemmaPromptBuilderTest {
         assertTrue("expected success, got $result", result is GemmaPromptBuilder.PromptBuildResult.Success)
         return (result as GemmaPromptBuilder.PromptBuildResult.Success).prompt
     }
+
+    private fun understandingPrompt(): String = successPrompt(understandingRequest())
 
     @Test
     fun buildSucceedsForValidRequest() {
@@ -150,11 +155,158 @@ class GemmaPromptBuilderTest {
             GemmaPromptBuilder.CLARIFY_KEYS.length +
             GemmaPromptBuilder.REFUSE_KEYS.length +
             GemmaPromptBuilder.STEP_KEYS.length +
-            GemmaPromptBuilder.OUTPUT_RULES.length
+            GemmaPromptBuilder.OUTPUT_RULES.length +
+            GemmaPromptBuilder.UNDERSTANDING_KEYS.length +
+            GemmaPromptBuilder.UNDERSTANDING_OUTPUT_RULES.length
         assertTrue(
             "declarative contract block ${contractSize} chars is too large",
-            contractSize < 600,
+            contractSize < 1200,
         )
+    }
+
+    // ---- Understanding path isolation ----
+
+    @Test
+    fun understandingMarkerRoutesToUnderstandingPath() {
+        assertTrue(
+            "understanding request must be recognized by the marker",
+            GemmaPromptBuilder.isUnderstandingRequest(understandingRequest()),
+        )
+        assertFalse(
+            "planner request without output_contract must not be treated as understanding",
+            GemmaPromptBuilder.isUnderstandingRequest(request()),
+        )
+    }
+
+    @Test
+    fun plannerRequestWithNoAIActionPlanMarkerRoutesToUnderstandingPath() {
+        val request = request {
+            put(
+                "output_contract",
+                JSONObject().put("no_ai_action_plan", true).put("authority", "hint_only"),
+            )
+        }
+        assertTrue(GemmaPromptBuilder.isUnderstandingRequest(request))
+    }
+
+    @Test
+    fun understandingRequestBuildsUnderstandingPrompt() {
+        val prompt = understandingPrompt()
+        assertTrue(prompt.contains("JarvisOS on-device Gemma understanding middleware"))
+        assertTrue(prompt.contains("You are JarvisOS local understanding middleware. Extract hints only."))
+        assertTrue(prompt.contains("Lee status.read del dispositivo lamp_1."))
+        assertTrue(prompt.contains("Fields: "))
+        assertTrue(prompt.contains("intent"))
+        assertTrue(prompt.contains("referenced_device_id"))
+        assertTrue(prompt.contains("capability_hint"))
+        assertTrue(prompt.contains("operation_hint"))
+    }
+
+    @Test
+    fun understandingPromptInjectsNoPlanContract() {
+        val prompt = understandingPrompt()
+        // No KINDS / LIMITS sections.
+        assertFalse("understanding prompt must not contain KINDS", prompt.contains("\nKINDS:\n"))
+        assertFalse("understanding prompt must not contain LIMITS", prompt.contains("\nLIMITS:\n"))
+        // No kind-selection rule.
+        assertFalse(
+            "understanding prompt must not contain the kind decision rule",
+            prompt.contains(GemmaPromptBuilder.KIND_DECISION_RULE),
+        )
+        // No plan keys, no clarify/refuse/step keys.
+        assertFalse("must not contain Common keys", prompt.contains("Common keys"))
+        assertFalse("must not contain For clarify", prompt.contains("For clarify"))
+        assertFalse("must not contain For refuse", prompt.contains("For refuse"))
+        assertFalse("must not contain For execute steps", prompt.contains("For execute steps"))
+        assertFalse("must not contain clarify keys", prompt.contains("clarification.question"))
+        assertFalse("must not contain refuse keys", prompt.contains("refusal.reason_code"))
+        assertFalse("must not contain step keys", prompt.contains("canonical_command_text"))
+        assertFalse("must not contain safe_summary", prompt.contains("safe_summary"))
+    }
+
+    @Test
+    fun understandingPromptCarriesHintOnlyRules() {
+        val prompt = understandingPrompt()
+        assertTrue(prompt.contains(GemmaPromptBuilder.UNDERSTANDING_OUTPUT_RULES))
+        assertTrue(prompt.contains("Do not output an AIActionPlan"))
+        assertTrue(prompt.contains("Extract hints only"))
+    }
+
+    @Test
+    fun plannerPromptKeepsItsContractWhenMarkerAbsent() {
+        // Planner request (no output_contract) must keep the original planner
+        // contract and never enter the understanding path.
+        val prompt = successPrompt(request())
+        assertTrue(prompt.contains(GemmaPromptBuilder.KIND_DECISION_RULE))
+        assertTrue(prompt.contains("\nKINDS:\n"))
+        assertTrue(prompt.contains("\nLIMITS:\n"))
+        assertTrue(prompt.contains("Common keys: "))
+        assertTrue(prompt.contains("canonical_command_text"))
+        assertFalse(
+            "planner prompt must not contain understanding middleware header",
+            prompt.contains("JarvisOS on-device Gemma understanding middleware"),
+        )
+    }
+
+    @Test
+    fun understandingPromptUsesResponseFormatFieldsWhenPresent() {
+        val prompt = understandingPrompt()
+        // Sorted UNDERSTANDING_FIELDS as sent by the provider.
+        assertTrue(prompt.contains("safe_explanation"))
+        assertTrue(prompt.contains("raw_arguments"))
+        assertTrue(prompt.contains("safety_hints"))
+    }
+
+    @Test
+    fun understandingPromptFallsBackToConstantKeysWhenFieldsAbsent() {
+        val request = understandingRequest().apply {
+            getJSONObject("response_format").remove("fields")
+        }
+        val prompt = successPrompt(request)
+        assertTrue(
+            "fallback to UNDERSTANDING_KEYS must appear",
+            prompt.contains(GemmaPromptBuilder.UNDERSTANDING_KEYS),
+        )
+    }
+
+    @Test
+    fun understandingPromptIgnoresPlannerFieldsEvenIfPresent() {
+        // Even if a malformed understanding request carries plan inputs, the
+        // understanding path must not embed them.
+        val request = understandingRequest().apply {
+            getJSONObject("input")
+                .put("allowed_plan_kinds", org.json.JSONArray().put("execute").put("clarify").put("refuse"))
+                .put("limits", JSONObject().put("max_steps", 5))
+        }
+        val prompt = successPrompt(request)
+        assertFalse("must not inject KINDS", prompt.contains("\nKINDS:\n"))
+        assertFalse("must not inject LIMITS", prompt.contains("\nLIMITS:\n"))
+        assertFalse("must not contain KIND_DECISION_RULE", prompt.contains(GemmaPromptBuilder.KIND_DECISION_RULE))
+        assertFalse("must not contain plan key", prompt.contains("safe_summary"))
+    }
+
+    @Test
+    fun understandingPromptStaysWithinProxyLimit() {
+        val prompt = understandingPrompt()
+        assertTrue(
+            "understanding prompt length ${prompt.length} exceeds proxy limit ${GemmaPromptBuilder.MAX_PROMPT_CHAR_LIMIT}",
+            GemmaPromptBuilder.isWithinProxyLimit(prompt),
+        )
+    }
+
+    @Test
+    fun understandingPromptHasNoConcreteExamples() {
+        val prompt = understandingPrompt()
+        assertFalse("must not contain a JSON example", prompt.contains(""""intent":""""))
+        assertFalse("must not contain canonical_command_text", prompt.contains("canonical_command_text"))
+        assertFalse("must not contain device apply", prompt.contains("device apply"))
+    }
+
+    @Test
+    fun understandingPromptIsDeterministic() {
+        val a = successPrompt(understandingRequest())
+        val b = successPrompt(understandingRequest())
+        assertTrue("same understanding request must produce identical prompts", a == b)
     }
 
     // ---- Missing input handling ----
@@ -177,6 +329,31 @@ class GemmaPromptBuilderTest {
     fun missingInputFails() {
         val result = build(request { remove("input") })
         assertTrue(result is GemmaPromptBuilder.PromptBuildResult.Failure)
+    }
+
+    @Test
+    fun understandingRequestMissingUserRequestFails() {
+        val result = build(
+            understandingRequest().apply {
+                getJSONObject("input").remove("user_request")
+            },
+        )
+        assertTrue(result is GemmaPromptBuilder.PromptBuildResult.Failure)
+        val failure = result as GemmaPromptBuilder.PromptBuildResult.Failure
+        assertTrue(failure.message.contains("user_request"))
+    }
+
+    @Test
+    fun understandingRequestMissingSafeContextStillBuilds() {
+        val result = build(
+            understandingRequest().apply {
+                getJSONObject("input").remove("safe_context")
+            },
+        )
+        assertTrue("expected success even with missing safe_context, got $result", result is GemmaPromptBuilder.PromptBuildResult.Success)
+        val prompt = (result as GemmaPromptBuilder.PromptBuildResult.Success).prompt
+        assertTrue(prompt.contains("CONTEXT:"))
+        assertTrue(prompt.contains("understanding middleware"))
     }
 
     @Test
