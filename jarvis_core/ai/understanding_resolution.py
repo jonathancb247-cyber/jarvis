@@ -1,6 +1,7 @@
 """Deterministic resolution for local AI understanding proposals."""
 
 import re
+import unicodedata
 
 from jarvis_core.ai.contracts import (
     ACTION_KIND_MUTATE,
@@ -43,6 +44,39 @@ DESTRUCTIVE_TERMS = {
     "destruir",
     "formatear",
 }
+POWER_SWITCH_ON_VERBS = {
+    "enciende",
+    "encender",
+    "prende",
+    "prender",
+}
+POWER_SWITCH_OFF_VERBS = {
+    "apaga",
+    "apagar",
+}
+POWER_SWITCH_ON_PHRASES = {
+    ("turn", "on"),
+    ("switch", "on"),
+}
+POWER_SWITCH_OFF_PHRASES = {
+    ("turn", "off"),
+    ("switch", "off"),
+}
+TRUE_VALUES = {"true", "on"}
+FALSE_VALUES = {"false", "off"}
+NEGATION_TERMS = {"no", "not", "dont", "don", "do", "never", "nunca"}
+QUESTION_TERMS = {"is", "esta", "estan"}
+READ_STATUS_TERMS = {
+    "status",
+    "estado",
+}
+DEVICE_TEXT_SYNONYMS = {
+    "light": {"light", "lights", "luz", "luces", "lampara", "lamp", "lamps"},
+    "lamp": {"light", "lights", "luz", "luces", "lampara", "lamp", "lamps"},
+    "luz": {"light", "lights", "luz", "luces", "lampara", "lamp", "lamps"},
+    "luces": {"light", "lights", "luz", "luces", "lampara", "lamp", "lamps"},
+    "lampara": {"light", "lights", "luz", "luces", "lampara", "lamp", "lamps"},
+}
 
 
 class DeterministicUnderstandingResolver:
@@ -62,6 +96,19 @@ class DeterministicUnderstandingResolver:
         validate_against_context(step, command, safe_context)
         action_kind = classify_command(command, safe_context)
         return recompute_plan(plan, (recompute_step(step, action_kind),))
+
+    def refusal_precheck(self, safe_context):
+        """Return a validated refuse plan for destructive requests.
+
+        This never depends on model proposal normalization. Destructive
+        requests refuse with forbidden_operation before any proposal value
+        is trusted; non-destructive requests return None so downstream
+        behavior stays fail-closed.
+        """
+        if not _is_destructive_request(safe_context.user_request):
+            return None
+        raw_plan = _refuse_plan("forbidden_operation", "That request is not allowed.")
+        return validate_plan_shape(normalize_plan(raw_plan))
 
     def resolve_to_raw_plan(self, safe_context, proposal):
         if not isinstance(proposal, AIUnderstandingProposal):
@@ -93,6 +140,16 @@ class DeterministicUnderstandingResolver:
             )
 
         device = candidates[0]
+        if not _capability_hint_is_grounded(
+            safe_context.user_request,
+            proposal.capability_hint,
+        ):
+            return _clarify_plan(
+                "unsupported_request",
+                "That capability was not clearly requested.",
+                ("capability_name",),
+                tuple(capability.name for capability in device.capabilities[:5]),
+            )
         capability = _find_capability(device, proposal.capability_hint)
         if capability is None:
             return _clarify_plan(
@@ -102,7 +159,15 @@ class DeterministicUnderstandingResolver:
                 tuple(capability.name for capability in device.capabilities[:5]),
             )
 
-        arguments = dict(proposal.raw_arguments)
+        try:
+            arguments = _arguments_as_dict(proposal.raw_arguments)
+        except ValueError:
+            return _clarify_plan(
+                "missing_parameter",
+                "A required parameter is missing.",
+                ("parameters",),
+                (),
+            )
         if capability.kind == "reading":
             return _execute_plan(
                 f"device read {device.device_id} {capability.name}",
@@ -117,6 +182,18 @@ class DeterministicUnderstandingResolver:
                 "missing_parameter",
                 "A required parameter is missing.",
                 tuple(missing),
+                (),
+            )
+        ungrounded = _ungrounded_arguments(
+            safe_context.user_request,
+            arguments,
+            capability,
+        )
+        if ungrounded:
+            return _clarify_plan(
+                "missing_parameter",
+                "A required parameter is missing.",
+                tuple(ungrounded),
                 (),
             )
 
@@ -138,6 +215,7 @@ class DeterministicUnderstandingResolver:
 
 
 def _resolve_device_candidates(safe_context, proposal):
+    user_request = safe_context.user_request
     id_candidates = _resolve_device_id_candidates(
         safe_context,
         proposal.referenced_device_id,
@@ -146,15 +224,24 @@ def _resolve_device_candidates(safe_context, proposal):
         safe_context,
         proposal.referenced_device_text,
     )
+    id_grounded = _device_id_is_grounded(user_request, proposal.referenced_device_id)
+    text_grounded = _device_text_is_grounded(user_request, proposal.referenced_device_text)
 
-    if proposal.referenced_device_id and proposal.referenced_device_text:
-        if len(id_candidates) != 1 or len(text_candidates) != 1:
-            return ()
-        if id_candidates[0].device_id != text_candidates[0].device_id:
-            return ()
+    if proposal.referenced_device_id and len(id_candidates) == 1 and id_grounded:
+        if proposal.referenced_device_text:
+            if not text_grounded:
+                return id_candidates
+            if len(text_candidates) != 1:
+                return ()
+            if id_candidates[0].device_id != text_candidates[0].device_id:
+                return ()
         return id_candidates
     if proposal.referenced_device_id:
-        return id_candidates
+        if proposal.referenced_device_text and text_grounded:
+            return text_candidates
+        return ()
+    if not text_grounded:
+        return ()
     return text_candidates
 
 
@@ -169,18 +256,18 @@ def _resolve_device_id_candidates(safe_context, device_id):
 
 
 def _resolve_device_text_candidates(safe_context, device_text):
-    text = _normalize(device_text)
-    if not text:
+    text_terms = _semantic_terms(device_text)
+    if not text_terms:
         return ()
     candidates = [
         device
         for device in safe_context.devices
-        if text
-        in {
-            _normalize(device.device_id),
-            _normalize(device.display_name),
-            _normalize(device.device_type),
-        }
+        if text_terms
+        & (
+            _semantic_terms(device.device_id)
+            | _semantic_terms(device.display_name)
+            | _semantic_terms(device.device_type)
+        )
     ]
     return tuple(sorted(candidates, key=lambda device: device.device_id))
 
@@ -202,6 +289,72 @@ def _missing_required_arguments(arguments, capability):
         if parameter.get("required") is True and name not in arguments:
             missing.append(name)
     return sorted(missing)
+
+
+def _arguments_as_dict(raw_arguments):
+    arguments = {}
+    for key, value in raw_arguments:
+        if key in arguments:
+            raise ValueError("duplicate raw argument keys are not allowed")
+        arguments[key] = value
+    return arguments
+
+
+def _ungrounded_arguments(user_request, arguments, capability):
+    required_names = {
+        dict(descriptor).get("name")
+        for descriptor in capability.parameters
+        if dict(descriptor).get("required") is True
+    }
+    missing = []
+    for name in sorted(required_names):
+        if name not in arguments:
+            missing.append(name)
+            continue
+        if not _argument_is_grounded(
+            user_request,
+            capability.name,
+            name,
+            arguments[name],
+        ):
+            missing.append(name)
+    return missing
+
+
+def _argument_is_grounded(user_request, capability_name, key, value):
+    key_norm = _normalize(key)
+    value_norm = _normalize(value)
+    if not key_norm or not value_norm:
+        return False
+    if _has_exact_raw_token(user_request, f"{key}={value}"):
+        return True
+    if _has_adjacent_raw_tokens(user_request, key, value):
+        return True
+    if _has_exact_token(user_request, f"{key_norm}={value_norm}"):
+        return True
+    if _has_adjacent_tokens(user_request, key_norm, value_norm):
+        return True
+    if capability_name == "power.switch" and key_norm == "state":
+        if value_norm in TRUE_VALUES:
+            return _has_imperative_power_switch(user_request, target_state=True)
+        if value_norm in FALSE_VALUES:
+            return _has_imperative_power_switch(user_request, target_state=False)
+    return False
+
+
+def _capability_hint_is_grounded(user_request, capability_hint):
+    capability = _normalize(capability_hint)
+    if not capability:
+        return False
+    request = _normalize(user_request)
+    if capability in request:
+        return True
+    request_terms = _semantic_terms(user_request)
+    if capability == "status.read":
+        return bool(request_terms & READ_STATUS_TERMS)
+    if capability == "power.switch":
+        return _has_imperative_power_switch(user_request, target_state=None)
+    return False
 
 
 def _execute_plan(command, device_id, capability_name, action_kind):
@@ -277,7 +430,144 @@ def _is_destructive_request(user_request):
 def _normalize(value):
     if not value:
         return ""
-    return str(value).strip().casefold()
+    normalized = unicodedata.normalize("NFKD", str(value))
+    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    normalized = re.sub(r"[^\w.=-]+", " ", normalized, flags=re.UNICODE)
+    return " ".join(normalized.strip().casefold().split())
+
+
+def _device_id_is_grounded(user_request, device_id):
+    device = _normalize(device_id)
+    if not device:
+        return False
+    return _has_exact_token(user_request, device)
+
+
+def _device_text_is_grounded(user_request, device_text):
+    request_terms = _semantic_terms(user_request)
+    text_terms = _semantic_terms(device_text)
+    return bool(text_terms and request_terms & text_terms)
+
+
+def _semantic_terms(value):
+    tokens = _normalized_tokens(value)
+    if not tokens:
+        return set()
+    normalized = " ".join(tokens)
+    terms = set(tokens)
+    terms = {term for term in terms if term}
+    if normalized:
+        terms.add(normalized)
+    expanded = set(terms)
+    for term in terms:
+        expanded.update(DEVICE_TEXT_SYNONYMS.get(term, ()))
+    return expanded
+
+
+def _has_exact_token(value, token):
+    return _normalize(token) in _normalized_tokens(value)
+
+
+def _has_exact_raw_token(value, token):
+    token = str(token).strip().casefold()
+    if not token:
+        return False
+    return token in _raw_tokens(value)
+
+
+def _has_adjacent_raw_tokens(value, first, second):
+    tokens = _raw_tokens(value)
+    first = str(first).strip().casefold()
+    second = str(second).strip().casefold()
+    return any(
+        left == first and right == second
+        for left, right in zip(tokens, tokens[1:])
+    )
+
+
+def _has_adjacent_tokens(value, first, second):
+    tokens = _normalized_tokens(value)
+    first = _normalize(first)
+    second = _normalize(second)
+    return any(
+        left == first and right == second
+        for left, right in zip(tokens, tokens[1:])
+    )
+
+
+def _normalized_tokens(value):
+    normalized = _normalize(value)
+    if not normalized:
+        return ()
+    return tuple(
+        token.strip(".=-")
+        for token in normalized.split()
+        if token.strip(".=-")
+    )
+
+
+def _raw_tokens(value):
+    return tuple(
+        token.strip(".,;:!?¿¡()[]{}\"'").casefold()
+        for token in str(value).split()
+        if token.strip(".,;:!?¿¡()[]{}\"'")
+    )
+
+
+def _has_imperative_power_switch(user_request, target_state):
+    if _looks_like_question(user_request) or _has_negated_power_switch(user_request):
+        return False
+    tokens = _normalized_tokens(user_request)
+    terms = set(tokens)
+    if target_state is True:
+        return bool(terms & POWER_SWITCH_ON_VERBS) or any(
+            _has_token_phrase(tokens, phrase) for phrase in POWER_SWITCH_ON_PHRASES
+        )
+    if target_state is False:
+        return bool(terms & POWER_SWITCH_OFF_VERBS) or any(
+            _has_token_phrase(tokens, phrase) for phrase in POWER_SWITCH_OFF_PHRASES
+        )
+    return (
+        bool(terms & (POWER_SWITCH_ON_VERBS | POWER_SWITCH_OFF_VERBS))
+        or any(_has_token_phrase(tokens, phrase) for phrase in POWER_SWITCH_ON_PHRASES)
+        or any(_has_token_phrase(tokens, phrase) for phrase in POWER_SWITCH_OFF_PHRASES)
+    )
+
+
+def _looks_like_question(user_request):
+    text = str(user_request)
+    if "?" in text or "¿" in text:
+        return True
+    tokens = _normalized_tokens(user_request)
+    return bool(tokens and tokens[0] in QUESTION_TERMS)
+
+
+def _has_negated_power_switch(user_request):
+    tokens = _normalized_tokens(user_request)
+    for index, token in enumerate(tokens):
+        if token in POWER_SWITCH_ON_VERBS or token in POWER_SWITCH_OFF_VERBS:
+            window = tokens[max(0, index - 3):index]
+            if set(window) & NEGATION_TERMS:
+                return True
+    for phrase in POWER_SWITCH_ON_PHRASES | POWER_SWITCH_OFF_PHRASES:
+        for index in _phrase_start_indexes(tokens, phrase):
+            window = tokens[max(0, index - 3):index]
+            if set(window) & NEGATION_TERMS:
+                return True
+    return False
+
+
+def _has_token_phrase(tokens, phrase):
+    return bool(_phrase_start_indexes(tokens, phrase))
+
+
+def _phrase_start_indexes(tokens, phrase):
+    size = len(phrase)
+    return tuple(
+        index
+        for index in range(0, len(tokens) - size + 1)
+        if tuple(tokens[index:index + size]) == tuple(phrase)
+    )
 
 
 __all__ = [

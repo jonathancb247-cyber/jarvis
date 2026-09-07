@@ -69,6 +69,73 @@ class GemmaModelControllerTest {
     }
 
     @Test
+    fun understandingRequestRoutesThroughUnderstandingPrompt() {
+        val file = GemmaTestFixtures.tempModelFile()
+        val runtime = GemmaTestFixtures.FakeRuntime(output = GemmaTestFixtures.understandingProposalText)
+        val controller = GemmaTestFixtures.loadedController(file, runtime)
+        try {
+            val outcome = controller.generateForRequest(GemmaTestFixtures.understandingRequest)
+            assertTrue(outcome is GemmaModelController.GenerateOutcome.Success)
+            val success = outcome as GemmaModelController.GenerateOutcome.Success
+            assertEquals("read", success.responseBody.getString("intent"))
+            val prompt = runtime.lastPrompt!!
+            assertTrue(
+                "understanding request must reach the model as an understanding prompt",
+                prompt.contains("understanding middleware"),
+            )
+            assertFalse(
+                "understanding prompt must not contain planner kind rules",
+                prompt.contains(GemmaPromptBuilder.KIND_DECISION_RULE),
+            )
+            assertFalse(
+                "understanding prompt must not contain KINDS section",
+                prompt.contains("\nKINDS:\n"),
+            )
+        } finally {
+            controller.close()
+            file.delete()
+        }
+    }
+
+    @Test
+    fun understandingEmptyGenerationReturns500() {
+        val file = GemmaTestFixtures.tempModelFile()
+        val controller = GemmaTestFixtures.loadedController(
+            file,
+            GemmaTestFixtures.FakeRuntime(output = "   "),
+        )
+        try {
+            val outcome = controller.generateForRequest(GemmaTestFixtures.understandingRequest)
+            assertTrue(outcome is GemmaModelController.GenerateOutcome.Failure)
+            val failure = outcome as GemmaModelController.GenerateOutcome.Failure
+            assertEquals(500, failure.statusCode)
+            assertEquals("empty_generation", failure.code)
+        } finally {
+            controller.close()
+            file.delete()
+        }
+    }
+
+    @Test
+    fun understandingMalformedGenerationReturns500() {
+        val file = GemmaTestFixtures.tempModelFile()
+        val controller = GemmaTestFixtures.loadedController(
+            file,
+            GemmaTestFixtures.FakeRuntime(output = "please clarify"),
+        )
+        try {
+            val outcome = controller.generateForRequest(GemmaTestFixtures.understandingRequest)
+            assertTrue(outcome is GemmaModelController.GenerateOutcome.Failure)
+            val failure = outcome as GemmaModelController.GenerateOutcome.Failure
+            assertEquals(500, failure.statusCode)
+            assertEquals("invalid_generation", failure.code)
+        } finally {
+            controller.close()
+            file.delete()
+        }
+    }
+
+    @Test
     fun fencedJsonGenerationReturnsModelJson() {
         val file = GemmaTestFixtures.tempModelFile()
         val fenced = "```json\n${GemmaTestFixtures.clarifyPlanText}\n```"

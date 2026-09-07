@@ -177,16 +177,41 @@ class UnderstandingRoleBakeOff:
 
     def evaluate_fixture(self, fixture: UnderstandingFixture) -> UnderstandingEvaluationResult:
         started_at = self._clock() if self._clock is not None else None
+        refusal = self.resolver.refusal_precheck(fixture.context)
+        raw = None
+        proposal = None
         try:
             raw = self.provider.extract_understanding(fixture.context)
             proposal = normalize_understanding_proposal(raw)
+        except Exception:
+            proposal = None
+
+        if refusal is not None:
+            return _refusal_result(
+                fixture,
+                self.provider_name,
+                refusal,
+                raw=raw,
+                proposal=proposal,
+                latency_ms=self._elapsed_ms(started_at),
+            )
+        if proposal is None:
+            return _invalid_result(
+                fixture,
+                self.provider_name,
+                AI_RESPONSE_INVALID,
+                raw_model_output=raw,
+                latency_ms=self._elapsed_ms(started_at),
+            )
+
+        try:
             plan = self.resolver.resolve(fixture.context, proposal)
         except AIValidationError as error:
             return _invalid_result(
                 fixture,
                 self.provider_name,
                 error.code,
-                raw_model_output=locals().get("raw"),
+                raw_model_output=raw,
                 latency_ms=self._elapsed_ms(started_at),
             )
         except Exception:
@@ -194,7 +219,7 @@ class UnderstandingRoleBakeOff:
                 fixture,
                 self.provider_name,
                 AI_RESPONSE_INVALID,
-                raw_model_output=locals().get("raw"),
+                raw_model_output=raw,
                 latency_ms=self._elapsed_ms(started_at),
             )
 
@@ -429,6 +454,50 @@ def _invalid_result(
         UnderstandingMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0),
         raw_model_output=raw_model_output,
         normalized_failure=failure,
+        latency_ms=latency_ms,
+    )
+
+
+def _refusal_result(
+    fixture: UnderstandingFixture,
+    provider_name: str,
+    plan,
+    *,
+    raw,
+    proposal,
+    latency_ms: int | None = None,
+) -> UnderstandingEvaluationResult:
+    if proposal is not None:
+        return _evaluate_result(
+            fixture,
+            provider_name,
+            raw,
+            proposal,
+            plan,
+            latency_ms=latency_ms,
+        )
+    expectation = fixture.expectation
+    metrics = UnderstandingMetrics(
+        proposal_valid=0.0,
+        intent_accuracy=_score(None, expectation.intent),
+        device_id_accuracy=_score(None, expectation.referenced_device_id),
+        device_text_accuracy=_score(None, expectation.referenced_device_text),
+        capability_accuracy=_score(None, expectation.capability_hint),
+        operation_accuracy=_score(None, expectation.operation_hint),
+        argument_accuracy=_score_mapping({}, expectation.arguments),
+        resolver_kind_accuracy=_score(plan.kind, expectation.resolver_kind),
+        canonical_command_accuracy=_score(None, expectation.canonical_command_text),
+    )
+    return UnderstandingEvaluationResult(
+        fixture.fixture_id,
+        provider_name,
+        metrics,
+        raw_model_output=raw,
+        normalized_proposal=None,
+        final_plan_kind=plan.kind,
+        canonical_command_text=None,
+        validation_status="refused",
+        normalized_failure=None,
         latency_ms=latency_ms,
     )
 

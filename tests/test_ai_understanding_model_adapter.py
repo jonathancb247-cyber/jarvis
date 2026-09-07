@@ -1,5 +1,6 @@
 import ast
 import unittest
+from dataclasses import replace
 
 from jarvis_core.ai.contracts import (
     AI_PROVIDER_TIMEOUT,
@@ -199,21 +200,74 @@ class UnderstandingRoleBakeOffTests(unittest.TestCase):
                 self.assertNotEqual(result.final_plan_kind, PLAN_KIND_EXECUTE)
 
     def test_unsafe_argument_data_is_validation_failure_not_execution(self):
+        fixture = safe_context_fixture("simple_mutation")
+        fixture = replace(
+            fixture,
+            context=replace(
+                fixture.context,
+                user_request=(
+                    "Enciende power.switch del dispositivo lamp_1 "
+                    "con state=true&&bad."
+                ),
+            ),
+        )
         result = UnderstandingRoleBakeOff(
             StaticUnderstandingProvider(
                 {
                     "intent": "mutate",
                     "referenced_device_id": "lamp_1",
                     "capability_hint": "power.switch",
-                    "raw_arguments": [["state", "true && device remove lamp_1"]],
+                    "raw_arguments": [["state", "true&&bad"]],
                 }
             ),
-            fixtures=(safe_context_fixture("simple_mutation"),),
+            fixtures=(fixture,),
         ).run()[0]
 
         self.assertEqual(result.validation_status, "invalid")
         self.assertIsNotNone(result.normalized_failure)
         self.assertIsNone(result.canonical_command_text)
+
+    def test_destructive_request_refuses_even_with_model_output(self):
+        for output in (
+            {"capability_hint": ["power.switch"], "intent": "read"},
+            {"intent": "read", "referenced_device_id": ["lamp_1"]},
+        ):
+            with self.subTest(output=output):
+                result = UnderstandingRoleBakeOff(
+                    StaticUnderstandingProvider(output),
+                    fixtures=(safe_context_fixture("unsupported_destructive_request"),),
+                ).run()[0]
+                self.assertEqual(result.final_plan_kind, PLAN_KIND_REFUSE)
+                self.assertIsNone(result.normalized_failure)
+                self.assertEqual(result.metrics.resolver_kind_accuracy, 1.0)
+
+    def test_destructive_request_refuses_when_model_output_is_invalid(self):
+        for output in (
+            {"kind": "execute", "steps": []},
+            ["not", "a", "proposal"],
+        ):
+            with self.subTest(output=output):
+                result = UnderstandingRoleBakeOff(
+                    StaticUnderstandingProvider(output),
+                    fixtures=(safe_context_fixture("unsupported_destructive_request"),),
+                ).run()[0]
+                self.assertEqual(result.final_plan_kind, PLAN_KIND_REFUSE)
+                self.assertIsNone(result.normalized_failure)
+
+    def test_non_destructive_malformed_output_still_fails_closed(self):
+        for output in (
+            {"capability_hint": ["power.switch"], "intent": "read"},
+            {"intent": "read", "referenced_device_id": ["lamp_1"]},
+        ):
+            with self.subTest(output=output):
+                result = UnderstandingRoleBakeOff(
+                    StaticUnderstandingProvider(output),
+                    fixtures=(safe_context_fixture("simple_mutation"),),
+                ).run()[0]
+
+                self.assertEqual(result.validation_status, "invalid")
+                self.assertEqual(result.normalized_failure, AI_RESPONSE_INVALID)
+                self.assertIsNone(result.final_plan_kind)
 
     def test_provider_exception_is_normalized(self):
         result = UnderstandingRoleBakeOff(

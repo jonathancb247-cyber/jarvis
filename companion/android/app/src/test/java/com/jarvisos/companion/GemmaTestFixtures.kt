@@ -43,6 +43,42 @@ object GemmaTestFixtures {
             """"missing_fields":["device_id"],"candidate_options":[]},"refusal":null,""" +
             """"confirmation_required":false,"policy_flags":[]}"""
 
+    /** A hint-only understanding proposal object a fake model might emit. */
+    val understandingProposalText: String =
+        """{"intent":"read","referenced_device_text":"lamp_1",""" +
+            """"referenced_device_id":"lamp_1","capability_hint":"status.read",""" +
+            """"operation_hint":"read","raw_arguments":[],"safety_hints":[],""" +
+            """"confidence":1.0,"safe_explanation":"Reading lamp_1 status."}"""
+
+    /** A request mirroring `GemmaLocalUnderstandingProvider.build_request(...)` output. */
+    val understandingRequest: JSONObject = JSONObject(
+        """
+        {
+          "provider": "gemma-local-understanding",
+          "model": "gemma3-1b-it",
+          "system_instruction": "You are JarvisOS local understanding middleware. Extract hints only.",
+          "input": {
+            "user_request": "Lee status.read del dispositivo lamp_1.",
+            "safe_context": {"schema_version": 1, "session_context": [], "devices": [
+              {"device_id": "lamp_1", "display_name": "Lamp", "device_type": "light",
+               "capabilities": [{"name": "status.read", "kind": "reading", "parameters": []}],
+               "state": {"status": "known", "semantic_properties": [], "updated_at": null}}],
+              "command_grammar": [{"pattern": "device read <device_id> <capability_name>"}],
+              "policies": {"max_plan_steps": 5, "confirmation_required_for_mutations": true}}
+          },
+          "response_format": {"type": "json_object",
+            "fields": ["capability_hint", "confidence", "intent", "operation_hint",
+              "raw_arguments", "referenced_device_id", "referenced_device_text",
+              "safe_explanation", "safety_hints"]},
+          "output_contract": {"authority": "hint_only",
+            "allowed_fields": ["intent", "referenced_device_text"],
+            "no_runtime": true, "no_drivers": true, "no_ai_action_plan": true},
+          "generation_config": {"max_output_tokens": 256, "temperature": 0},
+          "execution": {"tools": false, "runtime": false, "drivers": false}
+        }
+        """.trimIndent(),
+    )
+
     fun tempModelFile(): File = File.createTempFile("gemma-fixture", ".litertlm")
 
     /**
