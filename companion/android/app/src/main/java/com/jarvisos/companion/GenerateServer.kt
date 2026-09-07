@@ -25,6 +25,17 @@ class GenerateServer(
     port: Int = DEFAULT_PORT,
 ) : NanoHTTPD(hostname, port) {
 
+    /**
+     * Called on the server thread as soon as a `POST /generate` request is
+     * identified (after the method/path/Content-Length guards, before the body
+     * is evaluated). The local-AI host service uses it to reset its bounded
+     * warm window at request arrival, so a long-running inference keeps the
+     * service alive instead of being torn down mid-generation. Requests rejected
+     * before this point (wrong method/path, bad Content-Length) do not notify.
+     */
+    @Volatile
+    var onRequestServed: (() -> Unit)? = null
+
     companion object {
         const val TAG = "JarvisOSCompanion"
         const val LOOPBACK_HOST = "127.0.0.1"
@@ -144,7 +155,13 @@ class GenerateServer(
             return jsonError(400, "bad_request", "Unable to read request body.")
         }
 
-        return respond(evaluate(session.headers["content-type"], rawBody, modelController))
+        // Signal host activity at request arrival (before inference), so the
+        // bounded warm window reflects real use and a long-running generation is
+        // never torn down by an idle stop that was armed before the request.
+        onRequestServed?.invoke()
+
+        val result = evaluate(session.headers["content-type"], rawBody, modelController)
+        return respond(result)
     }
 
     private fun respond(result: RequestResult): Response {

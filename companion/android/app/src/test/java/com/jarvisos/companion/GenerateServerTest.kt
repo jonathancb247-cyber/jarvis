@@ -10,6 +10,9 @@ import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.Socket
 import java.net.URL
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 class GenerateServerTest {
 
@@ -283,13 +286,145 @@ class GenerateServerTest {
         }
     }
 
+    // ---- host-activity notification (bounded warm retention) ----
+
+    @Test
+    fun generateRequestNotifiesHostActivity() {
+        val (controller, _, file) = planController()
+        var served = 0
+        val server = startServerOnEphemeralPort(controller) { served++ }
+        try {
+            val port = server.listeningPort
+            val connection = URL("http://127.0.0.1:$port" + GenerateServer.GENERATE_PATH).openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.doOutput = true
+            connection.connectTimeout = 5000
+            connection.readTimeout = 5000
+            connection.setRequestProperty("Content-Type", "application/json")
+            val payload = validRequest.toByteArray(Charsets.UTF_8)
+            connection.setFixedLengthStreamingMode(payload.size)
+            connection.connect()
+            connection.outputStream.use {
+                it.write(payload)
+                it.flush()
+            }
+            connection.inputStream.bufferedReader().use { it.readText() }
+            connection.disconnect()
+
+            assertEquals(
+                "a served POST /generate must notify the host service so it can keep the model warm",
+                1,
+                served,
+            )
+        } finally {
+            server.stop()
+            controller.close()
+            file.delete()
+        }
+    }
+
+    /**
+     * Regression: a served request must notify host activity at ARRIVAL, while
+     * inference is still in flight, so the host's bounded warm window is armed
+     * by real use and a long generation is never torn down by an idle stop.
+     */
+    @Test
+    fun requestNotifiesHostActivityAtArrivalWhileInferenceIsInFlight() {
+        val file = GemmaTestFixtures.tempModelFile()
+        val releaseGenerate = CountDownLatch(1)
+        val runtime = GemmaTestFixtures.FakeRuntime(output = GemmaTestFixtures.clarifyPlanText).apply {
+            this.releaseGenerate = releaseGenerate
+        }
+        val controller = GemmaTestFixtures.loadedController(file, runtime)
+        val served = AtomicInteger(0)
+        val server = startServerOnEphemeralPort(controller) { served.incrementAndGet() }
+        val responseStatus = AtomicInteger(-1)
+        val requester = Thread {
+            try {
+                val port = server.listeningPort
+                val connection = URL("http://127.0.0.1:$port" + GenerateServer.GENERATE_PATH).openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.doOutput = true
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                connection.setRequestProperty("Content-Type", "application/json")
+                val payload = validRequest.toByteArray(Charsets.UTF_8)
+                connection.setFixedLengthStreamingMode(payload.size)
+                connection.connect()
+                connection.outputStream.use {
+                    it.write(payload)
+                    it.flush()
+                }
+                responseStatus.set(connection.responseCode)
+                connection.disconnect()
+            } catch (error: Exception) {
+                // The assertion path below owns the failure; swallow so the
+                // finally block can always release the blocked generation.
+            }
+        }
+        requester.start()
+        try {
+            assertTrue(
+                "inference must have started within the wait budget",
+                runtime.enteredGenerate.await(10, TimeUnit.SECONDS),
+            )
+            assertTrue(
+                "host activity must be notified at request arrival, before inference completes",
+                served.get() >= 1,
+            )
+            assertEquals(
+                "the request must not have completed while inference was still blocked",
+                -1,
+                responseStatus.get(),
+            )
+            releaseGenerate.countDown()
+            requester.join(TimeUnit.SECONDS.toMillis(10))
+            assertTrue("request thread must finish after the generation is released", !requester.isAlive)
+            assertEquals(200, responseStatus.get())
+        } finally {
+            releaseGenerate.countDown()
+            server.stop()
+            controller.close()
+            file.delete()
+        }
+    }
+
+    @Test
+    fun unsupportedRequestDoesNotNotifyHostActivity() {
+        var served = 0
+        val server = startServerOnEphemeralPort(unconfigured()) { served++ }
+        try {
+            val port = server.listeningPort
+            val connection = URL("http://127.0.0.1:$port/").openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 5000
+            connection.readTimeout = 5000
+            connection.connect()
+            val bodyStream = if (connection.responseCode < 400) connection.inputStream else connection.errorStream
+            bodyStream?.bufferedReader()?.use { it.readText() }
+            connection.disconnect()
+
+            assertEquals(
+                "a request rejected before evaluation must not count as served activity",
+                0,
+                served,
+            )
+        } finally {
+            server.stop()
+        }
+    }
+
     /**
      * Starts the server on an ephemeral loopback port so socket-based tests do
      * not collide with the fixed device port 8767 (which a lab adb forward may
      * already hold open on the host).
      */
-    private fun startServerOnEphemeralPort(controller: GemmaModelController): GenerateServer {
+    private fun startServerOnEphemeralPort(
+        controller: GemmaModelController,
+        onRequestServed: (() -> Unit)? = null,
+    ): GenerateServer {
         val server = GenerateServer(modelController = controller, hostname = GenerateServer.LOOPBACK_HOST, port = 0)
+        server.onRequestServed = onRequestServed
         server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false)
         return server
     }

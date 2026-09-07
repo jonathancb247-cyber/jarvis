@@ -18,4 +18,10 @@
     <string name="gemma_output_format">Prompt: %1$s\n\nOutput:\n%2$s</string>
     <string name="gemma_loading">Loading model, please wait\u2026</string>
     <string name="gemma_running">Generating, please wait\u2026</string>
+
+    <!-- Local AI host foreground-service notification -->
+    <string name="notification_channel_name">Local AI bridge</string>
+    <string name="notification_channel_description">Keeps the on-device Gemma bridge warm for bounded lab use, then self-stops after an idle window.</string>
+    <string name="notification_title">Local AI bridge active</string>
+    <string name="notification_text">On-device Gemma serving loopback requests</string>
 </resources>
