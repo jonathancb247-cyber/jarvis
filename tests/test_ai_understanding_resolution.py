@@ -82,6 +82,22 @@ class AIUnderstandingNormalizationTests(unittest.TestCase):
                 }
             )
 
+    def test_direct_duplicate_raw_arguments_resolve_to_clarify_not_execute(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende power.switch del dispositivo lamp_1 con state true."
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"), ("state", "false")),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
 
 class DeterministicUnderstandingResolverTests(unittest.TestCase):
     def test_exact_device_and_reading_capability_resolves_execute(self):
@@ -104,7 +120,7 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
 
     def test_unique_display_name_resolution_resolves_execute(self):
         plan = resolver().resolve(
-            safe_context(),
+            safe_context(user_request="Lee el estado de Lamp."),
             AIUnderstandingProposal(
                 intent="read",
                 referenced_device_text="Lamp",
@@ -117,7 +133,7 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
 
     def test_matching_referenced_device_id_and_text_resolves_execute(self):
         plan = resolver().resolve(
-            safe_context(),
+            safe_context(user_request="Lee el estado de Lamp lamp_1."),
             AIUnderstandingProposal(
                 intent="read",
                 referenced_device_id="lamp_1",
@@ -131,7 +147,10 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
 
     def test_conflicting_referenced_device_id_and_text_resolves_clarify(self):
         plan = resolver().resolve(
-            safe_context(include_second_lamp=True),
+            safe_context(
+                user_request="Lee el estado de lamp_1 Desk Lamp.",
+                include_second_lamp=True,
+            ),
             AIUnderstandingProposal(
                 intent="read",
                 referenced_device_id="lamp_1",
@@ -159,7 +178,10 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
 
     def test_valid_id_and_ambiguous_text_resolves_clarify(self):
         plan = resolver().resolve(
-            safe_context(include_second_lamp=True),
+            safe_context(
+                user_request="Lee el estado de lamp_1 light.",
+                include_second_lamp=True,
+            ),
             AIUnderstandingProposal(
                 intent="read",
                 referenced_device_id="lamp_1",
@@ -173,7 +195,10 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
 
     def test_high_confidence_cannot_override_conflicting_device_hints(self):
         plan = resolver().resolve(
-            safe_context(include_second_lamp=True),
+            safe_context(
+                user_request="Lee el estado de lamp_1 Desk Lamp.",
+                include_second_lamp=True,
+            ),
             AIUnderstandingProposal(
                 intent="read",
                 referenced_device_id="lamp_1",
@@ -186,9 +211,85 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
         self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
         self.assertEqual(plan.steps, ())
 
+    def test_model_fabricated_id_from_generic_light_resolves_clarify(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz.",
+                include_second_lamp=True,
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+                confidence=1.0,
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_explicit_device_id_is_grounded_and_allowed(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Lee el estado de lamp_1."),
+            AIUnderstandingProposal(
+                intent="read",
+                referenced_device_id="lamp_1",
+                capability_hint="status.read",
+                confidence=1.0,
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_device_id_embedded_in_larger_id_is_not_grounded(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Lee el estado de lamp_10."),
+            AIUnderstandingProposal(
+                intent="read",
+                referenced_device_id="lamp_1",
+                capability_hint="status.read",
+                confidence=1.0,
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_device_id_embedded_in_larger_token_is_not_grounded(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Lee el estado de my_lamp_1_backup."),
+            AIUnderstandingProposal(
+                intent="read",
+                referenced_device_id="lamp_1",
+                capability_hint="status.read",
+                confidence=1.0,
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_punctuation_around_explicit_device_id_is_grounded(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Lee estado usando lamp_1."),
+            AIUnderstandingProposal(
+                intent="read",
+                referenced_device_id="lamp_1",
+                capability_hint="status.read",
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
     def test_ambiguous_two_device_match_resolves_clarify_in_deterministic_order(self):
         plan = resolver().resolve(
-            safe_context(include_second_lamp=True),
+            safe_context(
+                user_request="Enciende la luz.",
+                include_second_lamp=True,
+            ),
             AIUnderstandingProposal(
                 intent="mutate",
                 referenced_device_text="light",
@@ -205,7 +306,10 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
 
     def test_device_type_ambiguity_is_deterministic(self):
         first = resolver().resolve(
-            safe_context(include_second_lamp=True),
+            safe_context(
+                user_request="Lee el estado de la luz.",
+                include_second_lamp=True,
+            ),
             AIUnderstandingProposal(
                 intent="read",
                 referenced_device_text="light",
@@ -213,7 +317,10 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
             ),
         )
         second = resolver().resolve(
-            safe_context(include_second_lamp=True),
+            safe_context(
+                user_request="Lee el estado de la luz.",
+                include_second_lamp=True,
+            ),
             AIUnderstandingProposal(
                 intent="read",
                 referenced_device_text="light",
@@ -243,7 +350,9 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
 
     def test_valid_action_with_required_argument_resolves_mutating_execute(self):
         plan = resolver().resolve(
-            safe_context(),
+            safe_context(
+                user_request="Enciende power.switch del dispositivo lamp_1 con state true."
+            ),
             AIUnderstandingProposal(
                 intent="mutate",
                 referenced_device_id="lamp_1",
@@ -262,9 +371,235 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
         self.assertTrue(plan.steps[0].requires_confirmation)
         self.assertTrue(plan.confirmation_required)
 
+    def test_missing_state_with_model_invented_value_resolves_clarify(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Cambia power.switch del dispositivo lamp_1."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "on"),),
+                confidence=1.0,
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.clarification.reason_code, "missing_parameter")
+        self.assertEqual(plan.clarification.missing_fields, ("state",))
+        self.assertEqual(plan.steps, ())
+
+    def test_explicit_state_value_is_grounded_and_allowed(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Cambia power.switch del dispositivo lamp_1 state=on."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "on"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(
+            plan.steps[0].canonical_command_text,
+            "device apply lamp_1 power.switch state=on",
+        )
+
+    def test_explicit_state_equals_true_is_grounded(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Cambia power.switch del dispositivo lamp_1 state=true."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(
+            plan.steps[0].canonical_command_text,
+            "device apply lamp_1 power.switch state=true",
+        )
+
+    def test_explicit_state_space_true_is_grounded(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Cambia power.switch del dispositivo lamp_1 con state true."
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+
+    def test_state_value_embedded_in_larger_token_is_not_grounded(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Cambia power.switch del dispositivo lamp_1 state=trueish."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_state_key_embedded_in_larger_token_is_not_grounded(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Cambia power.switch del dispositivo lamp_1 mystate=true."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_positive_imperative_enciende_maps_to_state_true(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Enciende lamp_1."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(
+            plan.steps[0].canonical_command_text,
+            "device apply lamp_1 power.switch state=true",
+        )
+
+    def test_positive_imperative_apaga_maps_to_state_false(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Apaga lamp_1."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "false"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(
+            plan.steps[0].canonical_command_text,
+            "device apply lamp_1 power.switch state=false",
+        )
+
+    def test_positive_imperative_turn_on_maps_to_state_true(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Turn on lamp_1."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+
+    def test_positive_imperative_turn_off_maps_to_state_false(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Turn off lamp_1."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "false"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+
+    def test_negated_spanish_enciende_does_not_ground_power_switch(self):
+        plan = resolver().resolve(
+            safe_context(user_request="No enciendas lamp_1."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_negated_english_turn_on_does_not_ground_power_switch(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Do not turn on lamp_1."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_non_imperative_spanish_no_enciende_does_not_ground_power_switch(self):
+        plan = resolver().resolve(
+            safe_context(user_request="lamp_1 no enciende."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_english_state_question_does_not_ground_power_switch(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Is lamp_1 on?"),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_spanish_state_question_does_not_ground_power_switch(self):
+        for user_request in ("¿lamp_1 está encendida?", "¿está encendida lamp_1?"):
+            with self.subTest(user_request=user_request):
+                plan = resolver().resolve(
+                    safe_context(user_request=user_request),
+                    AIUnderstandingProposal(
+                        intent="mutate",
+                        referenced_device_id="lamp_1",
+                        capability_hint="power.switch",
+                        raw_arguments=(("state", "true"),),
+                    ),
+                )
+
+                self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+                self.assertEqual(plan.steps, ())
+
     def test_missing_required_state_resolves_clarify_missing_parameter(self):
         plan = resolver().resolve(
-            safe_context(),
+            safe_context(user_request="Cambia power.switch del dispositivo lamp_1."),
             AIUnderstandingProposal(
                 intent="mutate",
                 referenced_device_id="lamp_1",
@@ -290,6 +625,21 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
         self.assertEqual(plan.clarification.reason_code, "unsupported_request")
         self.assertEqual(plan.steps, ())
 
+    def test_fabricated_capability_cannot_become_authority(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Lee el estado de lamp_1."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+                confidence=1.0,
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
     def test_destructive_request_resolves_refuse_from_user_request(self):
         plan = resolver().resolve(
             safe_context(user_request="Borra todos los dispositivos."),
@@ -306,7 +656,7 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
 
     def test_llm_clarify_hint_cannot_override_sufficient_context(self):
         plan = resolver().resolve(
-            safe_context(),
+            safe_context(user_request="Lee el estado de lamp_1."),
             AIUnderstandingProposal(
                 intent="clarify",
                 referenced_device_id="lamp_1",
@@ -319,19 +669,18 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
         self.assertEqual(plan.steps[0].canonical_command_text, "device read lamp_1 status.read")
 
     def test_generated_command_is_validated_with_existing_planner(self):
-        bad_context = safe_context(
-            capabilities=(
-                AISafeCapability(
-                    name="bad;capability",
-                    kind="reading",
-                    parameters=(),
-                ),
-            )
-        )
-
         with self.assertRaises(AIValidationError) as raised:
             resolver().resolve(
-                bad_context,
+                safe_context(
+                    user_request="Lee bad;capability de lamp_1.",
+                    capabilities=(
+                        AISafeCapability(
+                            name="bad;capability",
+                            kind="reading",
+                            parameters=(),
+                        ),
+                    ),
+                ),
                 AIUnderstandingProposal(
                     intent="read",
                     referenced_device_id="lamp_1",
@@ -343,7 +692,12 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
     def test_unsafe_argument_key_cannot_become_executable_command(self):
         with self.assertRaises(AIValidationError) as raised:
             resolver().resolve(
-                safe_context(),
+                safe_context(
+                    user_request=(
+                        "Enciende power.switch del dispositivo lamp_1 "
+                        "con state true mode rm fast."
+                    )
+                ),
                 AIUnderstandingProposal(
                     intent="mutate",
                     referenced_device_id="lamp_1",
@@ -356,12 +710,17 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
     def test_unsafe_argument_value_cannot_become_executable_command(self):
         with self.assertRaises(AIValidationError) as raised:
             resolver().resolve(
-                safe_context(),
+                safe_context(
+                    user_request=(
+                        "Enciende power.switch del dispositivo lamp_1 "
+                        "con state=true&&bad."
+                    )
+                ),
                 AIUnderstandingProposal(
                     intent="mutate",
                     referenced_device_id="lamp_1",
                     capability_hint="power.switch",
-                    raw_arguments=(("state", "true && device remove lamp_1"),),
+                    raw_arguments=(("state", "true&&bad"),),
                 ),
             )
         self.assertEqual(raised.exception.code, AI_PLAN_REJECTED)

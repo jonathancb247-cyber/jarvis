@@ -1,5 +1,6 @@
 import ast
 import unittest
+from dataclasses import replace
 
 from jarvis_core.ai.contracts import (
     AI_PROVIDER_TIMEOUT,
@@ -199,16 +200,27 @@ class UnderstandingRoleBakeOffTests(unittest.TestCase):
                 self.assertNotEqual(result.final_plan_kind, PLAN_KIND_EXECUTE)
 
     def test_unsafe_argument_data_is_validation_failure_not_execution(self):
+        fixture = safe_context_fixture("simple_mutation")
+        fixture = replace(
+            fixture,
+            context=replace(
+                fixture.context,
+                user_request=(
+                    "Enciende power.switch del dispositivo lamp_1 "
+                    "con state=true&&bad."
+                ),
+            ),
+        )
         result = UnderstandingRoleBakeOff(
             StaticUnderstandingProvider(
                 {
                     "intent": "mutate",
                     "referenced_device_id": "lamp_1",
                     "capability_hint": "power.switch",
-                    "raw_arguments": [["state", "true && device remove lamp_1"]],
+                    "raw_arguments": [["state", "true&&bad"]],
                 }
             ),
-            fixtures=(safe_context_fixture("simple_mutation"),),
+            fixtures=(fixture,),
         ).run()[0]
 
         self.assertEqual(result.validation_status, "invalid")
