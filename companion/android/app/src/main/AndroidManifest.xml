@@ -2,6 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+        Foreground-service support for the on-demand local AI host. Both are
+        normal (auto-granted) permissions required for a dataSync foreground
+        service that keeps the loopback bridge alive without an Activity.
+        POST_NOTIFICATIONS is declared for notification visibility; the app
+        never requests it and the service still runs if it is denied.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".CompanionApplication"
@@ -19,6 +29,33 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            On-demand local AI host (foreground dataSync, so modern Android and
+            vendor ROMs allow the Activity-free start; it still self-stops after
+            a bounded idle window). Exported so the lab bridge can start it via
+            broadcast/adb without opening an Activity. The service exposes no
+            UI, IPC or data: it only hosts the loopback 127.0.0.1:8767 HTTP
+            bridge and requires no runtime permissions.
+        -->
+        <service
+            android:name=".LocalAIHostService"
+            android:exported="true"
+            android:foregroundServiceType="dataSync" />
+
+        <!--
+            Broadcast trigger to cold-start LocalAIHostService from adb/the lab
+            bridge. While this receiver runs the process is temp-allowlisted, so
+            it may start a background service when a direct `am startservice`
+            would be rejected ("app is in background"). Carries no data.
+        -->
+        <receiver
+            android:name=".LocalAIHostTriggerReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.jarvisos.companion.action.START_LOCAL_AI" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

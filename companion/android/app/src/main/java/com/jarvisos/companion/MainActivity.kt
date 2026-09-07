@@ -55,7 +55,9 @@ class MainActivity : AppCompatActivity() {
         runPromptButton = findViewById(R.id.run_prompt_button)
         gemmaOutputTextView = findViewById(R.id.gemma_output_text)
 
-        app.startServer()
+        // The loopback companion server is lifecycle-owned by LocalAIHostService
+        // (started on demand, stopped after a bounded idle window). MainActivity
+        // is a debug/config surface only and must not start or stop it.
         refreshStatus()
 
         loadButton.setOnClickListener { onLoadModel() }
@@ -71,9 +73,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         // The Gemma probe is Activity-owned: release its native LiteRT-LM
-        // resources with the Activity. The fake companion server is
-        // process-owned (owned by CompanionApplication) and is intentionally
-        // left untouched.
+        // resources with the Activity. The loopback companion server is owned by
+        // LocalAIHostService and is intentionally left untouched here.
         //
         // If an engine is currently being used by an in-flight generation, we
         // must NOT close it here (that would tear down native LiteRT-LM resources
