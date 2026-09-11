@@ -11,6 +11,7 @@ import http.client
 import ipaddress
 import json
 import socket
+from typing import Callable
 
 from jarvis_core.ai.contracts import (
     AI_PROVIDER_PROTOCOL_ERROR,
@@ -51,10 +52,23 @@ class GemmaAndroidBridgeTransport:
       provider envelope understood by GemmaLocalAIProvider, such as an
       AIActionPlan object, {"plan": {...}}, {"output_text": "..."} or
       {"tool_calls": [...]}.
+
+    An optional [on_response] observer is a lab/evaluation hook only: when set,
+    it is called with the HTTP status and bounded raw response body for every
+    response (2xx and errors) so evaluation tooling can count Android-side JSON
+    rejections without loosening any error normalization. The default path is
+    unchanged and never reads a response body before status/Content-Length
+    validation.
     """
 
-    def __init__(self, config: GemmaAndroidBridgeConfig):
+    def __init__(
+        self,
+        config: GemmaAndroidBridgeConfig,
+        *,
+        on_response: Callable[[int, bytes], None] | None = None,
+    ) -> None:
         self.config = config
+        self.on_response = on_response
 
     def generate(
         self,
@@ -95,29 +109,24 @@ class GemmaAndroidBridgeTransport:
                 },
             )
             response = connection.getresponse()
-            _raise_for_status(response.status)
+            status = response.status
             headers = response.getheaders()
+            raw = None
+            if self.on_response is not None:
+                raw = response.read(max_response_bytes + 1)
+                self.on_response(status, raw)
+            _raise_for_status(status)
             _require_json_content(headers)
             _reject_oversized_content_length(headers, max_response_bytes)
-            raw = response.read(max_response_bytes + 1)
+            if raw is None:
+                raw = response.read(max_response_bytes + 1)
+            return _parse_response(raw, max_response_bytes)
         except TimeoutError as error:
             raise GemmaLocalProviderError(AI_PROVIDER_TIMEOUT) from error
         except (OSError, http.client.HTTPException, socket.timeout) as error:
             raise GemmaLocalProviderError(AI_PROVIDER_UNAVAILABLE) from error
         finally:
             connection.close()
-
-        if len(raw) > max_response_bytes:
-            raise GemmaLocalProviderError(AI_RESPONSE_TOO_LARGE)
-        if not raw:
-            raise GemmaLocalProviderError(AI_RESPONSE_INVALID)
-        try:
-            parsed = json.loads(raw.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as error:
-            raise GemmaLocalProviderError(AI_RESPONSE_INVALID) from error
-        if not isinstance(parsed, dict):
-            raise GemmaLocalProviderError(AI_RESPONSE_INVALID)
-        return GemmaLocalResponse(parsed, len(raw))
 
 
 def _raise_for_status(status: int) -> None:
@@ -159,6 +168,20 @@ def _reject_oversized_content_length(
         raise GemmaLocalProviderError(AI_PROVIDER_PROTOCOL_ERROR)
     if content_length > max_response_bytes:
         raise GemmaLocalProviderError(AI_RESPONSE_TOO_LARGE)
+
+
+def _parse_response(raw: bytes, max_response_bytes: int) -> GemmaLocalResponse:
+    if len(raw) > max_response_bytes:
+        raise GemmaLocalProviderError(AI_RESPONSE_TOO_LARGE)
+    if not raw:
+        raise GemmaLocalProviderError(AI_RESPONSE_INVALID)
+    try:
+        parsed = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise GemmaLocalProviderError(AI_RESPONSE_INVALID) from error
+    if not isinstance(parsed, dict):
+        raise GemmaLocalProviderError(AI_RESPONSE_INVALID)
+    return GemmaLocalResponse(parsed, len(raw))
 
 
 def _require_host(host: str) -> None:

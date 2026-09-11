@@ -20,6 +20,7 @@ from jarvis_core.ai.gemma_local import (
     GemmaLocalAIProvider,
     GemmaLocalProviderConfig,
     GemmaLocalProviderError,
+    GemmaLocalResponse,
 )
 from tests.test_gemma_local_provider import safe_context, success_plan
 
@@ -171,6 +172,42 @@ class GemmaAndroidBridgeTransportTests(unittest.TestCase):
                 self.assertEqual(len(connection.requests), 1)
                 self.assertEqual(connection.response.read_calls, 0)
 
+    def test_on_response_observer_records_error_status_and_body_without_leaking(self):
+        records = []
+        raw_body = b'{"error":"invalid_generation","message":"nope"}'
+        response = FakeHttpResponse(500, raw_body)
+        transport = _transport_with_connection(
+            FakeConnection(response),
+            on_response=lambda status, raw: records.append((status, raw)),
+        )
+
+        with self.assertRaises(GemmaLocalProviderError) as raised:
+            transport.generate({"hello": "world"}, 10, 1024)
+
+        self.assertEqual(raised.exception.code, AI_PROVIDER_UNAVAILABLE)
+        self.assertNotIn("invalid_generation", str(raised.exception))
+        self.assertEqual(len(records), 1)
+        status, raw = records[0]
+        self.assertEqual(status, 500)
+        self.assertEqual(raw, raw_body)
+        self.assertEqual(response.read_amounts, [1025])
+
+    def test_on_response_observer_records_success_responses(self):
+        records = []
+        raw_body = b'{"plan":{"kind":"execute","steps":[]}}'
+        transport = _transport_with_connection(
+            FakeConnection(FakeHttpResponse(200, raw_body)),
+            on_response=lambda status, raw: records.append((status, raw)),
+        )
+
+        result = transport.generate({"hello": "world"}, 10, 1024)
+
+        self.assertIsInstance(result, GemmaLocalResponse)
+        self.assertEqual(len(records), 1)
+        status, raw = records[0]
+        self.assertEqual(status, 200)
+        self.assertEqual(raw, raw_body)
+
     def test_timeout_and_connection_errors_are_normalized(self):
         cases = [
             (TimeoutError("raw timeout"), AI_PROVIDER_TIMEOUT),
@@ -297,9 +334,9 @@ class GemmaAndroidBridgeTransportTests(unittest.TestCase):
         )
 
 
-def _transport_with_connection(connection):
+def _transport_with_connection(connection, *, on_response=None):
     config = GemmaAndroidBridgeConfig("192.168.1.44", port=8767)
-    transport = GemmaAndroidBridgeTransport(config)
+    transport = GemmaAndroidBridgeTransport(config, on_response=on_response)
 
     def connection_factory(host, port, timeout):
         connection.host = host
@@ -312,7 +349,7 @@ def _transport_with_connection(connection):
             with patch("http.client.HTTPConnection", connection_factory):
                 return super().generate(request, timeout_seconds, max_response_bytes)
 
-    return TransportWithPatchedConnection(config)
+    return TransportWithPatchedConnection(config, on_response=on_response)
 
 
 class FakeConnection:
