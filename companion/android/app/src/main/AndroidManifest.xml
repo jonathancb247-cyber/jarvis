@@ -43,6 +43,17 @@
             android:exported="true"
             android:foregroundServiceType="dataSync" />
 
+        <service
+            android:name=".LocalAIHostTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_stat_bridge"
+            android:label="@string/quick_settings_local_ai"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <!--
             Broadcast trigger to cold-start LocalAIHostService from adb/the lab
             bridge. While this receiver runs the process is temp-allowlisted, so

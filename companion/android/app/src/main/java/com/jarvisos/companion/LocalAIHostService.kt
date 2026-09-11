@@ -31,6 +31,9 @@ import androidx.core.app.NotificationCompat
  * - start (via [LocalAIHostTriggerReceiver] / `am start-foreground-service`):
  *   posts the foreground notification, starts the server (idempotent), and opens
  *   the idle window;
+ * - ensure available: foreground UI or the visible notification action can send
+ *   the same idempotent start request without knowing whether the server/model
+ *   is already active;
  * - while serving: every `POST /generate` resets the idle window;
  * - idle stop: after [DEFAULT_IDLE_TIMEOUT_MS] (or the supplied
  *   [EXTRA_IDLE_TIMEOUT_MS]) with no traffic, the service stops the server and
@@ -82,6 +85,7 @@ class LocalAIHostService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        app.localAIHostLifecycle = LocalAIHostLifecycle.STARTING
         Log.i(TAG, "Local AI host service created")
     }
 
@@ -92,6 +96,11 @@ class LocalAIHostService : Service() {
             .setContentText(getString(R.string.notification_text))
             .setSmallIcon(R.drawable.ic_stat_bridge)
             .setContentIntent(launchPendingIntent())
+            .addAction(
+                R.drawable.ic_stat_bridge,
+                getString(R.string.notification_action_ensure_available),
+                ensureAvailablePendingIntent(),
+            )
             .build()
         startForeground(NOTIFICATION_ID, notification)
 
@@ -106,16 +115,19 @@ class LocalAIHostService : Service() {
         if (!app.startServer()) {
             Log.w(TAG, "Failed to start companion server; stopping service")
             app.requestActivityListener = null
+            app.localAIHostLifecycle = LocalAIHostLifecycle.ERROR
             stopSelf()
             return START_NOT_STICKY
         }
 
+        app.localAIHostLifecycle = LocalAIHostLifecycle.RUNNING
         Log.i(TAG, "Local AI host service running (idle timeout ${policy.idleTimeoutMs} ms)")
         scheduleIdleCheck()
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
+        app.localAIHostLifecycle = LocalAIHostLifecycle.STOPPING
         handler.removeCallbacks(idleCheck)
         policy.reset()
         if (app.requestActivityListener === requestActivityListener) {
@@ -123,6 +135,7 @@ class LocalAIHostService : Service() {
         }
         app.stopServer()
         app.modelController.close()
+        app.localAIHostLifecycle = LocalAIHostLifecycle.STOPPED
         Log.i(TAG, "Local AI host service destroyed; server and model released")
         super.onDestroy()
     }
@@ -153,9 +166,21 @@ class LocalAIHostService : Service() {
         return PendingIntent.getActivity(this, 0, launch, PendingIntent.FLAG_IMMUTABLE)
     }
 
+    private fun ensureAvailablePendingIntent(): PendingIntent {
+        val intent = LocalAIHostBootstrap.buildServiceIntent(this, policy.idleTimeoutMs)
+            .putExtra(EXTRA_START_PATH, LocalAIHostBootstrap.StartPath.NOTIFICATION_ACTION.name)
+        return PendingIntent.getService(
+            this,
+            REQUEST_CODE_ENSURE_AVAILABLE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
     companion object {
         const val TAG = "JarvisOSLocalAI"
         const val EXTRA_IDLE_TIMEOUT_MS = "com.jarvisos.companion.extra.IDLE_TIMEOUT_MS"
+        const val EXTRA_START_PATH = "com.jarvisos.companion.extra.START_PATH"
 
         /** Default bounded warm window before the service stops and unloads. */
         const val DEFAULT_IDLE_TIMEOUT_MS = 5 * 60 * 1000L
@@ -167,6 +192,7 @@ class LocalAIHostService : Service() {
         const val MAX_IDLE_TIMEOUT_MS = 30 * 60 * 1000L
 
         val NOTIFICATION_ID = GenerateServer.DEFAULT_PORT
+        const val REQUEST_CODE_ENSURE_AVAILABLE = 8768
 
         const val NOTIFICATION_CHANNEL_ID = "local_ai_host"
 
@@ -182,9 +208,9 @@ class LocalAIHostService : Service() {
          *         com.jarvisos.companion/.LocalAIHostService
          */
         fun start(context: Context, idleTimeoutMs: Long = DEFAULT_IDLE_TIMEOUT_MS) {
-            val intent = Intent(context, LocalAIHostService::class.java)
-                .putExtra(EXTRA_IDLE_TIMEOUT_MS, idleTimeoutMs)
-            context.startForegroundService(intent)
+            context.startForegroundService(
+                LocalAIHostBootstrap.buildServiceIntent(context, idleTimeoutMs),
+            )
         }
     }
 }

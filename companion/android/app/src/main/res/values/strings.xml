@@ -5,6 +5,10 @@
     <string name="status_running">running</string>
     <string name="status_stopped">stopped</string>
     <string name="status_none">not listening</string>
+    <string name="local_ai_bootstrap">Start local AI bridge</string>
+    <string name="local_ai_bootstrap_requested">Local AI bridge start requested.</string>
+    <string name="local_ai_bootstrap_available">Local AI bridge is already available.</string>
+    <string name="local_ai_bootstrap_blocked">Android blocked the local AI bridge start. Open the app and try again.</string>
 
     <!-- Gate 2A debug-only Gemma probe (separate from the fake /generate server) -->
     <string name="gemma_debug_label">Gemma debug probe (CPU)</string>
@@ -24,4 +28,6 @@
     <string name="notification_channel_description">Keeps the on-device Gemma bridge warm for bounded lab use, then self-stops after an idle window.</string>
     <string name="notification_title">Local AI bridge active</string>
     <string name="notification_text">On-device Gemma serving loopback requests</string>
+    <string name="notification_action_ensure_available">Keep available</string>
+    <string name="quick_settings_local_ai">JarvisOS local AI</string>
 </resources>
