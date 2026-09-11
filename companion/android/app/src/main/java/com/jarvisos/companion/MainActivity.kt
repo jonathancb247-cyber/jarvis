@@ -23,6 +23,7 @@ import androidx.core.widget.doAfterTextChanged
 class MainActivity : AppCompatActivity() {
 
     private lateinit var statusTextView: TextView
+    private lateinit var startLocalAIButton: Button
     private lateinit var modelPathInput: EditText
     private lateinit var loadButton: Button
     private lateinit var runPromptButton: Button
@@ -50,6 +51,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         statusTextView = findViewById(R.id.status_text)
+        startLocalAIButton = findViewById(R.id.start_local_ai_button)
         modelPathInput = findViewById(R.id.model_path_input)
         loadButton = findViewById(R.id.load_model_button)
         runPromptButton = findViewById(R.id.run_prompt_button)
@@ -57,9 +59,11 @@ class MainActivity : AppCompatActivity() {
 
         // The loopback companion server is lifecycle-owned by LocalAIHostService
         // (started on demand, stopped after a bounded idle window). MainActivity
-        // is a debug/config surface only and must not start or stop it.
+        // offers an explicit user-visible bootstrap button but does not own the
+        // server lifecycle.
         refreshStatus()
 
+        startLocalAIButton.setOnClickListener { onStartLocalAIHost() }
         loadButton.setOnClickListener { onLoadModel() }
         runPromptButton.setOnClickListener { onRunPrompt() }
         modelPathInput.doAfterTextChanged { refreshButtons() }
@@ -138,6 +142,23 @@ class MainActivity : AppCompatActivity() {
                 refreshButtons()
             }
         }.start()
+    }
+
+    private fun onStartLocalAIHost() {
+        val result = LocalAIHostBootstrap.ensureAvailable(
+            this,
+            startPath = LocalAIHostBootstrap.StartPath.FOREGROUND_APP,
+        )
+        val message = when (result.status) {
+            LocalAIHostBootstrap.BootstrapStatus.ALREADY_AVAILABLE ->
+                R.string.local_ai_bootstrap_available
+            LocalAIHostBootstrap.BootstrapStatus.START_REQUESTED ->
+                R.string.local_ai_bootstrap_requested
+            LocalAIHostBootstrap.BootstrapStatus.BLOCKED_BY_PLATFORM ->
+                R.string.local_ai_bootstrap_blocked
+        }
+        toast(message)
+        refreshStatus()
     }
 
     private fun onRunPrompt() {

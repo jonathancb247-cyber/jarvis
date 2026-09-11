@@ -6,7 +6,8 @@ import android.content.Intent
 import android.util.Log
 
 /**
- * Lab trigger that starts [LocalAIHostService] without any Activity being open.
+ * Lab trigger that asks the bootstrap boundary to start [LocalAIHostService]
+ * without any Activity being open.
  *
  * While a BroadcastReceiver executes, the framework temp-allowlists the process,
  * so a cold app can start its (background) host service even though a direct
@@ -27,13 +28,16 @@ class LocalAIHostTriggerReceiver : BroadcastReceiver() {
         if (intent.action != ACTION_START_LOCAL_AI) {
             return
         }
-        val requested = intent.getLongExtra(LocalAIHostService.EXTRA_IDLE_TIMEOUT_MS, -1L)
-        val service = Intent(context, LocalAIHostService::class.java)
-        if (requested >= 0) {
-            service.putExtra(LocalAIHostService.EXTRA_IDLE_TIMEOUT_MS, requested)
-        }
+        val requested = intent.getLongExtra(
+            LocalAIHostService.EXTRA_IDLE_TIMEOUT_MS,
+            LocalAIHostService.DEFAULT_IDLE_TIMEOUT_MS,
+        )
         Log.i(TAG, "Trigger received; starting local AI host service")
-        context.startForegroundService(service)
+        LocalAIHostBootstrap.ensureAvailable(
+            context,
+            idleTimeoutMs = requested,
+            startPath = LocalAIHostBootstrap.StartPath.LAB_RECEIVER,
+        )
     }
 
     companion object {

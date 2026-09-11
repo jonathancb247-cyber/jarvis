@@ -37,6 +37,9 @@ class CompanionApplication : Application() {
     var generateServer: GenerateServer? = null
         private set
 
+    @Volatile
+    var localAIHostLifecycle: LocalAIHostLifecycle = LocalAIHostLifecycle.STOPPED
+
     /**
      * Optional consumer of served-request activity. [LocalAIHostService] sets it
      * so its bounded idle window resets while the bridge is used; the server
@@ -59,6 +62,7 @@ class CompanionApplication : Application() {
             true
         } catch (error: Exception) {
             Log.e(TAG, "Failed to start companion server", error)
+            localAIHostLifecycle = LocalAIHostLifecycle.ERROR
             false
         }
     }
@@ -68,4 +72,14 @@ class CompanionApplication : Application() {
         generateServer = null
         Log.i(TAG, "Companion server stopped")
     }
+
+    fun currentLocalAIHostReadiness(): LocalAIHostReadiness =
+        LocalAIHostBootstrap.readiness(
+            serverRunning = generateServer != null,
+            modelConfigured = modelController.currentModelPath != null,
+            modelLoading = false,
+            modelLoaded = modelController.isLoaded,
+            generating = modelController.isGenerating,
+            lifecycle = localAIHostLifecycle,
+        )
 }
