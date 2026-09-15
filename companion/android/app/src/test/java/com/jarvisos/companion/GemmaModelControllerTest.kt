@@ -408,4 +408,118 @@ class GemmaModelControllerTest {
             newFile.delete()
         }
     }
+
+    // ---- debug-only FunctionGemma family routing ----
+
+    private fun functionGemmaEnvelope(): String =
+        "<start_of_turn>model\n<start_function_call>call:produce_understanding_proposal{" +
+            "intent:<escape>read<escape>,referenced_device_text:<escape>lamp_1<escape>," +
+            "referenced_device_id:<escape>lamp_1<escape>,capability_hint:<escape>status.read<escape>," +
+            "operation_hint:<escape>read<escape>,raw_arguments:<escape>[]<escape>," +
+            "safety_hints:<escape>[]<escape>,confidence:1.0," +
+            "safe_explanation:<escape>Reading lamp_1 status.<escape>}<end_function_call><end_of_turn>"
+
+    @Test
+    fun functionGemmaFamilyRoutesUnderstandingThroughEnvelopeDecoder() {
+        val file = GemmaTestFixtures.tempModelFile()
+        val runtime = GemmaTestFixtures.FakeRuntime(output = functionGemmaEnvelope())
+        val controller = GemmaModelController(
+            engineFactory = { path -> GemmaEngine(modelPath = path) { runtime } },
+        )
+        try {
+            assertTrue(controller.configureForEvaluation(file.absolutePath, ModelPromptFamily.FUNCTION_GEMMA))
+            val outcome = controller.generateForRequest(GemmaTestFixtures.understandingRequest)
+            assertTrue(outcome is GemmaModelController.GenerateOutcome.Success)
+            val success = outcome as GemmaModelController.GenerateOutcome.Success
+            assertEquals("read", success.responseBody.getString("intent"))
+            assertEquals("lamp_1", success.responseBody.getString("referenced_device_text"))
+            assertEquals("lamp_1", success.responseBody.getString("referenced_device_id"))
+            assertEquals(1.0, success.responseBody.getDouble("confidence"), 0.0001)
+
+            val prompt = runtime.lastPrompt!!
+            assertTrue(prompt.contains(FunctionGemmaPromptAdapter.DEVELOPER_PREAMBLE))
+            assertTrue(prompt.contains(FunctionGemmaPromptAdapter.UNDERSTANDING_FUNCTION_NAME))
+            assertTrue(prompt.contains("<start_function_declaration>"))
+        } finally {
+            controller.close()
+            file.delete()
+        }
+    }
+
+    @Test
+    fun functionGemmaFamilyFallsBackToPlainJson() {
+        val file = GemmaTestFixtures.tempModelFile()
+        val runtime = GemmaTestFixtures.FakeRuntime(output = GemmaTestFixtures.understandingProposalText)
+        val controller = GemmaModelController(
+            engineFactory = { path -> GemmaEngine(modelPath = path) { runtime } },
+        )
+        try {
+            assertTrue(controller.configureForEvaluation(file.absolutePath, ModelPromptFamily.FUNCTION_GEMMA))
+            val outcome = controller.generateForRequest(GemmaTestFixtures.understandingRequest)
+            assertTrue(outcome is GemmaModelController.GenerateOutcome.Success)
+            val success = outcome as GemmaModelController.GenerateOutcome.Success
+            assertEquals("read", success.responseBody.getString("intent"))
+        } finally {
+            controller.close()
+            file.delete()
+        }
+    }
+
+    @Test
+    fun functionGemmaFamilyRejectsPlannerRequest() {
+        val file = GemmaTestFixtures.tempModelFile()
+        val runtime = GemmaTestFixtures.FakeRuntime(output = "{}")
+        val controller = GemmaModelController(
+            engineFactory = { path -> GemmaEngine(modelPath = path) { runtime } },
+        )
+        try {
+            assertTrue(controller.configureForEvaluation(file.absolutePath, ModelPromptFamily.FUNCTION_GEMMA))
+            val outcome = controller.generateForRequest(GemmaTestFixtures.validRequest)
+            assertTrue(outcome is GemmaModelController.GenerateOutcome.Failure)
+            val failure = outcome as GemmaModelController.GenerateOutcome.Failure
+            assertEquals(400, failure.statusCode)
+            assertEquals("bad_request", failure.code)
+            assertEquals("the FunctionGemma family must not run a planning request", 0, runtime.generateCount)
+        } finally {
+            controller.close()
+            file.delete()
+        }
+    }
+
+    @Test
+    fun configureForEvaluationIsRefusedAfterLoad() {
+        val file = GemmaTestFixtures.tempModelFile()
+        val controller = GemmaTestFixtures.loadedController(
+            file,
+            GemmaTestFixtures.FakeRuntime(output = GemmaTestFixtures.clarifyPlanText),
+        )
+        try {
+            assertTrue(controller.generateForRequest(GemmaTestFixtures.validRequest) is GemmaModelController.GenerateOutcome.Success)
+            assertFalse("a loaded model must never be swapped", controller.configureForEvaluation(file.absolutePath, ModelPromptFamily.FUNCTION_GEMMA))
+            assertTrue("model must stay loaded after a refused override", controller.isLoaded)
+            assertEquals("family must stay default after refused override", ModelPromptFamily.GEMMA, controller.currentModelFamily)
+        } finally {
+            controller.close()
+            file.delete()
+        }
+    }
+
+    @Test
+    fun configureDefaultPathResetsFamilyToGemma() {
+        val file = GemmaTestFixtures.tempModelFile()
+        val runtime = GemmaTestFixtures.FakeRuntime(output = "{}")
+        val controller = GemmaModelController(
+            engineFactory = { path -> GemmaEngine(modelPath = path) { runtime } },
+        )
+        try {
+            assertTrue(controller.configureForEvaluation(file.absolutePath, ModelPromptFamily.FUNCTION_GEMMA))
+            assertEquals(ModelPromptFamily.FUNCTION_GEMMA, controller.currentModelFamily)
+
+            controller.configureDefaultPath(file.path)
+            assertEquals("a clean default start must revert to the default family", ModelPromptFamily.GEMMA, controller.currentModelFamily)
+        } finally {
+            controller.close()
+            file.delete()
+        }
+    }
 }
