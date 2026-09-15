@@ -112,6 +112,13 @@ class LocalAIHostService : Service() {
         app.requestActivityListener = requestActivityListener
         policy.onActivity()
 
+        if (!applyDebugModelOverride(intent)) {
+            app.requestActivityListener = null
+            app.localAIHostLifecycle = LocalAIHostLifecycle.ERROR
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         if (!app.startServer()) {
             Log.w(TAG, "Failed to start companion server; stopping service")
             app.requestActivityListener = null
@@ -121,7 +128,11 @@ class LocalAIHostService : Service() {
         }
 
         app.localAIHostLifecycle = LocalAIHostLifecycle.RUNNING
-        Log.i(TAG, "Local AI host service running (idle timeout ${policy.idleTimeoutMs} ms)")
+        Log.i(
+            TAG,
+            "Local AI host service running (family=${app.modelController.currentModelFamily}, " +
+                "path=${app.modelController.currentModelPath}, idle timeout ${policy.idleTimeoutMs} ms)",
+        )
         scheduleIdleCheck()
         return START_NOT_STICKY
     }
@@ -141,6 +152,57 @@ class LocalAIHostService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /**
+     * Applies the debug-only model override (see [DebugModelOverride]) before
+     * the bridge starts, preserving the production default path exactly when no
+     * override is requested. Returns false when the override cannot be applied
+     * (the caller must not start the bridge).
+     *
+     * The override is evaluated only while the bridge is not already serving:
+     * re-starting a warm bridge must never reconfigure it underneath a live
+     * server, which keeps service/server idempotency intact.
+     */
+    private fun applyDebugModelOverride(intent: Intent?): Boolean {
+        if (app.generateServer != null) {
+            return true
+        }
+        val filesDir = filesDir?.absolutePath
+        if (filesDir == null) {
+            Log.e(TAG, "App files dir unavailable; cannot configure the bridge model")
+            return false
+        }
+        val appDebuggable =
+            (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        return when (
+            val override = DebugModelOverride.resolve(
+                intent = intent,
+                appDebuggable = appDebuggable,
+                filesDirAbsolutePath = filesDir,
+                modelAlreadyLoaded = app.modelController.isLoaded,
+            )
+        ) {
+            is DebugModelOverride.Result.Ignored -> {
+                app.modelController.configureDefaultPath(filesDir)
+                true
+            }
+            is DebugModelOverride.Result.Applied -> {
+                if (!app.modelController.configureForEvaluation(override.target, override.family)) {
+                    Log.e(TAG, "Model override could not be applied (model already loaded); failing closed")
+                    return false
+                }
+                Log.i(
+                    TAG,
+                    "Debug model override applied: family=${override.family}, model=${override.target}",
+                )
+                true
+            }
+            is DebugModelOverride.Result.Rejected -> {
+                Log.w(TAG, "Debug model override rejected: ${override.message}")
+                false
+            }
+        }
+    }
 
     private fun scheduleIdleCheck() {
         handler.removeCallbacks(idleCheck)

@@ -44,6 +44,7 @@ class GemmaModelController(
     private var modelPath: String? = null
     private var engine: GemmaEngine? = null
     private var loadedPath: String? = null
+    private var modelFamily: ModelPromptFamily = ModelPromptFamily.GEMMA
 
     @Volatile
     private var generating = false
@@ -57,6 +58,10 @@ class GemmaModelController(
 
     val currentModelPath: String?
         get() = synchronized(lock) { modelPath }
+
+    /** Prompt/decode family currently configured (see [ModelPromptFamily]). */
+    val currentModelFamily: ModelPromptFamily
+        get() = synchronized(lock) { modelFamily }
 
     /**
      * Set the model path the controller should load. Thread-safe.
@@ -82,7 +87,30 @@ class GemmaModelController(
             return
         }
         val candidate = java.io.File(filesDir, DEFAULT_MODEL_FILENAME)
-        synchronized(lock) { modelPath = candidate.absolutePath }
+        synchronized(lock) {
+            modelPath = candidate.absolutePath
+            // A clean start without an override always reverts to the default
+            // family, so a debug-only FunctionGemma override can never persist
+            // silently across service starts in the same process.
+            modelFamily = ModelPromptFamily.GEMMA
+        }
+    }
+
+    /**
+     * Apply a debug-only evaluation override (see [DebugModelOverride]) before
+     * anything is loaded. Returns false (without touching state) when the model
+     * is already loaded: a loaded engine must never be silently swapped. The
+     * default [configureDefaultPath] remains the only path used in production.
+     */
+    fun configureForEvaluation(path: String, family: ModelPromptFamily): Boolean {
+        synchronized(lock) {
+            if (engine?.isLoaded == true) {
+                return false
+            }
+            setModelPath(path)
+            modelFamily = family
+            return true
+        }
     }
 
     /**
@@ -113,7 +141,10 @@ class GemmaModelController(
             return GenerateOutcome.Failure(503, "model_unavailable", "Model is not loaded.")
         }
 
-        val promptResult = GemmaPromptBuilder.build(request)
+        val promptResult = when (modelFamily) {
+            ModelPromptFamily.FUNCTION_GEMMA -> FunctionGemmaPromptAdapter.build(request)
+            ModelPromptFamily.GEMMA -> GemmaPromptBuilder.build(request)
+        }
         if (promptResult is GemmaPromptBuilder.PromptBuildResult.Failure) {
             return GenerateOutcome.Failure(400, "bad_request", promptResult.message)
         }
@@ -147,7 +178,10 @@ class GemmaModelController(
         if (trimmed.toByteArray(Charsets.UTF_8).size > MAX_RESPONSE_BYTES) {
             return GenerateOutcome.Failure(413, "response_too_large", "Model output exceeds maximum size.")
         }
-        return when (val extracted = GemmaJsonExtractor.extract(trimmed)) {
+        return when (val extracted = when (modelFamily) {
+                ModelPromptFamily.FUNCTION_GEMMA -> FunctionGemmaOutputDecoder.extract(trimmed)
+                ModelPromptFamily.GEMMA -> GemmaJsonExtractor.extract(trimmed)
+            }) {
             is GemmaJsonExtractor.ExtractionResult.Success ->
                 GenerateOutcome.Success(extracted.json)
             is GemmaJsonExtractor.ExtractionResult.Rejected -> {
