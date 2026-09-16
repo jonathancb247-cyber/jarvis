@@ -44,6 +44,7 @@ object DebugModelOverride {
 
     const val MODEL_FAMILY_GEMMA = "gemma"
     const val MODEL_FAMILY_FUNCTION_GEMMA = "functiongemma"
+    const val MODEL_FAMILY_QWEN = "qwen"
 
     const val TAG = "JarvisOSGemma"
 

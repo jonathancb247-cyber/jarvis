@@ -12,6 +12,7 @@ package com.jarvisos.companion
 enum class ModelPromptFamily {
     GEMMA,
     FUNCTION_GEMMA,
+    QWEN,
     ;
 
     companion object {
@@ -23,6 +24,7 @@ enum class ModelPromptFamily {
         fun fromValue(value: String?): ModelPromptFamily? = when (value?.trim()?.lowercase()) {
             DebugModelOverride.MODEL_FAMILY_GEMMA -> GEMMA
             DebugModelOverride.MODEL_FAMILY_FUNCTION_GEMMA -> FUNCTION_GEMMA
+            DebugModelOverride.MODEL_FAMILY_QWEN -> QWEN
             else -> null
         }
     }
