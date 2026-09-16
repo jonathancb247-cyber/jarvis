@@ -1450,6 +1450,137 @@ class ExactDisplayIdentitySafetyTests(unittest.TestCase):
         self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
 
 
+class EntityBoundaryExactIdentityTests(unittest.TestCase):
+    def test_truncated_span_backup_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp Backup."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_truncated_span_2_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp 2."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_truncated_span_pro_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp Pro."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_truncated_span_lampish_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lampish."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_truncated_span_fake_prefix_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Fake Desk Lamp."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_truncated_span_backup_with_full_text_also_clarifies(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp Backup."),
+            notify_mutation("Desk Lamp Backup"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_clean_exact_display_name_still_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_clean_exact_display_name_with_room_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp in cuarto."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_clean_exact_display_name_other_room_clarifies(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp in sala."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_generic_lamp_in_sala_still_narrows(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on the lamp in sala."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="lamp",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+    def test_punctuation_preserves_clean_boundaries(self):
+        for request in (
+            "Turn on Desk Lamp.",
+            "Turn on Desk Lamp, please",
+            "Turn on Desk Lamp!",
+            "Turn on Desk Lamp please",
+        ):
+            with self.subTest(request=request):
+                plan = resolver().resolve(
+                    light_pair_context(request),
+                    notify_mutation("Desk Lamp"),
+                )
+
+                self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+                self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_question_form_never_seizes_identity(self):
+        plan = resolver().resolve(
+            light_pair_context("Can you turn on Desk Lamp?"),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertNotEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps, ())
+
+    def test_request_without_article_before_display_still_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Enciende Desk Lamp."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+
 def notify_mutation(device_text):
     return AIUnderstandingProposal(
         intent="mutate",

@@ -107,6 +107,38 @@ LOCATIVE_ARTICLES = {
     "al",
 }
 DEVICE_ROLE_ANCHOR_TERMS = ("dispositivo", "dispositivos", "device", "devices")
+ENTITY_BOUNDARY_BEFORE_TERMS = frozenset(
+    set(LOCATIVE_PREPOSITIONS)
+    | set(LOCATIVE_ARTICLES)
+    | POWER_SWITCH_ON_VERBS
+    | POWER_SWITCH_OFF_VERBS
+    | {
+        "turn",
+        "switch",
+        "please",
+        "and",
+        "or",
+        "with",
+        "but",
+        "of",
+        "my",
+        "your",
+        "our",
+        "their",
+        "his",
+        "her",
+        "its",
+        "this",
+        "that",
+        "these",
+        "those",
+    }
+)
+ENTITY_BOUNDARY_AFTER_TERMS = frozenset(
+    set(LOCATIVE_PREPOSITIONS)
+    | set(LOCATIVE_ARTICLES)
+    | {"please", "and", "or", "with", "but"}
+)
 
 
 class DeterministicUnderstandingResolver:
@@ -286,48 +318,88 @@ def _resolve_base_device_candidates(safe_context, proposal):
 
 
 def _resolve_exact_display_name_candidates(safe_context, proposal):
-    """Resolve a device whose display name equals the referenced entity span.
+    """Resolve displays that are complete, proven device references.
 
-    Exact display-name identity is only claimed when the referenced device
-    text itself matches a configured display name after the existing safe
-    normalization: full normalized equality, case- and accent-insensitive,
-    token-boundary safe, with no fuzzy matching, no synonym expansion, no
-    prefix/substring containment, and no suffix or numeric stripping. The
-    model may propose the referenced text, but it never decides identity;
-    the proposal span must also occur verbatim (normalized) in the request so
-    identity is not invented. Generic class terms such as "lamp" or "light"
-    are never treated as exact identities, and a request that names more
-    than one configured display (for example "compare Desk Lamp with Floor
-    Lamp") cannot seize a single device. Grounded device ids already return
-    earlier with higher precedence.
+    Exact display-name identity is claimed only when the deterministic
+    resolver can prove from user_request itself that a configured display
+    name is the complete device reference, AND the model-proposed referenced
+    text is a full normalized match for that display name. The model span
+    never defines entity boundaries; it is only a consistency signal. Full
+    equality is required: case- and accent-insensitive, token-boundary safe,
+    with no fuzzy matching, no synonym expansion, and no prefix/substring or
+    suffix/numeric acceptance. Generic class terms such as "lamp" are never
+    exact identities, and requests naming more than one configured display
+    (for example "compare Desk Lamp with Floor Lamp") cannot seize a single
+    device. Grounded device ids already return earlier with higher
+    precedence.
     """
-    user_request = safe_context.user_request
     referenced_text = proposal.referenced_device_text
     referenced_norm = _normalize(referenced_text)
     if not referenced_norm:
         return ()
     if _referenced_text_is_generic(referenced_text, safe_context):
         return ()
-    if not _has_token_phrase(
-        _normalized_tokens(user_request),
-        tuple(referenced_norm.split()),
-    ):
+    request_tokens = _normalized_tokens(safe_context.user_request)
+    if not request_tokens:
+        return ()
+    boundary_ids = _display_entity_boundary_device_ids(safe_context, request_tokens)
+    if not boundary_ids:
         return ()
     matches = [
         device
         for device in safe_context.devices
         if not _display_name_is_generic_class_term(device)
         and _normalize(device.display_name) == referenced_norm
+        and device.device_id in boundary_ids
     ]
     if not matches:
         return ()
-    if len(_display_phrase_present_device_ids(safe_context)) > 1:
+    if len(_display_phrase_present_device_ids(safe_context, request_tokens)) > 1:
         return ()
     return tuple(sorted(matches, key=lambda device: device.device_id))
 
 
-def _display_phrase_present_device_ids(safe_context):
-    request_tokens = _normalized_tokens(safe_context.user_request)
+def _display_entity_boundary_device_ids(safe_context, request_tokens):
+    """Configured displays that occur in the request with a clean boundary.
+
+    A display phrase is a complete device reference only if no occurrence is
+    immediately preceded or followed by a token that plausibly continues the
+    same device noun phrase. The structural acceptance sets cover the small
+    command grammar (prepositions, articles, determiners, command verbs,
+    light connectors). Any extended occurrence rejects exact identity, so a
+    longer user-authored entity such as "Desk Lamp Backup", "Desk Lamp 2",
+    or "Fake Desk Lamp" can never collapse into the shorter display "Desk
+    Lamp". This is structural, not a suffix blacklist, and it fails closed.
+    """
+    boundary_ids = set()
+    for device in safe_context.devices:
+        if _display_name_is_generic_class_term(device):
+            continue
+        phrase = tuple(_normalize(device.display_name).split())
+        if not phrase:
+            continue
+        if not _has_token_phrase(request_tokens, phrase):
+            continue
+        if not _phrase_has_clean_boundary(request_tokens, phrase):
+            continue
+        boundary_ids.add(device.device_id)
+    return boundary_ids
+
+
+def _phrase_has_clean_boundary(tokens, phrase):
+    size = len(phrase)
+    for index in _phrase_start_indexes(tokens, phrase):
+        before_ok = index == 0 or tokens[index - 1] in ENTITY_BOUNDARY_BEFORE_TERMS
+        after_ok = (
+            index + size == len(tokens)
+            or tokens[index + size] in ENTITY_BOUNDARY_AFTER_TERMS
+        )
+        if not (before_ok and after_ok):
+            return False
+    return True
+
+
+def _display_phrase_present_device_ids(safe_context, request_tokens):
     present = set()
     for device in safe_context.devices:
         if _display_name_is_generic_class_term(device):
