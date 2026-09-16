@@ -1120,6 +1120,295 @@ class RoomNarrowingResolverTests(unittest.TestCase):
         self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
 
 
+class ExactDisplayNameResolutionTests(unittest.TestCase):
+    def test_exact_display_name_ignores_conflicting_room_never_other_device(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp near sala."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_exact_display_name_with_other_room_clarifies(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp in sala."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_exact_display_name_with_matching_room_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp in cuarto."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+        self.assertEqual(
+            plan.steps[0].canonical_command_text,
+            "device apply lamp_1 power.switch state=true",
+        )
+
+    def test_exact_display_name_without_room_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_generic_phrase_with_room_still_narrows_to_other_device(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on the lamp in sala."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="lamp",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+    def test_exact_other_display_name_with_mismatched_room_clarifies(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Floor Lamp in cuarto."),
+            notify_mutation("Floor Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_exact_display_name_matching_is_case_insensitive(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on DESK LAMP."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_exact_display_name_matching_is_accent_insensitive(self):
+        context = AISafeContext(
+            schema_version=PLAN_SCHEMA_VERSION,
+            user_request="Turn on the salon.",
+            devices=(
+                safe_device(
+                    "lamp_1",
+                    "Salón",
+                    "light",
+                    capabilities=default_capabilities(),
+                    room="cuarto",
+                ),
+                safe_device(
+                    "lamp_2",
+                    "Cocina",
+                    "light",
+                    capabilities=default_capabilities(),
+                    room="sala",
+                ),
+            ),
+            command_grammar=(),
+        )
+
+        plan = resolver().resolve(
+            context,
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="Salón",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_generic_class_display_name_does_not_hijack_generic_phrase(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Turn on the lamp.",
+                include_second_lamp=True,
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="lamp",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.clarification.reason_code, "ambiguous_device")
+        self.assertEqual(plan.clarification.candidate_options, ("lamp_1", "lamp_2"))
+
+    def test_grounded_device_id_keeps_precedence_over_exact_display_name(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp lamp_1 near sala."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                referenced_device_text="Desk Lamp",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_prende_la_luz_del_cuarto_still_executes_room_light(self):
+        plan = resolver().resolve(
+            light_pair_context("Prende la luz del cuarto."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_apaga_lamp_2_still_executes_explicit_device(self):
+        plan = resolver().resolve(
+            light_pair_context("Apaga lamp_2."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_2",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "false"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+    def test_unlock_door_never_executes(self):
+        plan = resolver().resolve(
+            lock_context("Unlock door_1."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="door_1",
+                capability_hint="lock.set",
+                raw_arguments=(("state", "false"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_question_light_in_sala_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Is the light in the sala on?"),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_device_id_with_ambiguous_generic_text_still_clarifies(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Turn on the lamp_1 lamp.",
+                include_second_lamp=True,
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                referenced_device_text="lamp",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_exact_display_name_with_unknown_location_fails_closed(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp near the patio."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+
+def notify_mutation(device_text):
+    return AIUnderstandingProposal(
+        intent="mutate",
+        referenced_device_text=device_text,
+        capability_hint="power.switch",
+        raw_arguments=(("state", "true"),),
+    )
+
+
+def light_pair_context(user_request):
+    return AISafeContext(
+        schema_version=PLAN_SCHEMA_VERSION,
+        user_request=user_request,
+        devices=(
+            safe_device(
+                "lamp_1",
+                "Desk Lamp",
+                "light",
+                capabilities=default_capabilities(),
+                room="cuarto",
+            ),
+            safe_device(
+                "lamp_2",
+                "Floor Lamp",
+                "light",
+                capabilities=default_capabilities(),
+                room="sala",
+            ),
+        ),
+        command_grammar=(),
+    )
+
+
+def lock_context(user_request):
+    return AISafeContext(
+        schema_version=PLAN_SCHEMA_VERSION,
+        user_request=user_request,
+        devices=(
+            safe_device(
+                "door_1",
+                "Main Door",
+                "lock",
+                capabilities=(
+                    AISafeCapability(name="status.read", kind="reading", parameters=()),
+                    AISafeCapability(
+                        name="lock.set",
+                        kind="action",
+                        parameters=(
+                            (
+                                ("name", "state"),
+                                ("required", True),
+                                ("type", "boolean"),
+                            ),
+                        ),
+                    ),
+                ),
+                room="entrada",
+            ),
+        ),
+        command_grammar=(),
+    )
+
+
 def resolver():
     return DeterministicUnderstandingResolver()
 

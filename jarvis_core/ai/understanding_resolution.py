@@ -273,6 +273,9 @@ def _resolve_base_device_candidates(safe_context, proposal):
             if id_candidates[0].device_id != text_candidates[0].device_id:
                 return ()
         return id_candidates
+    exact_candidates = _resolve_exact_display_name_candidates(safe_context)
+    if exact_candidates:
+        return exact_candidates
     if proposal.referenced_device_id:
         if proposal.referenced_device_text and text_grounded:
             return text_candidates
@@ -280,6 +283,43 @@ def _resolve_base_device_candidates(safe_context, proposal):
     if not text_grounded:
         return ()
     return text_candidates
+
+
+def _resolve_exact_display_name_candidates(safe_context):
+    """Resolve devices whose full display name appears in the user request.
+
+    This is the exact display-name identity layer: a request phrase that
+    matches a configured display name grounds that device even when generic
+    synonym matching would hit several candidates. Matching is token-boundary
+    safe and case- and accent-insensitive, and it never broadens through
+    DEVICE_TEXT_SYNONYMS. Grounded device ids already returned earlier with
+    higher precedence. Devices whose display name is a bare generic class
+    term ("Lamp" for a light, "Sensor" for a sensor) are excluded so generic
+    phrasing stays on the generic matching and room-narrowing path.
+    """
+    request_tokens = _normalized_tokens(safe_context.user_request)
+    if not request_tokens:
+        return ()
+    matches = []
+    for device in safe_context.devices:
+        if _display_name_is_generic_class_term(device):
+            continue
+        phrase = tuple(_normalize(device.display_name).split())
+        if not phrase:
+            continue
+        if _has_token_phrase(request_tokens, phrase):
+            matches.append(device)
+    return tuple(sorted(matches, key=lambda device: device.device_id))
+
+
+def _display_name_is_generic_class_term(device):
+    display_name = _normalize(device.display_name)
+    device_type = _normalize(device.device_type)
+    if not display_name:
+        return False
+    generic_class_terms = {device_type}
+    generic_class_terms.update(DEVICE_TEXT_SYNONYMS.get(device_type, ()))
+    return display_name in generic_class_terms
 
 
 def _resolve_device_id_candidates(safe_context, device_id):
