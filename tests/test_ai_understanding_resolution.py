@@ -1581,6 +1581,61 @@ class EntityBoundaryExactIdentityTests(unittest.TestCase):
         self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
 
 
+class ConnectorBoundaryExactIdentityTests(unittest.TestCase):
+    def test_connector_and_tail_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp and backup."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_connector_or_tail_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp or backup."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_connector_with_tail_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp with backup."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_connector_but_tail_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp but backup."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_connector_after_second_display_clarifies(self):
+        for request in (
+            "Turn on Desk Lamp and Floor Lamp.",
+            "Turn on Desk Lamp or Floor Lamp.",
+            "Turn on Desk Lamp with Floor Lamp.",
+            "Turn on Desk Lamp but Floor Lamp.",
+            "Turn on Floor Lamp and Desk Lamp.",
+        ):
+            with self.subTest(request=request):
+                plan = resolver().resolve(
+                    light_pair_context(request),
+                    notify_mutation("Desk Lamp"),
+                )
+
+                self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+                self.assertEqual(plan.steps, ())
+
+
 def notify_mutation(device_text):
     return AIUnderstandingProposal(
         intent="mutate",

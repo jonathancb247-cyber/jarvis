@@ -116,10 +116,6 @@ ENTITY_BOUNDARY_BEFORE_TERMS = frozenset(
         "turn",
         "switch",
         "please",
-        "and",
-        "or",
-        "with",
-        "but",
         "of",
         "my",
         "your",
@@ -137,7 +133,7 @@ ENTITY_BOUNDARY_BEFORE_TERMS = frozenset(
 ENTITY_BOUNDARY_AFTER_TERMS = frozenset(
     set(LOCATIVE_PREPOSITIONS)
     | set(LOCATIVE_ARTICLES)
-    | {"please", "and", "or", "with", "but"}
+    | {"please"}
 )
 
 
@@ -364,12 +360,16 @@ def _display_entity_boundary_device_ids(safe_context, request_tokens):
 
     A display phrase is a complete device reference only if no occurrence is
     immediately preceded or followed by a token that plausibly continues the
-    same device noun phrase. The structural acceptance sets cover the small
-    command grammar (prepositions, articles, determiners, command verbs,
-    light connectors). Any extended occurrence rejects exact identity, so a
-    longer user-authored entity such as "Desk Lamp Backup", "Desk Lamp 2",
-    or "Fake Desk Lamp" can never collapse into the shorter display "Desk
-    Lamp". This is structural, not a suffix blacklist, and it fails closed.
+    same device noun phrase. The structural acceptance sets cover only the
+    small command grammar that clearly begins a separate clause or location
+    (prepositions, articles, determiners, command verbs). Generic connectors
+    such as "and", "or", "with", or "but" are never boundary proof by
+    themselves because they do not prove the user finished naming the
+    device. Any extended occurrence rejects exact identity, so a longer
+    user-authored entity such as "Desk Lamp Backup", "Desk Lamp 2", "Fake
+    Desk Lamp", or "Desk Lamp and backup" can never collapse into the
+    shorter display "Desk Lamp". This is structural, not a suffix list, and
+    it fails closed.
     """
     boundary_ids = set()
     for device in safe_context.devices:
