@@ -1967,6 +1967,35 @@ class ExplicitUserRequestDeviceIdSafetyTests(unittest.TestCase):
         self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
         self.assertEqual(plan.steps, ())
 
+    def test_explicit_id_and_different_display_name_clarify(self):
+        for connector in ("and", "with", "but use", "or"):
+            request = f"Turn on lamp_2 {connector} Desk Lamp."
+            with self.subTest(request=request):
+                plan = resolver().resolve(
+                    light_pair_context(request),
+                    AIUnderstandingProposal(
+                        intent="mutate",
+                        capability_hint="power.switch",
+                        raw_arguments=(("state", "true"),),
+                    ),
+                )
+
+                self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+                self.assertEqual(plan.steps, ())
+
+    def test_explicit_id_and_matching_display_name_keep_same_device(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on lamp_2 and Floor Lamp."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
 
 def notify_mutation(device_text):
     return AIUnderstandingProposal(

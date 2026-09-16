@@ -302,8 +302,13 @@ def _resolve_base_device_candidates(safe_context, proposal):
     id_grounded = _device_id_is_grounded(user_request, proposal.referenced_device_id)
     text_grounded = _device_text_is_grounded(user_request, proposal.referenced_device_text)
     explicit_ids = _exact_user_request_device_ids(safe_context)
+    request_tokens = _normalized_tokens(user_request)
+    display_mentions = _display_phrase_present_device_ids(
+        safe_context,
+        request_tokens,
+    )
 
-    if len(explicit_ids) > 1:
+    if len(set(explicit_ids) | display_mentions) > 1:
         return ()
     explicit_id = explicit_ids[0] if explicit_ids else None
 
