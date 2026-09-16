@@ -273,7 +273,7 @@ def _resolve_base_device_candidates(safe_context, proposal):
             if id_candidates[0].device_id != text_candidates[0].device_id:
                 return ()
         return id_candidates
-    exact_candidates = _resolve_exact_display_name_candidates(safe_context)
+    exact_candidates = _resolve_exact_display_name_candidates(safe_context, proposal)
     if exact_candidates:
         return exact_candidates
     if proposal.referenced_device_id:
@@ -285,31 +285,73 @@ def _resolve_base_device_candidates(safe_context, proposal):
     return text_candidates
 
 
-def _resolve_exact_display_name_candidates(safe_context):
-    """Resolve devices whose full display name appears in the user request.
+def _resolve_exact_display_name_candidates(safe_context, proposal):
+    """Resolve a device whose display name equals the referenced entity span.
 
-    This is the exact display-name identity layer: a request phrase that
-    matches a configured display name grounds that device even when generic
-    synonym matching would hit several candidates. Matching is token-boundary
-    safe and case- and accent-insensitive, and it never broadens through
-    DEVICE_TEXT_SYNONYMS. Grounded device ids already returned earlier with
-    higher precedence. Devices whose display name is a bare generic class
-    term ("Lamp" for a light, "Sensor" for a sensor) are excluded so generic
-    phrasing stays on the generic matching and room-narrowing path.
+    Exact display-name identity is only claimed when the referenced device
+    text itself matches a configured display name after the existing safe
+    normalization: full normalized equality, case- and accent-insensitive,
+    token-boundary safe, with no fuzzy matching, no synonym expansion, no
+    prefix/substring containment, and no suffix or numeric stripping. The
+    model may propose the referenced text, but it never decides identity;
+    the proposal span must also occur verbatim (normalized) in the request so
+    identity is not invented. Generic class terms such as "lamp" or "light"
+    are never treated as exact identities, and a request that names more
+    than one configured display (for example "compare Desk Lamp with Floor
+    Lamp") cannot seize a single device. Grounded device ids already return
+    earlier with higher precedence.
     """
-    request_tokens = _normalized_tokens(safe_context.user_request)
-    if not request_tokens:
+    user_request = safe_context.user_request
+    referenced_text = proposal.referenced_device_text
+    referenced_norm = _normalize(referenced_text)
+    if not referenced_norm:
         return ()
-    matches = []
+    if _referenced_text_is_generic(referenced_text, safe_context):
+        return ()
+    if not _has_token_phrase(
+        _normalized_tokens(user_request),
+        tuple(referenced_norm.split()),
+    ):
+        return ()
+    matches = [
+        device
+        for device in safe_context.devices
+        if not _display_name_is_generic_class_term(device)
+        and _normalize(device.display_name) == referenced_norm
+    ]
+    if not matches:
+        return ()
+    if len(_display_phrase_present_device_ids(safe_context)) > 1:
+        return ()
+    return tuple(sorted(matches, key=lambda device: device.device_id))
+
+
+def _display_phrase_present_device_ids(safe_context):
+    request_tokens = _normalized_tokens(safe_context.user_request)
+    present = set()
     for device in safe_context.devices:
         if _display_name_is_generic_class_term(device):
             continue
         phrase = tuple(_normalize(device.display_name).split())
-        if not phrase:
-            continue
-        if _has_token_phrase(request_tokens, phrase):
-            matches.append(device)
-    return tuple(sorted(matches, key=lambda device: device.device_id))
+        if phrase and _has_token_phrase(request_tokens, phrase):
+            present.add(device.device_id)
+    return present
+
+
+def _referenced_text_is_generic(device_text, safe_context):
+    tokens = _normalized_tokens(device_text)
+    if not tokens:
+        return False
+    return all(token in _generic_device_text_terms(safe_context) for token in tokens)
+
+
+def _generic_device_text_terms(safe_context):
+    terms = set()
+    for synonyms in DEVICE_TEXT_SYNONYMS.values():
+        terms.update(synonyms)
+    for device in safe_context.devices:
+        terms.add(_normalize(device.device_type))
+    return terms
 
 
 def _display_name_is_generic_class_term(device):
@@ -333,6 +375,8 @@ def _resolve_device_id_candidates(safe_context, device_id):
 
 
 def _resolve_device_text_candidates(safe_context, device_text):
+    if not _referenced_text_is_generic(device_text, safe_context):
+        return ()
     text_terms = _semantic_terms(device_text)
     if not text_terms:
         return ()

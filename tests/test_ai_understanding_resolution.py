@@ -1346,6 +1346,110 @@ class ExactDisplayNameResolutionTests(unittest.TestCase):
         self.assertEqual(plan.steps, ())
 
 
+class ExactDisplayIdentitySafetyTests(unittest.TestCase):
+    def test_desk_lamp_backup_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp Backup."),
+            notify_mutation("Desk Lamp Backup"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_desk_lamp_2_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lamp 2."),
+            notify_mutation("Desk Lamp 2"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_desk_lampish_never_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on Desk Lampish."),
+            notify_mutation("Desk Lampish"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_partial_identity_needs_full_normalized_equality(self):
+        for request, text in (
+            ("Turn on Desk Lamp Backup.", "Desk Lamp Backup"),
+            ("Turn on Desk Lamp 2.", "Desk Lamp 2"),
+            ("Turn on Desk Lampish.", "Desk Lampish"),
+        ):
+            with self.subTest(request=request):
+                plan = resolver().resolve(
+                    light_pair_context(request),
+                    notify_mutation(text),
+                )
+
+                self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+                self.assertEqual(plan.steps, ())
+
+    def test_lowercase_referenced_text_is_case_insensitive_exact(self):
+        plan = resolver().resolve(
+            light_pair_context("TURN ON DESK LAMP."),
+            notify_mutation("desk lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_referenced_text_without_accent_normalizes_to_display(self):
+        plan = resolver().resolve(
+            accent_pair_context("Turn on the salon."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="salon",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_device_id_precedence_unchanged(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on lamp_1."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_two_display_names_in_request_never_seize_single_device(self):
+        plan = resolver().resolve(
+            light_pair_context("Compare Desk Lamp with Floor Lamp."),
+            notify_mutation("Desk Lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_generic_lampara_room_narrowing_still_resolves(self):
+        plan = resolver().resolve(
+            light_pair_context("Enciende la lampara del cuarto."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="lampara",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+
 def notify_mutation(device_text):
     return AIUnderstandingProposal(
         intent="mutate",
@@ -1370,6 +1474,30 @@ def light_pair_context(user_request):
             safe_device(
                 "lamp_2",
                 "Floor Lamp",
+                "light",
+                capabilities=default_capabilities(),
+                room="sala",
+            ),
+        ),
+        command_grammar=(),
+    )
+
+
+def accent_pair_context(user_request):
+    return AISafeContext(
+        schema_version=PLAN_SCHEMA_VERSION,
+        user_request=user_request,
+        devices=(
+            safe_device(
+                "lamp_1",
+                "Salón",
+                "light",
+                capabilities=default_capabilities(),
+                room="cuarto",
+            ),
+            safe_device(
+                "lamp_2",
+                "Cocina",
                 "light",
                 capabilities=default_capabilities(),
                 room="sala",
