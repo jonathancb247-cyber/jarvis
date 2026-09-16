@@ -276,7 +276,8 @@ def _resolve_device_candidates(safe_context, proposal):
     candidates = _resolve_base_device_candidates(safe_context, proposal)
     if not candidates:
         return candidates
-    return _apply_room_narrowing(safe_context, candidates)
+    narrowed = _apply_room_narrowing(safe_context, candidates)
+    return _restrict_by_explicit_user_request_device_ids(safe_context, narrowed)
 
 
 def _resolve_base_device_candidates(safe_context, proposal):
@@ -296,10 +297,20 @@ def _resolve_base_device_candidates(safe_context, proposal):
         if proposal.referenced_device_text:
             if not text_grounded:
                 return id_candidates
-            if len(text_candidates) != 1:
+            if len(text_candidates) == 1:
+                if id_candidates[0].device_id == text_candidates[0].device_id:
+                    return id_candidates
                 return ()
-            if id_candidates[0].device_id != text_candidates[0].device_id:
-                return ()
+            if (
+                _referenced_text_is_exact_device_id_literal(
+                    user_request,
+                    id_candidates[0].device_id,
+                    proposal.referenced_device_text,
+                )
+                and not _has_conflicting_power_switch_intents(user_request)
+            ):
+                return id_candidates
+            return ()
         return id_candidates
     exact_candidates = _resolve_exact_display_name_candidates(safe_context, proposal)
     if exact_candidates:
@@ -479,6 +490,49 @@ def _apply_room_narrowing(safe_context, candidates):
     if _request_has_unmatched_location(safe_context):
         return ()
     return candidates
+
+
+def _restrict_by_explicit_user_request_device_ids(safe_context, candidates):
+    """Fail closed when user-request device ids conflict with candidates.
+
+    An exact configured device id literally present in the user request is
+    deterministic evidence that no generic, display-name, or room path may
+    silently override. Multiple explicit ids are inherently ambiguous for
+    the single-device resolver and always clarify. A single explicit id may
+    keep the proposed election only when every elected candidate is that
+    same device; otherwise the selection is unsafe and clarifies.
+    """
+    explicit = _exact_user_request_device_ids(safe_context)
+    if not explicit:
+        return candidates
+    if len(explicit) > 1:
+        return ()
+    explicit_id = explicit[0]
+    candidate_ids = {device.device_id for device in candidates}
+    if candidate_ids == {explicit_id}:
+        return candidates
+    return ()
+
+
+def _exact_user_request_device_ids(safe_context):
+    """Configured device ids literally present in the user request.
+
+    Only exact token-safe equality is accepted. Substring, prefix, suffix,
+    numeric-normalized, and edit-distance variants never count as mentions.
+    Token-edge punctuation already handled by the shared tokenizer (for
+    example ",", "(", quotes) does not hide a mention, while embedded forms
+    such as "lamp_20", "lamp_2_backup", or "lamp_2-backup" remain distinct
+    tokens and never match a configured "lamp_2".
+    """
+    request_tokens = _normalized_tokens(safe_context.user_request)
+    if not request_tokens:
+        return ()
+    explicit = []
+    for device in safe_context.devices:
+        phrase = tuple(_normalize(device.device_id).split())
+        if phrase and _has_token_phrase(request_tokens, phrase):
+            explicit.append(device.device_id)
+    return tuple(dict.fromkeys(explicit))
 
 
 def _request_has_unmatched_location(safe_context):
@@ -695,6 +749,35 @@ def _device_id_is_grounded(user_request, device_id):
     if not device:
         return False
     return _has_exact_token(user_request, device)
+
+
+def _referenced_text_is_exact_device_id_literal(user_request, device_id, referenced_text):
+    """True when referenced text is the literal of a grounded device id.
+
+    The model already grounded the device id in the user request, and the
+    referenced text normalizes to that exact literal. Only literal equality
+    is accepted: "lamp_2" or punctuation-edged "lamp_2." confirm the model
+    span, while "lamp_20", "lamp_2_backup", or "lamp_2-b" never do.
+    """
+    device_normalized = _normalize(device_id)
+    referenced_normalized = _normalize(referenced_text)
+    if not device_normalized or not referenced_normalized:
+        return False
+    if referenced_normalized.strip(".=-") != device_normalized.strip(".=-"):
+        return False
+    return _device_id_is_grounded(user_request, device_id)
+
+
+def _has_conflicting_power_switch_intents(user_request):
+    """True when the request grounds both a power-on and a power-off intent.
+
+    A request such as "Turn on lamp_1 and apagar it" names conflicting
+    targets for the same device; a single canonical command cannot represent
+    both, so exact-ID literal confirmation must fail closed in that case.
+    """
+    return _has_imperative_power_switch(
+        user_request, target_state=True
+    ) and _has_imperative_power_switch(user_request, target_state=False)
 
 
 def _device_text_is_grounded(user_request, device_text):

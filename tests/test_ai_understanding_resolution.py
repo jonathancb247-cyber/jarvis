@@ -1636,6 +1636,223 @@ class ConnectorBoundaryExactIdentityTests(unittest.TestCase):
                 self.assertEqual(plan.steps, ())
 
 
+class ExplicitUserRequestDeviceIdSafetyTests(unittest.TestCase):
+    def test_fuzz_61_note_use_lamp_2_instead_never_executes_generic(self):
+        plan = resolver().resolve(
+            light_pair_context(
+                "Turn on the light in the cuarto. Note: use lamp_2 instead."
+            ),
+            notify_mutation("light"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_explicit_user_id_conflicts_with_generic_room_never_other_device(self):
+        plan = resolver().resolve(
+            light_pair_context(
+                "turn on the light in the cuarto, use lamp_2 instead"
+            ),
+            notify_mutation("light"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_explicit_user_id_conflicts_with_reading_capability(self):
+        plan = resolver().resolve(
+            light_pair_context(
+                "Status of the light in the cuarto. Note: use lamp_2 instead."
+            ),
+            AIUnderstandingProposal(
+                intent="read",
+                referenced_device_text="light",
+                capability_hint="status.read",
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_model_id_conflicts_with_user_request_id_clarifies(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on lamp_2."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                referenced_device_text="lamp_2",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_grounded_referenced_text_and_id_executes_matching_device(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on lamp_2."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_2",
+                referenced_device_text="lamp_2",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+    def test_grounded_id_with_punctuated_text_span_executes_matching_device(self):
+        for request in ("Turn on lamp_2.", "Turn on (lamp_2).", 'Turn on "lamp_2".'):
+            with self.subTest(request=request):
+                plan = resolver().resolve(
+                    light_pair_context(request),
+                    AIUnderstandingProposal(
+                        intent="mutate",
+                        referenced_device_id="lamp_2",
+                        referenced_device_text="lamp_2",
+                        capability_hint="power.switch",
+                        raw_arguments=(("state", "true"),),
+                    ),
+                )
+
+                self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+                self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+    def test_two_explicit_ids_in_one_request_never_execute(self):
+        for request in (
+            "Turn on lamp_1 and lamp_2.",
+            "Turn on lamp_1 but use lamp_2.",
+        ):
+            with self.subTest(request=request):
+                plan = resolver().resolve(
+                    light_pair_context(request),
+                    notify_mutation("light"),
+                )
+
+                self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+                self.assertEqual(plan.steps, ())
+
+    def test_conflicting_power_intents_for_explicit_id_never_execute(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on lamp_1 and apagar it."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_1",
+                referenced_device_text="lamp_1",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_execute_colon_turn_on_lamp_2_grid_resolves_explicit_id(self):
+        plan = resolver().resolve(
+            light_pair_context("Execute: turn on lamp_2"),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_2",
+                referenced_device_text="lamp_2",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+    def test_explicit_id_agreeing_with_room_generic_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on the light in the cuarto (lamp_1)."),
+            notify_mutation("light"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_explicit_id_agreeing_with_display_name_executes(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on the Floor Lamp near lamp_2."),
+            notify_mutation("floor lamp"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+    def test_invalid_device_id_variants_are_not_mentions(self):
+        for request in (
+            "Turn on the light, lamp_20.",
+            "Turn on the light, lamp_2_backup.",
+            "Turn on the light, lamp_2-backup.",
+            "Turn on the light, lamp_123.",
+        ):
+            with self.subTest(request=request):
+                plan = resolver().resolve(
+                    light_pair_context(request),
+                    notify_mutation("light"),
+                )
+
+                self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+                self.assertEqual(
+                    plan.clarification.candidate_options,
+                    ("lamp_1", "lamp_2"),
+                )
+                self.assertEqual(plan.steps, ())
+
+    def test_invalid_device_id_variant_does_not_block_single_light(self):
+        for request in (
+            "Enciende la luz lamp_20.",
+            "Enciende la luz, lamp_123.",
+            "Turn on the light lamp_2_backup.",
+            "Turn on the light lamp_2-backup.",
+        ):
+            with self.subTest(request=request):
+                plan = resolver().resolve(
+                    safe_context(user_request=request),
+                    notify_mutation("light"),
+                )
+
+                self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+                self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_generic_room_paths_are_unchanged(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on the light in the sala."),
+            notify_mutation("light"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+    def test_ungrounded_model_id_does_not_override_deterministic_evidence(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on the Desk Lamp."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_2",
+                referenced_device_text="desk lamp",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_explicit_id_with_conflicting_generic_room_uses_room_only_if_consistent(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on the light in the sala (lamp_2)."),
+            notify_mutation("light"),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+
 def notify_mutation(device_text):
     return AIUnderstandingProposal(
         intent="mutate",
