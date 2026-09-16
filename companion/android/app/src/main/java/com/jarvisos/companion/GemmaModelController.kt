@@ -144,6 +144,7 @@ class GemmaModelController(
         val promptResult = when (modelFamily) {
             ModelPromptFamily.FUNCTION_GEMMA -> FunctionGemmaPromptAdapter.build(request)
             ModelPromptFamily.GEMMA -> GemmaPromptBuilder.build(request)
+            ModelPromptFamily.QWEN -> QwenChatMLPromptAdapter.build(request)
         }
         if (promptResult is GemmaPromptBuilder.PromptBuildResult.Failure) {
             return GenerateOutcome.Failure(400, "bad_request", promptResult.message)
@@ -179,9 +180,10 @@ class GemmaModelController(
             return GenerateOutcome.Failure(413, "response_too_large", "Model output exceeds maximum size.")
         }
         return when (val extracted = when (modelFamily) {
-                ModelPromptFamily.FUNCTION_GEMMA -> FunctionGemmaOutputDecoder.extract(trimmed)
-                ModelPromptFamily.GEMMA -> GemmaJsonExtractor.extract(trimmed)
-            }) {
+            ModelPromptFamily.FUNCTION_GEMMA -> FunctionGemmaOutputDecoder.extract(trimmed)
+            ModelPromptFamily.GEMMA -> GemmaJsonExtractor.extract(trimmed)
+            ModelPromptFamily.QWEN -> QwenChatMLOutputExtractor.extract(trimmed)
+        }) {
             is GemmaJsonExtractor.ExtractionResult.Success ->
                 GenerateOutcome.Success(extracted.json)
             is GemmaJsonExtractor.ExtractionResult.Rejected -> {
