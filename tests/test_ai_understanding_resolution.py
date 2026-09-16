@@ -1852,6 +1852,121 @@ class ExplicitUserRequestDeviceIdSafetyTests(unittest.TestCase):
         self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
         self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
 
+    def test_omitted_referenced_id_with_text_id_seeds_explicit_device(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on lamp_2."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="lamp_2",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+    def test_fully_omitted_identity_seeds_explicit_device(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on lamp_2."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+    def test_omitted_referenced_id_with_punctuated_span_seeds_explicit_device(self):
+        for request in ("Turn on lamp_2.", "Turn on (lamp_2).", 'Turn on "lamp_2".'):
+            with self.subTest(request=request):
+                plan = resolver().resolve(
+                    light_pair_context(request),
+                    AIUnderstandingProposal(
+                        intent="mutate",
+                        capability_hint="power.switch",
+                        raw_arguments=(("state", "true"),),
+                    ),
+                )
+
+                self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+                self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+    def test_two_explicit_ids_with_omitted_identity_clarify(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on lamp_1 and lamp_2."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_lookalike_ids_never_seed_without_grounded_reference(self):
+        for request in (
+            "Turn on lamp_20.",
+            "Turn on lamp_2_backup.",
+            "Turn on lamp_2-backup.",
+            "Turn on lamp_123.",
+        ):
+            with self.subTest(request=request):
+                plan = resolver().resolve(
+                    light_pair_context(request),
+                    AIUnderstandingProposal(
+                        intent="mutate",
+                        capability_hint="power.switch",
+                        raw_arguments=(("state", "true"),),
+                    ),
+                )
+
+                self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+                self.assertEqual(plan.steps, ())
+
+    def test_lookalike_id_never_steals_single_light_without_grounded_reference(self):
+        plan = resolver().resolve(
+            safe_context(user_request="Turn on lamp_20."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_ungrounded_generic_text_seeds_explicit_device_not_other_light(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on lamp_2."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_2")
+
+    def test_seeded_explicit_id_respects_room_conflict(self):
+        plan = resolver().resolve(
+            light_pair_context("Turn on lamp_2 in cuarto."),
+            AIUnderstandingProposal(
+                intent="mutate",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
 
 def notify_mutation(device_text):
     return AIUnderstandingProposal(

@@ -281,6 +281,15 @@ def _resolve_device_candidates(safe_context, proposal):
 
 
 def _resolve_base_device_candidates(safe_context, proposal):
+    """Elect identity candidates for the single-device resolver.
+
+    An exact configured device id literally present in the user request is
+    authoritative evidence and must seed the candidate set even when the
+    model proposal omits or contradicts device identity. Multiple explicit
+    ids, or a proposed id that contradicts the explicit id, fail closed.
+    Generic referenced text still flows through the legacy generic chain so
+    room narrowing and the explicit-id restriction gate reconcile it.
+    """
     user_request = safe_context.user_request
     id_candidates = _resolve_device_id_candidates(
         safe_context,
@@ -292,6 +301,14 @@ def _resolve_base_device_candidates(safe_context, proposal):
     )
     id_grounded = _device_id_is_grounded(user_request, proposal.referenced_device_id)
     text_grounded = _device_text_is_grounded(user_request, proposal.referenced_device_text)
+    explicit_ids = _exact_user_request_device_ids(safe_context)
+
+    if len(explicit_ids) > 1:
+        return ()
+    explicit_id = explicit_ids[0] if explicit_ids else None
+
+    if explicit_id and proposal.referenced_device_id and proposal.referenced_device_id != explicit_id:
+        return ()
 
     if proposal.referenced_device_id and len(id_candidates) == 1 and id_grounded:
         if proposal.referenced_device_text:
@@ -314,14 +331,20 @@ def _resolve_base_device_candidates(safe_context, proposal):
         return id_candidates
     exact_candidates = _resolve_exact_display_name_candidates(safe_context, proposal)
     if exact_candidates:
+        if explicit_id and {
+            device.device_id for device in exact_candidates
+        } != {explicit_id}:
+            return ()
         return exact_candidates
     if proposal.referenced_device_id:
         if proposal.referenced_device_text and text_grounded:
             return text_candidates
         return ()
-    if not text_grounded:
-        return ()
-    return text_candidates
+    if text_candidates and text_grounded:
+        return text_candidates
+    if explicit_id:
+        return _resolve_device_id_candidates(safe_context, explicit_id)
+    return ()
 
 
 def _resolve_exact_display_name_candidates(safe_context, proposal):
