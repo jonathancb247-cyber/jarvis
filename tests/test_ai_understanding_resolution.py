@@ -792,6 +792,334 @@ class DeterministicUnderstandingResolverTests(unittest.TestCase):
             self.assertFalse(imports & forbidden)
 
 
+class RoomNarrowingResolverTests(unittest.TestCase):
+    def test_one_light_in_room_resolves_execute_candidate(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz del cuarto.",
+                include_second_lamp=False,
+                rooms={"lamp_1": "cuarto"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_one_light_unknown_room_never_executes(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz del garage.",
+                include_second_lamp=False,
+                rooms={"lamp_1": "cuarto"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_one_light_known_room_still_resolves_after_unknown_room_gate(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz del cuarto.",
+                include_second_lamp=False,
+                rooms={"lamp_1": "cuarto"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_one_light_without_room_language_preserves_previous_behavior(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz.",
+                include_second_lamp=False,
+                rooms={"lamp_1": "cuarto"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_two_known_rooms_with_unknown_requested_room_never_chooses_either(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz del garage.",
+                include_second_lamp=True,
+                rooms={"lamp_1": "cuarto", "lamp_2": "sala"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.clarification.candidate_options, ())
+
+    def test_explicit_id_with_unmatched_location_clarifies(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Lee status.read de lamp_1 en el garage.",
+                include_second_lamp=False,
+                rooms={"lamp_1": "cuarto"},
+            ),
+            AIUnderstandingProposal(
+                intent="read",
+                referenced_device_id="lamp_1",
+                capability_hint="status.read",
+                operation_hint="read",
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(plan.steps, ())
+
+    def test_two_lights_same_room_clarifies(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz del cuarto.",
+                include_second_lamp=True,
+                rooms={"lamp_1": "cuarto", "lamp_2": "cuarto"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+        self.assertEqual(
+            plan.clarification.reason_code,
+            "ambiguous_device",
+        )
+
+    def test_same_type_different_rooms_room_narrows_safely(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz del cuarto.",
+                include_second_lamp=True,
+                rooms={"lamp_1": "cuarto", "lamp_2": "sala"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+        self.assertEqual(
+            plan.steps[0].canonical_command_text,
+            "device apply lamp_1 power.switch state=true",
+        )
+
+    def test_unknown_room_term_fails_closed(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz del patio.",
+                include_second_lamp=True,
+                rooms={"lamp_1": "cuarto", "lamp_2": "sala"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+
+    def test_explicit_id_with_conflicting_room_clarifies(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Lee status.read de lamp_1 en el cuarto.",
+                include_second_lamp=True,
+                rooms={"lamp_1": "sala", "lamp_2": "cuarto"},
+            ),
+            AIUnderstandingProposal(
+                intent="read",
+                referenced_device_id="lamp_1",
+                capability_hint="status.read",
+                operation_hint="read",
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+
+    def test_exact_display_name_with_conflicting_room_clarifies(self):
+        context = AISafeContext(
+            schema_version=PLAN_SCHEMA_VERSION,
+            user_request="Lee el estado de la Velador del cuarto.",
+            devices=(
+                safe_device(
+                    "lamp_1",
+                    "Velador",
+                    "light",
+                    capabilities=default_capabilities(),
+                    room="sala",
+                ),
+                safe_device(
+                    "lamp_2",
+                    "Estudio",
+                    "light",
+                    capabilities=default_capabilities(),
+                    room="cuarto",
+                ),
+            ),
+            command_grammar=(),
+        )
+
+        plan = resolver().resolve(
+            context,
+            AIUnderstandingProposal(
+                intent="read",
+                referenced_device_text="velador",
+                capability_hint="status.read",
+                operation_hint="read",
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+
+    def test_no_room_mention_keeps_current_behavior(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz.",
+                include_second_lamp=True,
+                rooms={"lamp_1": "cuarto", "lamp_2": "sala"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+
+    def test_room_matching_is_case_insensitive(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz de la Sala.",
+                include_second_lamp=True,
+                rooms={"lamp_1": "Sala", "lamp_2": "cuarto"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_room_matching_is_accent_insensitive(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz de la habitacion.",
+                include_second_lamp=True,
+                rooms={"lamp_1": "Habitación", "lamp_2": "Baño"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_habitacion_does_not_match_configured_cuarto(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz de la habitación.",
+                include_second_lamp=True,
+                rooms={"lamp_1": "cuarto", "lamp_2": "sala"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+
+    def test_model_proposed_device_id_cannot_bypass_room_conflict(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende la luz del cuarto.",
+                include_second_lamp=True,
+                rooms={"lamp_1": "cuarto", "lamp_2": "sala"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_id="lamp_2",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_EXECUTE)
+        self.assertEqual(plan.steps[0].target_device_id, "lamp_1")
+
+    def test_room_only_request_never_executes(self):
+        plan = resolver().resolve(
+            safe_context(
+                user_request="Enciende el cuarto.",
+                include_second_lamp=True,
+                rooms={"lamp_1": "cuarto", "lamp_2": "sala"},
+            ),
+            AIUnderstandingProposal(
+                intent="mutate",
+                referenced_device_text="light",
+                capability_hint="power.switch",
+                raw_arguments=(("state", "true"),),
+            ),
+        )
+
+        self.assertEqual(plan.kind, PLAN_KIND_CLARIFY)
+
+
 def resolver():
     return DeterministicUnderstandingResolver()
 
@@ -801,13 +1129,16 @@ def safe_context(
     user_request="Lee el estado de lamp_1.",
     include_second_lamp=False,
     capabilities=None,
+    rooms=None,
 ):
+    rooms = rooms or {}
     devices = [
         safe_device(
             "lamp_1",
             "Lamp",
             "light",
             capabilities=capabilities or default_capabilities(),
+            room=rooms.get("lamp_1"),
         )
     ]
     if include_second_lamp:
@@ -817,6 +1148,7 @@ def safe_context(
                 "Desk Lamp",
                 "light",
                 capabilities=default_capabilities(),
+                room=rooms.get("lamp_2"),
             )
         )
     return AISafeContext(
@@ -827,13 +1159,14 @@ def safe_context(
     )
 
 
-def safe_device(device_id, display_name, device_type, *, capabilities):
+def safe_device(device_id, display_name, device_type, *, capabilities, room=None):
     return AISafeDevice(
         device_id=device_id,
         display_name=display_name,
         device_type=device_type,
         capabilities=tuple(capabilities),
         state=AISafeDeviceState(status="known", semantic_properties=(("power", False),)),
+        room=room,
     )
 
 

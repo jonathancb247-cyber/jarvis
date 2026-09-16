@@ -221,9 +221,78 @@ class RuntimeConfigurationLoaderTests(unittest.TestCase):
         with self.assertConfigError(CONFIG_INVALID):
             RuntimeConfigurationLoader().load(path)
 
-    def test_non_empty_metadata_rejected(self):
+    def test_metadata_room_allowed(self):
         payload = valid_profile()
-        payload["devices"][0]["metadata"] = {"room": "lab"}
+        payload["devices"][0]["metadata"] = {"room": "Habitación Principal"}
+        path = self.write_profile(payload)
+
+        profile = RuntimeConfigurationLoader().load(path)
+
+        self.assertEqual(
+            profile.devices[0].metadata,
+            {"room": "Habitación Principal"},
+        )
+
+    def test_metadata_unknown_key_rejected(self):
+        payload = valid_profile()
+        payload["devices"][0]["metadata"] = {"serial": "abc"}
+        path = self.write_profile(payload)
+
+        with self.assertConfigError(CONFIG_INVALID):
+            RuntimeConfigurationLoader().load(path)
+
+    def test_metadata_mixed_room_and_other_key_rejected(self):
+        payload = valid_profile()
+        payload["devices"][0]["metadata"] = {"room": "sala", "floor": "1"}
+        path = self.write_profile(payload)
+
+        with self.assertConfigError(CONFIG_INVALID):
+            RuntimeConfigurationLoader().load(path)
+
+    def test_metadata_room_non_string_rejected(self):
+        payload = valid_profile()
+        payload["devices"][0]["metadata"] = {"room": ["sala"]}
+        path = self.write_profile(payload)
+
+        with self.assertConfigError(CONFIG_INVALID):
+            RuntimeConfigurationLoader().load(path)
+
+    def test_metadata_room_blank_treated_as_absent(self):
+        payload = valid_profile()
+        payload["devices"][0]["metadata"] = {"room": "   "}
+        path = self.write_profile(payload)
+
+        profile = RuntimeConfigurationLoader().load(path)
+
+        self.assertEqual(profile.devices[0].metadata, {})
+
+    def test_metadata_room_oversized_rejected(self):
+        payload = valid_profile()
+        payload["devices"][0]["metadata"] = {"room": "x" * 65}
+        path = self.write_profile(payload)
+
+        with self.assertConfigError(CONFIG_INVALID):
+            RuntimeConfigurationLoader().load(path)
+
+    def test_metadata_room_path_rejected(self):
+        payload = valid_profile()
+        payload["devices"][0]["metadata"] = {"room": "a/b"}
+        path = self.write_profile(payload)
+
+        with self.assertConfigError(CONFIG_INVALID):
+            RuntimeConfigurationLoader().load(path)
+
+    def test_metadata_room_url_rejected(self):
+        payload = valid_profile()
+        payload["devices"][0]["metadata"] = {"room": "https://example.invalid"}
+        path = self.write_profile(payload)
+
+        with self.assertConfigError(CONFIG_INVALID):
+            RuntimeConfigurationLoader().load(path)
+
+    def test_metadata_room_ip_like_value_rejected(self):
+        payload = valid_profile()
+        payload["devices"][0]["metadata"] = {"room": "192.168.1.50"}
         path = self.write_profile(payload)
 
         with self.assertConfigError(CONFIG_INVALID):
@@ -458,6 +527,15 @@ class RuntimeConfigurationLoaderTests(unittest.TestCase):
         self.assertTrue(
             all(isinstance(capability, DeviceCapability) for capability in devices[0].capabilities)
         )
+
+    def test_materialize_devices_with_room(self):
+        payload = valid_profile()
+        payload["devices"][0]["metadata"] = {"room": "Cuarto"}
+        profile = RuntimeConfigurationLoader().load(self.write_profile(payload))
+
+        devices = build_devices(profile)
+
+        self.assertEqual(devices[0].metadata, {"room": "Cuarto"})
 
     def test_materialize_http_bindings(self):
         profile = RuntimeConfigurationLoader().load(self.write_profile(valid_profile()))

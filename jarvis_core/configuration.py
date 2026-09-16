@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import json
 from pathlib import Path
 
-from jarvis_core.devices import Device, DeviceCapability, DeviceState
+from jarvis_core.devices import Device, DeviceCapability, DeviceState, room_label
 from jarvis_core.http_driver import HttpDeviceBinding
 from jarvis_core.mqtt_driver import MQTTDeviceBinding
 
@@ -239,7 +239,7 @@ class RuntimeConfigurationLoader:
                 raise ConfigurationError(CONFIG_INVALID)
             if not isinstance(capabilities_payload, list):
                 raise ConfigurationError(CONFIG_INVALID)
-            if not isinstance(metadata, dict) or metadata:
+            if not isinstance(metadata, dict):
                 raise ConfigurationError(CONFIG_INVALID)
             capabilities = self._parse_capabilities(capabilities_payload)
             devices.append(
@@ -248,7 +248,7 @@ class RuntimeConfigurationLoader:
                     name=name,
                     type=device_type,
                     capabilities=tuple(capabilities),
-                    metadata={},
+                    metadata=_parse_device_metadata(metadata),
                 )
             )
         return devices
@@ -417,7 +417,7 @@ def build_devices(profile):
                 type=device_config.type,
                 capabilities=capabilities,
                 state=DeviceState(status="unknown"),
-                metadata={},
+                metadata=device_config.metadata.copy(),
             )
         )
     return devices
@@ -475,6 +475,22 @@ def _is_valid_local_path_string(value):
     if "$" in value or "%" in value:
         return False
     return True
+
+
+def _parse_device_metadata(metadata):
+    if not metadata:
+        return {}
+    if set(metadata.keys()) != {"room"}:
+        raise ConfigurationError(CONFIG_INVALID)
+    value = metadata["room"]
+    if not isinstance(value, str):
+        raise ConfigurationError(CONFIG_INVALID)
+    if not value.strip():
+        return {}
+    room = room_label(value)
+    if room is None:
+        raise ConfigurationError(CONFIG_INVALID)
+    return {"room": room}
 
 
 def _require_exact_fields(payload, allowed, code):

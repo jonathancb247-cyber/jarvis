@@ -77,6 +77,36 @@ DEVICE_TEXT_SYNONYMS = {
     "luces": {"light", "lights", "luz", "luces", "lampara", "lamp", "lamps"},
     "lampara": {"light", "lights", "luz", "luces", "lampara", "lamp", "lamps"},
 }
+LOCATIVE_PREPOSITIONS = {
+    "de",
+    "del",
+    "en",
+    "al",
+    "desde",
+    "in",
+    "at",
+    "near",
+    "on",
+    "by",
+    "inside",
+}
+LOCATIVE_ARTICLES = {
+    "el",
+    "la",
+    "los",
+    "las",
+    "lo",
+    "un",
+    "una",
+    "unos",
+    "unas",
+    "the",
+    "a",
+    "an",
+    "del",
+    "al",
+}
+DEVICE_ROLE_ANCHOR_TERMS = ("dispositivo", "dispositivos", "device", "devices")
 
 
 class DeterministicUnderstandingResolver:
@@ -215,6 +245,13 @@ class DeterministicUnderstandingResolver:
 
 
 def _resolve_device_candidates(safe_context, proposal):
+    candidates = _resolve_base_device_candidates(safe_context, proposal)
+    if not candidates:
+        return candidates
+    return _apply_room_narrowing(safe_context, candidates)
+
+
+def _resolve_base_device_candidates(safe_context, proposal):
     user_request = safe_context.user_request
     id_candidates = _resolve_device_id_candidates(
         safe_context,
@@ -270,6 +307,67 @@ def _resolve_device_text_candidates(safe_context, device_text):
         )
     ]
     return tuple(sorted(candidates, key=lambda device: device.device_id))
+
+
+def _apply_room_narrowing(safe_context, candidates):
+    mentioned = _mentioned_room_labels(safe_context)
+    if len(mentioned) > 1:
+        return ()
+    if len(mentioned) == 1:
+        room = next(iter(mentioned))
+        return tuple(
+            device
+            for device in candidates
+            if device.room and _normalize(device.room) == room
+        )
+    if _request_has_unmatched_location(safe_context):
+        return ()
+    return candidates
+
+
+def _request_has_unmatched_location(safe_context):
+    """Detect location-like language that mentions no configured room.
+
+    A request such as "enciende la luz del garage" with no configured room
+    named "garage" must never fall through to the only generic light. This
+    is a small fail-closed grammar over locative preposition phrases in the
+    current command language (Spanish/English). Arbitrary unknown room
+    language outside this pattern cannot be recognized deterministically
+    without heuristic NLP; unmatched locative phrasing always clarifies and
+    never executes.
+    """
+    tokens = _normalized_tokens(safe_context.user_request)
+    if len(tokens) < 2:
+        return False
+    anchors = set()
+    for device in safe_context.devices:
+        anchors.update(_semantic_terms(device.device_id))
+        anchors.update(_semantic_terms(device.display_name))
+        anchors.update(_semantic_terms(device.device_type))
+    for role_term in DEVICE_ROLE_ANCHOR_TERMS:
+        anchors.update(_semantic_terms(role_term))
+    for index, token in enumerate(tokens):
+        if token not in LOCATIVE_PREPOSITIONS:
+            continue
+        scanned = index + 1
+        while scanned < len(tokens) and tokens[scanned] in LOCATIVE_ARTICLES:
+            scanned += 1
+        if scanned >= len(tokens):
+            continue
+        if tokens[scanned] not in anchors:
+            return True
+    return False
+
+
+def _mentioned_room_labels(safe_context):
+    rooms = {device.room for device in safe_context.devices if device.room}
+    request_tokens = _normalized_tokens(safe_context.user_request)
+    mentioned = set()
+    for room in rooms:
+        room_terms = tuple(_normalize(room).split())
+        if _has_token_phrase(request_tokens, room_terms):
+            mentioned.add(_normalize(room))
+    return mentioned
 
 
 def _find_capability(device, capability_hint):
