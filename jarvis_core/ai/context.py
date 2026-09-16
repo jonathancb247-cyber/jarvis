@@ -14,7 +14,7 @@ from jarvis_core.ai.contracts import (
     AISafeDeviceState,
     AISafePolicyContext,
 )
-from jarvis_core.devices import DeviceCapability
+from jarvis_core.devices import DeviceCapability, room_label
 
 
 SAFE_PROPERTY_NAME = re.compile(r"^[a-zA-Z0-9_.-]{1,64}$")
@@ -97,6 +97,7 @@ class SafeContextBuilder:
             device_type=_sanitize_text(device.type, 128),
             capabilities=capabilities,
             state=self._project_state(device.state),
+            room=_project_room(device.metadata),
         )
 
     def _project_capability(self, capability):
@@ -191,3 +192,9 @@ def _sanitize_text(value, max_length):
     if not sanitized:
         return "unknown"
     return sanitized[:max_length]
+
+
+def _project_room(metadata):
+    if not isinstance(metadata, dict):
+        return None
+    return room_label(metadata.get("room"))

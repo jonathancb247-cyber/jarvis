@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass, field
 
+from jarvis_core.devices import MAX_ROOM_LENGTH
+
 
 PLAN_SCHEMA_VERSION = 1
 PLAN_KIND_EXECUTE = "execute"
@@ -210,6 +212,7 @@ class AISafeDevice:
     device_type: str
     capabilities: tuple = field(default_factory=tuple)
     state: AISafeDeviceState = None
+    room: str | None = None
 
     def __post_init__(self):
         _require_bounded_string(self.device_id, "AISafeDevice device_id")
@@ -224,6 +227,7 @@ class AISafeDevice:
                 raise ValueError("AISafeDevice capabilities are invalid")
         if not isinstance(self.state, AISafeDeviceState):
             raise ValueError("AISafeDevice state is required")
+        _validate_optional_room(self.room)
 
 
 @dataclass(frozen=True)
@@ -361,6 +365,15 @@ def _validate_optional_bounded_string(value, label):
     if value is None:
         return
     _require_bounded_string(value, label)
+
+
+def _validate_optional_room(value):
+    if value is None:
+        return
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("AISafeDevice room must be None or a non-empty string")
+    if len(value) > MAX_ROOM_LENGTH:
+        raise ValueError("AISafeDevice room exceeds maximum length")
 
 
 def _validate_string_tuple(value, label, max_items=None):

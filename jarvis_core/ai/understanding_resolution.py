@@ -77,6 +77,64 @@ DEVICE_TEXT_SYNONYMS = {
     "luces": {"light", "lights", "luz", "luces", "lampara", "lamp", "lamps"},
     "lampara": {"light", "lights", "luz", "luces", "lampara", "lamp", "lamps"},
 }
+LOCATIVE_PREPOSITIONS = {
+    "de",
+    "del",
+    "en",
+    "al",
+    "desde",
+    "in",
+    "at",
+    "near",
+    "on",
+    "by",
+    "inside",
+}
+LOCATIVE_ARTICLES = {
+    "el",
+    "la",
+    "los",
+    "las",
+    "lo",
+    "un",
+    "una",
+    "unos",
+    "unas",
+    "the",
+    "a",
+    "an",
+    "del",
+    "al",
+}
+DEVICE_ROLE_ANCHOR_TERMS = ("dispositivo", "dispositivos", "device", "devices")
+ENTITY_BOUNDARY_BEFORE_TERMS = frozenset(
+    set(LOCATIVE_PREPOSITIONS)
+    | set(LOCATIVE_ARTICLES)
+    | POWER_SWITCH_ON_VERBS
+    | POWER_SWITCH_OFF_VERBS
+    | {
+        "turn",
+        "switch",
+        "please",
+        "of",
+        "my",
+        "your",
+        "our",
+        "their",
+        "his",
+        "her",
+        "its",
+        "this",
+        "that",
+        "these",
+        "those",
+    }
+)
+ENTITY_BOUNDARY_AFTER_TERMS = frozenset(
+    set(LOCATIVE_PREPOSITIONS)
+    | set(LOCATIVE_ARTICLES)
+    | {"please"}
+)
 
 
 class DeterministicUnderstandingResolver:
@@ -215,6 +273,23 @@ class DeterministicUnderstandingResolver:
 
 
 def _resolve_device_candidates(safe_context, proposal):
+    candidates = _resolve_base_device_candidates(safe_context, proposal)
+    if not candidates:
+        return candidates
+    narrowed = _apply_room_narrowing(safe_context, candidates)
+    return _restrict_by_explicit_user_request_device_ids(safe_context, narrowed)
+
+
+def _resolve_base_device_candidates(safe_context, proposal):
+    """Elect identity candidates for the single-device resolver.
+
+    An exact configured device id literally present in the user request is
+    authoritative evidence and must seed the candidate set even when the
+    model proposal omits or contradicts device identity. Multiple explicit
+    ids, or a proposed id that contradicts the explicit id, fail closed.
+    Generic referenced text still flows through the legacy generic chain so
+    room narrowing and the explicit-id restriction gate reconcile it.
+    """
     user_request = safe_context.user_request
     id_candidates = _resolve_device_id_candidates(
         safe_context,
@@ -226,23 +301,178 @@ def _resolve_device_candidates(safe_context, proposal):
     )
     id_grounded = _device_id_is_grounded(user_request, proposal.referenced_device_id)
     text_grounded = _device_text_is_grounded(user_request, proposal.referenced_device_text)
+    explicit_ids = _exact_user_request_device_ids(safe_context)
+    request_tokens = _normalized_tokens(user_request)
+    display_mentions = _display_phrase_present_device_ids(
+        safe_context,
+        request_tokens,
+    )
+
+    if len(set(explicit_ids) | display_mentions) > 1:
+        return ()
+    explicit_id = explicit_ids[0] if explicit_ids else None
+
+    if explicit_id and proposal.referenced_device_id and proposal.referenced_device_id != explicit_id:
+        return ()
 
     if proposal.referenced_device_id and len(id_candidates) == 1 and id_grounded:
         if proposal.referenced_device_text:
             if not text_grounded:
                 return id_candidates
-            if len(text_candidates) != 1:
+            if len(text_candidates) == 1:
+                if id_candidates[0].device_id == text_candidates[0].device_id:
+                    return id_candidates
                 return ()
-            if id_candidates[0].device_id != text_candidates[0].device_id:
-                return ()
+            if (
+                _referenced_text_is_exact_device_id_literal(
+                    user_request,
+                    id_candidates[0].device_id,
+                    proposal.referenced_device_text,
+                )
+                and not _has_conflicting_power_switch_intents(user_request)
+            ):
+                return id_candidates
+            return ()
         return id_candidates
+    exact_candidates = _resolve_exact_display_name_candidates(safe_context, proposal)
+    if exact_candidates:
+        if explicit_id and {
+            device.device_id for device in exact_candidates
+        } != {explicit_id}:
+            return ()
+        return exact_candidates
     if proposal.referenced_device_id:
         if proposal.referenced_device_text and text_grounded:
             return text_candidates
         return ()
-    if not text_grounded:
+    if text_candidates and text_grounded:
+        return text_candidates
+    if explicit_id:
+        return _resolve_device_id_candidates(safe_context, explicit_id)
+    return ()
+
+
+def _resolve_exact_display_name_candidates(safe_context, proposal):
+    """Resolve displays that are complete, proven device references.
+
+    Exact display-name identity is claimed only when the deterministic
+    resolver can prove from user_request itself that a configured display
+    name is the complete device reference, AND the model-proposed referenced
+    text is a full normalized match for that display name. The model span
+    never defines entity boundaries; it is only a consistency signal. Full
+    equality is required: case- and accent-insensitive, token-boundary safe,
+    with no fuzzy matching, no synonym expansion, and no prefix/substring or
+    suffix/numeric acceptance. Generic class terms such as "lamp" are never
+    exact identities, and requests naming more than one configured display
+    (for example "compare Desk Lamp with Floor Lamp") cannot seize a single
+    device. Grounded device ids already return earlier with higher
+    precedence.
+    """
+    referenced_text = proposal.referenced_device_text
+    referenced_norm = _normalize(referenced_text)
+    if not referenced_norm:
         return ()
-    return text_candidates
+    if _referenced_text_is_generic(referenced_text, safe_context):
+        return ()
+    request_tokens = _normalized_tokens(safe_context.user_request)
+    if not request_tokens:
+        return ()
+    boundary_ids = _display_entity_boundary_device_ids(safe_context, request_tokens)
+    if not boundary_ids:
+        return ()
+    matches = [
+        device
+        for device in safe_context.devices
+        if not _display_name_is_generic_class_term(device)
+        and _normalize(device.display_name) == referenced_norm
+        and device.device_id in boundary_ids
+    ]
+    if not matches:
+        return ()
+    if len(_display_phrase_present_device_ids(safe_context, request_tokens)) > 1:
+        return ()
+    return tuple(sorted(matches, key=lambda device: device.device_id))
+
+
+def _display_entity_boundary_device_ids(safe_context, request_tokens):
+    """Configured displays that occur in the request with a clean boundary.
+
+    A display phrase is a complete device reference only if no occurrence is
+    immediately preceded or followed by a token that plausibly continues the
+    same device noun phrase. The structural acceptance sets cover only the
+    small command grammar that clearly begins a separate clause or location
+    (prepositions, articles, determiners, command verbs). Generic connectors
+    such as "and", "or", "with", or "but" are never boundary proof by
+    themselves because they do not prove the user finished naming the
+    device. Any extended occurrence rejects exact identity, so a longer
+    user-authored entity such as "Desk Lamp Backup", "Desk Lamp 2", "Fake
+    Desk Lamp", or "Desk Lamp and backup" can never collapse into the
+    shorter display "Desk Lamp". This is structural, not a suffix list, and
+    it fails closed.
+    """
+    boundary_ids = set()
+    for device in safe_context.devices:
+        if _display_name_is_generic_class_term(device):
+            continue
+        phrase = tuple(_normalize(device.display_name).split())
+        if not phrase:
+            continue
+        if not _has_token_phrase(request_tokens, phrase):
+            continue
+        if not _phrase_has_clean_boundary(request_tokens, phrase):
+            continue
+        boundary_ids.add(device.device_id)
+    return boundary_ids
+
+
+def _phrase_has_clean_boundary(tokens, phrase):
+    size = len(phrase)
+    for index in _phrase_start_indexes(tokens, phrase):
+        before_ok = index == 0 or tokens[index - 1] in ENTITY_BOUNDARY_BEFORE_TERMS
+        after_ok = (
+            index + size == len(tokens)
+            or tokens[index + size] in ENTITY_BOUNDARY_AFTER_TERMS
+        )
+        if not (before_ok and after_ok):
+            return False
+    return True
+
+
+def _display_phrase_present_device_ids(safe_context, request_tokens):
+    present = set()
+    for device in safe_context.devices:
+        if _display_name_is_generic_class_term(device):
+            continue
+        phrase = tuple(_normalize(device.display_name).split())
+        if phrase and _has_token_phrase(request_tokens, phrase):
+            present.add(device.device_id)
+    return present
+
+
+def _referenced_text_is_generic(device_text, safe_context):
+    tokens = _normalized_tokens(device_text)
+    if not tokens:
+        return False
+    return all(token in _generic_device_text_terms(safe_context) for token in tokens)
+
+
+def _generic_device_text_terms(safe_context):
+    terms = set()
+    for synonyms in DEVICE_TEXT_SYNONYMS.values():
+        terms.update(synonyms)
+    for device in safe_context.devices:
+        terms.add(_normalize(device.device_type))
+    return terms
+
+
+def _display_name_is_generic_class_term(device):
+    display_name = _normalize(device.display_name)
+    device_type = _normalize(device.device_type)
+    if not display_name:
+        return False
+    generic_class_terms = {device_type}
+    generic_class_terms.update(DEVICE_TEXT_SYNONYMS.get(device_type, ()))
+    return display_name in generic_class_terms
 
 
 def _resolve_device_id_candidates(safe_context, device_id):
@@ -256,6 +486,8 @@ def _resolve_device_id_candidates(safe_context, device_id):
 
 
 def _resolve_device_text_candidates(safe_context, device_text):
+    if not _referenced_text_is_generic(device_text, safe_context):
+        return ()
     text_terms = _semantic_terms(device_text)
     if not text_terms:
         return ()
@@ -270,6 +502,110 @@ def _resolve_device_text_candidates(safe_context, device_text):
         )
     ]
     return tuple(sorted(candidates, key=lambda device: device.device_id))
+
+
+def _apply_room_narrowing(safe_context, candidates):
+    mentioned = _mentioned_room_labels(safe_context)
+    if len(mentioned) > 1:
+        return ()
+    if len(mentioned) == 1:
+        room = next(iter(mentioned))
+        return tuple(
+            device
+            for device in candidates
+            if device.room and _normalize(device.room) == room
+        )
+    if _request_has_unmatched_location(safe_context):
+        return ()
+    return candidates
+
+
+def _restrict_by_explicit_user_request_device_ids(safe_context, candidates):
+    """Fail closed when user-request device ids conflict with candidates.
+
+    An exact configured device id literally present in the user request is
+    deterministic evidence that no generic, display-name, or room path may
+    silently override. Multiple explicit ids are inherently ambiguous for
+    the single-device resolver and always clarify. A single explicit id may
+    keep the proposed election only when every elected candidate is that
+    same device; otherwise the selection is unsafe and clarifies.
+    """
+    explicit = _exact_user_request_device_ids(safe_context)
+    if not explicit:
+        return candidates
+    if len(explicit) > 1:
+        return ()
+    explicit_id = explicit[0]
+    candidate_ids = {device.device_id for device in candidates}
+    if candidate_ids == {explicit_id}:
+        return candidates
+    return ()
+
+
+def _exact_user_request_device_ids(safe_context):
+    """Configured device ids literally present in the user request.
+
+    Only exact token-safe equality is accepted. Substring, prefix, suffix,
+    numeric-normalized, and edit-distance variants never count as mentions.
+    Token-edge punctuation already handled by the shared tokenizer (for
+    example ",", "(", quotes) does not hide a mention, while embedded forms
+    such as "lamp_20", "lamp_2_backup", or "lamp_2-backup" remain distinct
+    tokens and never match a configured "lamp_2".
+    """
+    request_tokens = _normalized_tokens(safe_context.user_request)
+    if not request_tokens:
+        return ()
+    explicit = []
+    for device in safe_context.devices:
+        phrase = tuple(_normalize(device.device_id).split())
+        if phrase and _has_token_phrase(request_tokens, phrase):
+            explicit.append(device.device_id)
+    return tuple(dict.fromkeys(explicit))
+
+
+def _request_has_unmatched_location(safe_context):
+    """Detect location-like language that mentions no configured room.
+
+    A request such as "enciende la luz del garage" with no configured room
+    named "garage" must never fall through to the only generic light. This
+    is a small fail-closed grammar over locative preposition phrases in the
+    current command language (Spanish/English). Arbitrary unknown room
+    language outside this pattern cannot be recognized deterministically
+    without heuristic NLP; unmatched locative phrasing always clarifies and
+    never executes.
+    """
+    tokens = _normalized_tokens(safe_context.user_request)
+    if len(tokens) < 2:
+        return False
+    anchors = set()
+    for device in safe_context.devices:
+        anchors.update(_semantic_terms(device.device_id))
+        anchors.update(_semantic_terms(device.display_name))
+        anchors.update(_semantic_terms(device.device_type))
+    for role_term in DEVICE_ROLE_ANCHOR_TERMS:
+        anchors.update(_semantic_terms(role_term))
+    for index, token in enumerate(tokens):
+        if token not in LOCATIVE_PREPOSITIONS:
+            continue
+        scanned = index + 1
+        while scanned < len(tokens) and tokens[scanned] in LOCATIVE_ARTICLES:
+            scanned += 1
+        if scanned >= len(tokens):
+            continue
+        if tokens[scanned] not in anchors:
+            return True
+    return False
+
+
+def _mentioned_room_labels(safe_context):
+    rooms = {device.room for device in safe_context.devices if device.room}
+    request_tokens = _normalized_tokens(safe_context.user_request)
+    mentioned = set()
+    for room in rooms:
+        room_terms = tuple(_normalize(room).split())
+        if _has_token_phrase(request_tokens, room_terms):
+            mentioned.add(_normalize(room))
+    return mentioned
 
 
 def _find_capability(device, capability_hint):
@@ -441,6 +777,35 @@ def _device_id_is_grounded(user_request, device_id):
     if not device:
         return False
     return _has_exact_token(user_request, device)
+
+
+def _referenced_text_is_exact_device_id_literal(user_request, device_id, referenced_text):
+    """True when referenced text is the literal of a grounded device id.
+
+    The model already grounded the device id in the user request, and the
+    referenced text normalizes to that exact literal. Only literal equality
+    is accepted: "lamp_2" or punctuation-edged "lamp_2." confirm the model
+    span, while "lamp_20", "lamp_2_backup", or "lamp_2-b" never do.
+    """
+    device_normalized = _normalize(device_id)
+    referenced_normalized = _normalize(referenced_text)
+    if not device_normalized or not referenced_normalized:
+        return False
+    if referenced_normalized.strip(".=-") != device_normalized.strip(".=-"):
+        return False
+    return _device_id_is_grounded(user_request, device_id)
+
+
+def _has_conflicting_power_switch_intents(user_request):
+    """True when the request grounds both a power-on and a power-off intent.
+
+    A request such as "Turn on lamp_1 and apagar it" names conflicting
+    targets for the same device; a single canonical command cannot represent
+    both, so exact-ID literal confirmation must fail closed in that case.
+    """
+    return _has_imperative_power_switch(
+        user_request, target_state=True
+    ) and _has_imperative_power_switch(user_request, target_state=False)
 
 
 def _device_text_is_grounded(user_request, device_text):

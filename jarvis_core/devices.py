@@ -1,9 +1,40 @@
 """Internal device model for JarvisOS AVP-001 Phase 1.3."""
 
+import re
 from dataclasses import dataclass, field
 
 
 DEVICE_CAPABILITY_KINDS = {"action", "reading"}
+
+MAX_ROOM_LENGTH = 64
+ROOM_ALLOWED_CHARS = re.compile(r"^[\w ._-]+$", re.UNICODE)
+ROOM_IPV4_LIKE = re.compile(r"^\d{1,3}(?:\.\d{1,3}){3}$")
+
+
+def room_label(value):
+    """Validate and sanitize a configured device room label.
+
+    Returns the cleaned original label (accents and case preserved) or None
+    when the value is blank or must never be treated as a room.
+    """
+    if not isinstance(value, str):
+        return None
+    room = "".join(ch for ch in value if ch >= " " and ch != "\x7f")
+    room = room.strip()
+    if not room:
+        return None
+    if len(room) > MAX_ROOM_LENGTH:
+        return None
+    if "/" in room or "\\" in room:
+        return None
+    lowered = room.lower()
+    if "://" in lowered or lowered.startswith("file:"):
+        return None
+    if not ROOM_ALLOWED_CHARS.match(room):
+        return None
+    if ROOM_IPV4_LIKE.match(room):
+        return None
+    return room
 
 
 @dataclass
