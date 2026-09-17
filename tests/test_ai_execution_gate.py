@@ -1,23 +1,32 @@
-"""Focused tests for the safe local understanding execution gate.
+"""Focused tests for the confirmation-gated safe local understanding execution gate.
 
-These tests prove the thesis execution vertical invariants:
+These tests prove the corrective execution vertical invariants:
 
-- Only validated single-step ``power.switch`` execute candidates reach Runtime.
-- Every rejected path stops before Runtime (never constructs or forwards a
-  command).
-- ``commands_executed`` on the decision surface stays honest and false.
-- The decision/provider/validation modules never import the gate or execution
-  boundaries (AST-level boundary enforcement).
-- The gate forwards commands to the existing Runtime and surfaces device-level
-  success or failure instead of hiding it.
+- ``prepare`` only validates and binds a pending confirmation; it NEVER calls
+  Runtime (``Runtime.execute`` call count after prepare is zero).
+- Every validated candidate requires explicit ``confirm`` before any mutation
+  reaches Runtime, regardless of the AI-provided ``confirmation_required``.
+- ``confirm`` re-validates the exact stored plan (plan-digest binding, single
+  use, TOCTOU device/capability re-check) before the single Runtime execute.
+- ``commands_executed`` is honest and exact: False for confirmation_required,
+  rejected, cancelled, or failed-before-invocation; True only when Runtime was
+  invoked.
+- The strict v1 allowlist accepts exactly ``power.switch`` with
+  ``{"state": "true"}`` or ``{"state": "false"}`` and never broadens values.
+- Raw exceptions and DriverResult internals are never exposed.
+- AST-level import boundary enforcement is retained.
 """
 
 import ast
 from dataclasses import FrozenInstanceError
+from types import SimpleNamespace
 import unittest
 
+from jarvis_core.ai.confirmation import AIConfirmationStore, plan_digest
 from jarvis_core.ai.contracts import (
     ACTION_KIND_MUTATE,
+    AI_CONFIRMATION_REQUIRED,
+    AI_EXECUTION_NOT_CONFIRMED,
     AI_PROVIDER_UNAVAILABLE,
     AI_RESPONSE_INVALID,
     PLAN_KIND_CLARIFY,
@@ -31,14 +40,27 @@ from jarvis_core.ai.contracts import (
 )
 from jarvis_core.ai.context import SafeContextBuilder
 from jarvis_core.ai.execution_gate import (
+    ALLOWED_CAPABILITIES,
     ALLOWED_POWER_SWITCH_STATES,
     EXECUTION_GATE_SOURCE,
+    GATE_STATUS_CANCELLED,
+    GATE_STATUS_CONFIRMATION_REQUIRED,
+    GATE_STATUSES,
+    GATE_STATUS_EXECUTED,
+    GATE_STATUS_EXECUTION_FAILED,
+    GATE_STATUS_REJECTED,
+    REJECT_CAPABILITY_UNAVAILABLE,
+    REJECT_CONFIRMATION_DIGEST_MISMATCH,
+    REJECT_CONFIRMATION_NOT_FOUND,
     REJECT_DECISION_NOT_EXECUTABLE,
+    REJECT_DEVICE_UNAVAILABLE,
     REJECT_INVALID_ARGUMENTS,
     REJECT_INVALID_COMMAND,
     REJECT_MULTI_STEP_PLAN,
     REJECT_UNSUPPORTED_CAPABILITY,
     REJECT_UNSUPPORTED_DECISION,
+    RUNTIME_EXECUTION_FAILED,
+    RUNTIME_FAILURE_MESSAGE,
     ExecutionGate,
     ExecutionGateResult,
 )
@@ -54,17 +76,17 @@ from jarvis_core.ai.understanding_decision import (
     decide_understanding,
 )
 from jarvis_core.bootstrap import build_http_runtime
-from jarvis_core.devices import Device, DeviceCapability
-from jarvis_core.domain import CapabilityResult
+from jarvis_core.devices import Device, DeviceCapability, DeviceRegistry
+from jarvis_core.domain import CapabilityResult, Command
 from jarvis_core.drivers import DriverResult, SimulatedDriver
 from jarvis_core.planner import (
     APPLY_OPERATION,
     DEVICE_EXECUTE_COMMAND,
-    DEVICE_CATALOG_COMMAND,
     Planner,
 )
 from tools.ai_execution_gate import (
     build_argument_parser,
+    format_gate_text_payload,
     run_ai_execution_gate,
 )
 
@@ -98,12 +120,22 @@ class FailingApplyDriver(RecordingSimulatedDriver):
 
 
 class RecordingRuntime:
-    def __init__(self, result=None):
+    """Runtime spy carrying a real DeviceRegistry for availability checks."""
+
+    def __init__(self, result=None, devices=()):
+        registry = DeviceRegistry()
+        for device in devices:
+            registry.register(device)
+        self.context = SimpleNamespace(device_registry=registry)
         self.executions = []
         self.result = result or CapabilityResult(
             success=True,
             message="ok",
-            data={"device_id": "lamp_1", "capability": "power.switch", "operation": "apply"},
+            data={
+                "device_id": "lamp_1",
+                "capability": "power.switch",
+                "operation": APPLY_OPERATION,
+            },
         )
 
     def execute(self, command, correlation_id=None):
@@ -111,147 +143,274 @@ class RecordingRuntime:
         return self.result
 
 
-class ExecutionGateCoreTests(unittest.TestCase):
-    def test_executable_candidate_reaches_runtime_with_exact_command(self):
-        runtime = RecordingRuntime()
-        gate = ExecutionGate(runtime)
+class RaisingRuntime(RecordingRuntime):
+    def execute(self, command, correlation_id=None):
+        self.executions.append(command)
+        raise RuntimeError("boom")
 
-        result = gate.execute(executable_decision("device apply lamp_1 power.switch state=true"))
 
-        self.assertTrue(result.executed)
-        self.assertEqual(result.device_id, "lamp_1")
-        self.assertEqual(result.capability, "power.switch")
-        self.assertEqual(result.arguments, {"state": "true"})
-        self.assertIsNone(result.reason)
-        self.assertEqual(len(runtime.executions), 1)
-        command = runtime.executions[0]
-        self.assertEqual(command.name, DEVICE_EXECUTE_COMMAND)
-        self.assertEqual(command.source, EXECUTION_GATE_SOURCE)
+class FlippingPlanner:
+    def __init__(self):
+        self.calls = 0
+
+    def plan(self, text, source="cli"):
+        self.calls += 1
+        if self.calls <= 1:
+            return Planner().plan(text, source=source)
+        return Command(name="unknown", args={"text": text}, source=source)
+
+
+class ExecutionGateResultInvariantTests(unittest.TestCase):
+    def test_statuses_and_allowlist_are_explicit(self):
         self.assertEqual(
-            command.args,
-            {
-                "device_id": "lamp_1",
-                "capability": "power.switch",
-                "operation": APPLY_OPERATION,
-                "parameters": {"state": "true"},
-            },
+            GATE_STATUSES,
+            frozenset(
+                {
+                    GATE_STATUS_CONFIRMATION_REQUIRED,
+                    GATE_STATUS_EXECUTED,
+                    GATE_STATUS_EXECUTION_FAILED,
+                    GATE_STATUS_REJECTED,
+                    GATE_STATUS_CANCELLED,
+                }
+            ),
         )
+        self.assertEqual(ALLOWED_CAPABILITIES, frozenset({"power.switch"}))
+        self.assertEqual(ALLOWED_POWER_SWITCH_STATES, frozenset({"true", "false"}))
 
-    def test_power_switch_on_and_off_reach_runtime(self):
-        for raw_state in ("true", "false", "on", "off"):
-            with self.subTest(state=raw_state):
-                runtime = RecordingRuntime()
-                gate = ExecutionGate(runtime)
-                result = gate.execute(
-                    executable_decision(
-                        f"device apply lamp_1 power.switch state={raw_state}"
-                    )
-                )
-                self.assertTrue(result.executed)
-                self.assertEqual(result.arguments, {"state": raw_state})
-                self.assertEqual(len(runtime.executions), 1)
-
-    def test_allowed_state_values_are_explicit(self):
-        self.assertEqual(
-            ALLOWED_POWER_SWITCH_STATES,
-            frozenset({"true", "false", "on", "off"}),
-        )
-
-    def test_result_invariants_and_immutability(self):
-        runtime = RecordingRuntime()
-        result = ExecutionGate(runtime).execute(
+    def test_result_is_immutable(self):
+        runtime = RecordingRuntime(devices=[room_lamp()])
+        result = ExecutionGate(runtime).prepare(
             executable_decision("device apply lamp_1 power.switch state=true")
         )
         with self.assertRaises(FrozenInstanceError):
-            result.executed = False
-        self.assertIsInstance(result.runtime_result, CapabilityResult)
+            result.status = GATE_STATUS_EXECUTED
+
+    def test_invalid_status_is_rejected(self):
         with self.assertRaises(ValueError):
-            ExecutionGateResult(executed=True, runtime_result=None)
-        with self.assertRaises(ValueError):
-            ExecutionGateResult(executed=False, reason="nope")
-        with self.assertRaises(ValueError):
-            ExecutionGateResult(executed=True, runtime_result=CapabilityResult(True, "ok"), reason=REJECT_MULTI_STEP_PLAN)
-
-    def test_runtime_failure_is_surfaced_not_hidden(self):
-        driver = FailingApplyDriver()
-        runtime = build_http_runtime(driver, devices=[room_lamp()])
-        gate = ExecutionGate(runtime)
-
-        result = gate.execute(executable_decision("device apply lamp_1 power.switch state=true"))
-
-        self.assertTrue(result.executed)
-        self.assertEqual(driver.apply_calls, 1)
-        self.assertFalse(result.runtime_result.success)
-        self.assertEqual(result.runtime_result.error, "device_execution_failed")
-        self.assertIsNone(result.reason)
-
-    def test_grid_pass_through_real_runtime_updates_device_state(self):
-        driver = RecordingSimulatedDriver()
-        runtime = build_http_runtime(driver, devices=[room_lamp()])
-        gate = ExecutionGate(runtime)
-
-        result = gate.execute(executable_decision("device apply lamp_1 power.switch state=true"))
-
-        self.assertTrue(result.executed)
-        self.assertTrue(result.runtime_result.success)
-        self.assertEqual(driver.apply_calls, 1)
-        self.assertIs(runtime.context.device_registry.get("lamp_1").state.properties["power"], True)
-
-    def test_gate_and_gate_input_rejections_are_structurally_rejected(self):
-        with self.assertRaises(TypeError):
-            ExecutionGate(object())
-
-    def test_executable_candidate_requires_execute_plan_shape(self):
-        with self.assertRaises(ValueError):
-            LocalUnderstandingDecision(
-                provider_id="p",
-                model_id="m",
-                status=EXECUTABLE_CANDIDATE,
-                planner_kind=DEVICE_EXECUTE_COMMAND,
+            ExecutionGateResult(
+                status="unknown",
+                success=False,
                 commands_executed=False,
             )
 
-    def test_decision_surface_never_claims_execution(self):
+    def test_confirmation_required_shape_is_enforced(self):
         with self.assertRaises(ValueError):
-            LocalUnderstandingDecision(
-                provider_id="p",
-                model_id="m",
-                status=EXECUTABLE_CANDIDATE,
-                resolver_kind=PLAN_KIND_EXECUTE,
-                planner_kind=DEVICE_EXECUTE_COMMAND,
-                plan=execute_plan("device apply lamp_1 power.switch state=true"),
+            ExecutionGateResult(
+                status=GATE_STATUS_CONFIRMATION_REQUIRED,
+                success=True,
+                commands_executed=False,
+                confirmation_id="c",
+                plan_digest="d",
+            )
+        with self.assertRaises(ValueError):
+            ExecutionGateResult(
+                status=GATE_STATUS_CONFIRMATION_REQUIRED,
+                success=False,
                 commands_executed=True,
+                confirmation_id="c",
+                plan_digest="d",
+            )
+        with self.assertRaises(ValueError):
+            ExecutionGateResult(
+                status=GATE_STATUS_CONFIRMATION_REQUIRED,
+                success=False,
+                commands_executed=False,
+            )
+
+    def test_executed_shape_is_enforced(self):
+        with self.assertRaises(ValueError):
+            ExecutionGateResult(
+                status=GATE_STATUS_EXECUTED,
+                success=True,
+                commands_executed=True,
+                runtime_result=CapabilityResult(True, "ok"),
+            )
+        with self.assertRaises(ValueError):
+            ExecutionGateResult(
+                status=GATE_STATUS_EXECUTED,
+                success=True,
+                commands_executed=True,
+                runtime_result=CapabilityResult(True, "ok"),
+                confirmation_id="c",
+                plan_digest="d",
+                device_id="lamp_1",
+                capability="power.switch",
+                arguments={"state": "true"},
+                error="nope",
+            )
+        with self.assertRaises(ValueError):
+            ExecutionGateResult(
+                status=GATE_STATUS_EXECUTED,
+                success=True,
+                commands_executed=True,
+                runtime_result=CapabilityResult(True, "ok"),
+                confirmation_id="c",
+                plan_digest="d",
+                device_id="lamp_1",
+                capability="power.switch",
+                arguments={"state": "true"},
+                reason=REJECT_MULTI_STEP_PLAN,
+            )
+
+    def test_execution_failed_shape_is_enforced(self):
+        failed = CapabilityResult(False, "nope", error="device_execution_failed")
+        valid = ExecutionGateResult(
+            status=GATE_STATUS_EXECUTION_FAILED,
+            success=False,
+            commands_executed=True,
+            device_id="lamp_1",
+            capability="power.switch",
+            arguments={"state": "true"},
+            confirmation_id="c",
+            plan_digest="d",
+            runtime_result=failed,
+            error="device_execution_failed",
+            message="nope",
+        )
+        self.assertEqual(valid.status, GATE_STATUS_EXECUTION_FAILED)
+        with self.assertRaises(ValueError):
+            ExecutionGateResult(
+                status=GATE_STATUS_EXECUTION_FAILED,
+                success=False,
+                commands_executed=True,
+                device_id="lamp_1",
+                capability="power.switch",
+                arguments={"state": "true"},
+                confirmation_id="c",
+                plan_digest="d",
+                runtime_result=failed,
+                error="some_other_error",
+                message="nope",
+            )
+
+    def test_rejected_and_cancelled_shapes_are_enforced(self):
+        with self.assertRaises(ValueError):
+            ExecutionGateResult(
+                status=GATE_STATUS_REJECTED,
+                success=False,
+                commands_executed=False,
+                reason="nope",
+            )
+        cancelled_result = ExecutionGateResult(
+            status=GATE_STATUS_CANCELLED,
+            success=False,
+            commands_executed=False,
+            confirmation_id="c",
+            plan_digest="d",
+            error=AI_EXECUTION_NOT_CONFIRMED,
+            message="cancelled",
+        )
+        self.assertEqual(cancelled_result.status, GATE_STATUS_CANCELLED)
+        with self.assertRaises(ValueError):
+            ExecutionGateResult(
+                status=GATE_STATUS_CANCELLED,
+                success=False,
+                commands_executed=False,
+                confirmation_id="c",
+                plan_digest="d",
+                error="wrong_error",
+            )
+        with self.assertRaises(ValueError):
+            ExecutionGateResult(
+                status=GATE_STATUS_CANCELLED,
+                success=False,
+                commands_executed=False,
+                error=AI_EXECUTION_NOT_CONFIRMED,
             )
 
 
-class ExecutionGateRejectedPathTests(unittest.TestCase):
+class ExecutionGatePrepareRequiresConfirmationTests(unittest.TestCase):
     def setUp(self):
-        self.runtime = RecordingRuntime()
+        self.runtime = RecordingRuntime(devices=[room_lamp()])
+        self.gate = ExecutionGate(self.runtime)
 
-    def assert_rejected(self, decision, expected_reason):
-        result = ExecutionGate(self.runtime).execute(decision)
-        self.assertFalse(result.executed)
+    def test_prepare_returns_confirmation_required_and_never_executes(self):
+        result = self.gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+
+        self.assertEqual(result.status, GATE_STATUS_CONFIRMATION_REQUIRED)
+        self.assertIs(result.success, False)
+        self.assertIs(result.commands_executed, False)
+        self.assertTrue(result.confirmation_id)
+        self.assertTrue(result.plan_digest)
+        self.assertEqual(result.error, AI_CONFIRMATION_REQUIRED)
+        self.assertIsNone(result.runtime_result)
+        self.assertEqual(self.runtime.executions, [])
+
+    def test_prepare_binds_one_pending_confirmation_with_digest(self):
+        decision = executable_decision("device apply lamp_1 power.switch state=true")
+        result = self.gate.prepare(decision)
+
+        self.assertEqual(
+            self.gate.confirmation_store.pending.pending_plan_id,
+            result.confirmation_id,
+        )
+        self.assertEqual(
+            self.gate.confirmation_store.pending.normalized_plan_digest,
+            result.plan_digest,
+        )
+        self.assertEqual(result.plan_digest, plan_digest(decision.plan))
+
+    def test_incoming_confirmation_required_false_cannot_bypass(self):
+        decision = executable_decision(
+            "device apply lamp_1 power.switch state=true",
+            confirmation_required=False,
+        )
+        result = self.gate.prepare(decision)
+
+        self.assertEqual(result.status, GATE_STATUS_CONFIRMATION_REQUIRED)
+        self.assertIs(self.runtime.executions == [], True)
+
+    def test_prepare_records_exact_derived_request_fields(self):
+        result = self.gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+        self.assertEqual(result.device_id, "lamp_1")
+        self.assertEqual(result.capability, "power.switch")
+        self.assertEqual(result.arguments, {"state": "true"})
+
+
+class ExecutionGatePrepareRejectedPathTests(unittest.TestCase):
+    def setUp(self):
+        self.runtime = RecordingRuntime(devices=[room_lamp()])
+
+    def assert_prepare_rejected(self, decision, expected_reason):
+        gate = ExecutionGate(self.runtime)
+        result = gate.prepare(decision)
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
+        self.assertIs(result.commands_executed, False)
         self.assertEqual(result.reason, expected_reason)
         self.assertIsNone(result.runtime_result)
-        self.assertEqual(self.runtime.executions, [], "rejected decisions must not reach Runtime")
+        self.assertIsNone(result.confirmation_id)
+        self.assertIsNone(result.plan_digest)
+        self.assertIsNone(gate.confirmation_store.pending)
+        self.assertEqual(
+            self.runtime.executions,
+            [],
+            "rejected decisions must never reach Runtime",
+        )
 
-    def test_needs_clarification_never_reaches_runtime(self):
-        self.assert_rejected(clarify_decision(), REJECT_DECISION_NOT_EXECUTABLE)
+    def test_clarify_decision_never_creates_confirmation(self):
+        self.assert_prepare_rejected(clarify_decision(), REJECT_DECISION_NOT_EXECUTABLE)
 
-    def test_refused_never_reaches_runtime(self):
-        self.assert_rejected(refused_decision(), REJECT_DECISION_NOT_EXECUTABLE)
+    def test_refused_decision_never_creates_confirmation(self):
+        self.assert_prepare_rejected(refused_decision(), REJECT_DECISION_NOT_EXECUTABLE)
 
-    def test_local_ai_unavailable_never_reaches_runtime(self):
-        self.assert_rejected(unavailable_decision(), REJECT_DECISION_NOT_EXECUTABLE)
+    def test_unavailable_decision_never_creates_confirmation(self):
+        self.assert_prepare_rejected(
+            unavailable_decision(),
+            REJECT_DECISION_NOT_EXECUTABLE,
+        )
 
-    def test_understanding_failed_never_reaches_runtime(self):
-        self.assert_rejected(failed_decision(), REJECT_DECISION_NOT_EXECUTABLE)
+    def test_failed_decision_never_creates_confirmation(self):
+        self.assert_prepare_rejected(failed_decision(), REJECT_DECISION_NOT_EXECUTABLE)
 
-    def test_non_decision_input_never_reaches_runtime(self):
-        self.assert_rejected({"status": EXECUTABLE_CANDIDATE}, REJECT_UNSUPPORTED_DECISION)
-        self.assert_rejected(None, REJECT_UNSUPPORTED_DECISION)
+    def test_malformed_input_is_rejected(self):
+        self.assert_prepare_rejected(None, REJECT_UNSUPPORTED_DECISION)
+        self.assert_prepare_rejected({"status": EXECUTABLE_CANDIDATE}, REJECT_UNSUPPORTED_DECISION)
 
-    def test_multi_step_plan_never_reaches_runtime(self):
+    def test_multi_step_plan_is_rejected(self):
         plan = AIActionPlan(
             schema_version=PLAN_SCHEMA_VERSION,
             kind=PLAN_KIND_EXECUTE,
@@ -286,114 +445,352 @@ class ExecutionGateRejectedPathTests(unittest.TestCase):
             plan=plan,
             commands_executed=False,
         )
-        self.assert_rejected(decision, REJECT_MULTI_STEP_PLAN)
+        self.assert_prepare_rejected(decision, REJECT_MULTI_STEP_PLAN)
 
-    def test_planner_unknown_command_never_reaches_runtime(self):
-        decision = executable_decision("hello there")
-        self.assert_rejected(decision, REJECT_INVALID_COMMAND)
+    def test_unsupported_capability_is_rejected(self):
+        self.assert_prepare_rejected(
+            executable_decision(
+                "device apply lamp_1 status.read state=true",
+                target="lamp_1",
+                capability="status.read",
+            ),
+            REJECT_UNSUPPORTED_CAPABILITY,
+        )
 
-    def test_non_execute_command_never_reaches_runtime(self):
-        decision = executable_decision("time now")
-        self.assert_rejected(decision, REJECT_INVALID_COMMAND)
+    def test_read_operation_is_not_gated_for_execution_in_v1(self):
+        self.assert_prepare_rejected(
+            executable_decision(
+                "device read lamp_1 power.switch",
+                target="lamp_1",
+                capability="power.switch",
+            ),
+            REJECT_UNSUPPORTED_CAPABILITY,
+        )
+
+    def test_wrong_command_name_is_rejected(self):
+        self.assert_prepare_rejected(
+            executable_decision("time now"),
+            REJECT_INVALID_COMMAND,
+        )
+
+    def test_misleading_step_capability_is_rejected(self):
+        self.assert_prepare_rejected(
+            executable_decision(
+                "device apply lamp_1 power.switch state=true",
+                target="lamp_1",
+                capability="status.read",
+            ),
+            REJECT_INVALID_COMMAND,
+        )
+
+    def test_misleading_step_device_is_rejected(self):
+        self.assert_prepare_rejected(
+            executable_decision(
+                "device apply lamp_2 power.switch state=true",
+                target="lamp_1",
+                capability="power.switch",
+            ),
+            REJECT_INVALID_COMMAND,
+        )
+
+    def test_extra_argument_is_rejected(self):
+        self.assert_prepare_rejected(
+            executable_decision(
+                "device apply lamp_1 power.switch state=true brightness=5"
+            ),
+            REJECT_INVALID_ARGUMENTS,
+        )
+
+    def test_missing_argument_is_rejected(self):
+        self.assert_prepare_rejected(
+            executable_decision("device apply lamp_1 power.switch"),
+            REJECT_INVALID_ARGUMENTS,
+        )
+
+    def test_wrong_parameter_key_is_rejected(self):
+        self.assert_prepare_rejected(
+            executable_decision("device apply lamp_1 power.switch brightness=5"),
+            REJECT_INVALID_ARGUMENTS,
+        )
+
+    def test_invalid_state_values_are_rejected(self):
+        for raw_state in ("maybe", "on", "off"):
+            with self.subTest(state=raw_state):
+                self.assert_prepare_rejected(
+                    executable_decision(
+                        f"device apply lamp_1 power.switch state={raw_state}"
+                    ),
+                    REJECT_INVALID_ARGUMENTS,
+                )
 
     def test_unsafe_shell_command_never_reaches_runtime(self):
-        decision = executable_decision("device apply lamp_1 power.switch state=true; rm -rf")
-        self.assert_rejected(decision, REJECT_INVALID_COMMAND)
+        self.assert_prepare_rejected(
+            executable_decision("device apply lamp_1 power.switch state=true; rm -rf"),
+            REJECT_INVALID_COMMAND,
+        )
 
     def test_newline_injection_never_reaches_runtime(self):
-        decision = executable_decision("device apply lamp_1 power.switch state=true\ndevice list")
-        self.assert_rejected(decision, REJECT_INVALID_COMMAND)
-
-    def test_unsupported_capability_never_reaches_runtime(self):
-        decision = executable_decision(
-            "device apply lamp_1 status.read state=true",
-            target="lamp_1",
-            capability="status.read",
+        self.assert_prepare_rejected(
+            executable_decision(
+                "device apply lamp_1 power.switch state=true\ndevice list"
+            ),
+            REJECT_INVALID_COMMAND,
         )
-        self.assert_rejected(decision, REJECT_UNSUPPORTED_CAPABILITY)
 
-    def test_misleading_step_capability_never_reaches_runtime(self):
-        decision = executable_decision(
-            "device apply lamp_1 power.switch state=true",
-            target="lamp_1",
-            capability="status.read",
+    def test_fabricated_device_missing_from_registry_is_rejected(self):
+        isolated = RecordingRuntime(devices=[])
+        result = ExecutionGate(isolated).prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
         )
-        self.assert_rejected(decision, REJECT_INVALID_COMMAND)
+        self.assertEqual(result.reason, REJECT_DEVICE_UNAVAILABLE)
+        self.assertEqual(isolated.executions, [])
 
-    def test_misleading_step_device_never_reaches_runtime(self):
-        decision = executable_decision(
-            "device apply lamp_2 power.switch state=true",
+    def test_device_without_action_capability_is_rejected(self):
+        reading_only = RecordingRuntime(devices=[reading_only_lamp()])
+        result = ExecutionGate(reading_only).prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+        self.assertEqual(result.reason, REJECT_CAPABILITY_UNAVAILABLE)
+        self.assertEqual(reading_only.executions, [])
+
+
+class ExecutionGateConfirmTests(unittest.TestCase):
+    def setUp(self):
+        self.runtime = RecordingRuntime(devices=[room_lamp()])
+        self.gate = ExecutionGate(self.runtime)
+
+    def prepared(self, command="device apply lamp_1 power.switch state=true"):
+        return self.gate.prepare(executable_decision(command))
+
+    def test_confirm_executes_exactly_once_with_derived_command(self):
+        prepared = self.prepared()
+
+        result = self.gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_EXECUTED)
+        self.assertIs(result.success, True)
+        self.assertIs(result.commands_executed, True)
+        self.assertTrue(result.runtime_result.success)
+        self.assertEqual(len(self.runtime.executions), 1)
+        command = self.runtime.executions[0]
+        self.assertEqual(command.name, DEVICE_EXECUTE_COMMAND)
+        self.assertEqual(command.source, EXECUTION_GATE_SOURCE)
+        self.assertEqual(
+            command.args,
+            {
+                "device_id": "lamp_1",
+                "capability": "power.switch",
+                "operation": APPLY_OPERATION,
+                "parameters": {"state": "true"},
+            },
+        )
+
+    def test_spanish_on_light_executes_and_turns_on_after_confirm(self):
+        runtime = build_http_runtime(RecordingSimulatedDriver(), devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        prepared = gate.prepare(run_decision("Enciende la luz del cuarto.", runtime))
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_EXECUTED)
+        self.assertEqual(result.arguments, {"state": "true"})
+        self.assertIs(
+            runtime.context.device_registry.get("lamp_1").state.properties["power"],
+            True,
+        )
+
+    def test_spanish_off_light_executes_and_turns_off_after_confirm(self):
+        runtime = build_http_runtime(RecordingSimulatedDriver(), devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        prepared = gate.prepare(run_decision("Apaga la luz del cuarto.", runtime))
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_EXECUTED)
+        self.assertEqual(result.arguments, {"state": "false"})
+        self.assertIs(
+            runtime.context.device_registry.get("lamp_1").state.properties["power"],
+            False,
+        )
+
+    def test_decision_surface_never_claims_execution_after_confirm(self):
+        runtime = build_http_runtime(RecordingSimulatedDriver(), devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        decision = run_decision("Enciende la luz del cuarto.", runtime)
+        prepared = gate.prepare(decision)
+        gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(decision.status, EXECUTABLE_CANDIDATE)
+        self.assertIs(decision.commands_executed, False)
+
+    def test_unknown_confirmation_id_is_rejected_without_execution(self):
+        prepared = self.prepared()
+
+        result = self.gate.confirm("not-the-confirmation-id", prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
+        self.assertEqual(result.reason, REJECT_CONFIRMATION_NOT_FOUND)
+        self.assertIs(result.commands_executed, False)
+        self.assertEqual(self.runtime.executions, [])
+
+    def test_wrong_plan_digest_is_rejected_without_execution(self):
+        prepared = self.prepared()
+        wrong_digest = "0" * 64
+
+        result = self.gate.confirm(prepared.confirmation_id, wrong_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
+        self.assertEqual(result.reason, REJECT_CONFIRMATION_DIGEST_MISMATCH)
+        self.assertIs(result.commands_executed, False)
+        self.assertEqual(self.runtime.executions, [])
+        self.assertIsNone(self.gate.confirmation_store.pending)
+
+    def test_confirmation_is_single_use_and_replay_is_blocked(self):
+        prepared = self.prepared()
+
+        first = self.gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+        self.assertEqual(first.status, GATE_STATUS_EXECUTED)
+
+        replay = self.gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+        self.assertEqual(replay.status, GATE_STATUS_REJECTED)
+        self.assertEqual(replay.reason, REJECT_CONFIRMATION_NOT_FOUND)
+        self.assertEqual(
+            len(self.runtime.executions),
+            1,
+            "replayed confirmations must never reach Runtime again",
+        )
+
+    def test_cancel_prevents_execution(self):
+        prepared = self.prepared()
+
+        cancelled = self.gate.cancel(prepared.confirmation_id)
+
+        self.assertEqual(cancelled.status, GATE_STATUS_CANCELLED)
+        self.assertIs(cancelled.commands_executed, False)
+        self.assertEqual(cancelled.error, AI_EXECUTION_NOT_CONFIRMED)
+        self.assertEqual(self.runtime.executions, [])
+        self.assertIsNone(self.gate.confirmation_store.pending)
+
+    def test_confirm_after_cancel_is_rejected(self):
+        prepared = self.prepared()
+        self.gate.cancel(prepared.confirmation_id)
+
+        result = self.gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
+        self.assertEqual(result.reason, REJECT_CONFIRMATION_NOT_FOUND)
+        self.assertEqual(self.runtime.executions, [])
+
+    def test_cancel_unknown_id_is_rejected(self):
+        result = self.gate.cancel("not-the-confirmation-id")
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
+        self.assertEqual(result.reason, REJECT_CONFIRMATION_NOT_FOUND)
+        self.assertEqual(self.runtime.executions, [])
+
+    def test_device_removed_between_prepare_and_confirm_is_rejected(self):
+        runtime = build_http_runtime(RecordingSimulatedDriver(), devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        prepared = gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+        runtime.context.device_registry.unregister("lamp_1")
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
+        self.assertEqual(result.reason, REJECT_DEVICE_UNAVAILABLE)
+        self.assertIs(result.commands_executed, False)
+        self.assertIsNone(gate.confirmation_store.pending)
+
+    def test_capability_removed_between_prepare_and_confirm_is_rejected(self):
+        driver = RecordingSimulatedDriver()
+        runtime = build_http_runtime(driver, devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        prepared = gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+        runtime.context.device_registry.unregister("lamp_1")
+        runtime.context.device_registry.register(reading_only_lamp())
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
+        self.assertEqual(result.reason, REJECT_CAPABILITY_UNAVAILABLE)
+        self.assertIs(result.commands_executed, False)
+        self.assertEqual(driver.apply_calls, 0)
+        self.assertIsNone(gate.confirmation_store.pending)
+
+    def test_planner_flip_on_confirm_stops_before_runtime(self):
+        planner = FlippingPlanner()
+        gate = ExecutionGate(self.runtime, planner=planner)
+        prepared = gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+        self.assertEqual(planner.calls, 1)
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
+        self.assertEqual(result.reason, REJECT_INVALID_COMMAND)
+        self.assertEqual(self.runtime.executions, [])
+        self.assertIsNone(gate.confirmation_store.pending)
+
+    def test_runtime_device_failure_surfaces_execution_failed(self):
+        driver = FailingApplyDriver()
+        runtime = build_http_runtime(driver, devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        prepared = gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_EXECUTION_FAILED)
+        self.assertIs(result.success, False)
+        self.assertIs(result.commands_executed, True)
+        self.assertEqual(driver.apply_calls, 1)
+        self.assertEqual(result.runtime_result.error, "device_execution_failed")
+        self.assertEqual(result.error, result.runtime_result.error)
+        self.assertIsNone(result.reason)
+        self.assertIsNone(gate.confirmation_store.pending)
+
+    def test_runtime_raise_is_bounded_as_execution_failed(self):
+        runtime = RaisingRuntime(devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        prepared = gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_EXECUTION_FAILED)
+        self.assertIs(result.commands_executed, True)
+        self.assertEqual(result.error, RUNTIME_EXECUTION_FAILED)
+        self.assertEqual(result.runtime_result.message, RUNTIME_FAILURE_MESSAGE)
+        self.assertEqual(len(runtime.executions), 1)
+
+    def test_plan_digest_binds_confirmation_to_exact_normalized_plan(self):
+        prepared = self.prepared()
+        other_plan = execute_plan(
+            "device apply lamp_1 power.switch state=false",
             target="lamp_1",
             capability="power.switch",
         )
-        self.assert_rejected(decision, REJECT_INVALID_COMMAND)
 
-    def test_missing_parameter_never_reaches_runtime(self):
-        decision = executable_decision("device apply lamp_1 power.switch")
-        self.assert_rejected(decision, REJECT_INVALID_ARGUMENTS)
+        result = self.gate.confirm(prepared.confirmation_id, plan_digest(other_plan))
 
-    def test_unknown_parameter_value_never_reaches_runtime(self):
-        decision = executable_decision("device apply lamp_1 power.switch state=maybe")
-        self.assert_rejected(decision, REJECT_INVALID_ARGUMENTS)
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
+        self.assertEqual(result.reason, REJECT_CONFIRMATION_DIGEST_MISMATCH)
+        self.assertEqual(self.runtime.executions, [])
 
-    def test_extra_parameter_never_reaches_runtime(self):
-        decision = executable_decision(
-            "device apply lamp_1 power.switch state=true brightness=5"
-        )
-        self.assert_rejected(decision, REJECT_INVALID_ARGUMENTS)
-
-    def test_wrong_parameter_key_never_reaches_runtime(self):
-        decision = executable_decision("device apply lamp_1 power.switch brightness=5")
-        self.assert_rejected(decision, REJECT_INVALID_ARGUMENTS)
-
-    def test_read_operation_is_not_gated_in_v1(self):
-        decision = executable_decision(
-            "device read lamp_1 status.read",
-            target="lamp_1",
-            capability="status.read",
-        )
-        self.assert_rejected(decision, REJECT_UNSUPPORTED_CAPABILITY)
+    def test_rejected_confirm_never_exposes_raw_exception(self):
+        prepared = self.prepared()
+        result = self.gate.confirm(prepared.confirmation_id, "bad")
+        self.assertIsNotNone(result.error)
+        self.assertIsNone(result.runtime_result)
 
 
 class ExecutionGateE2ETests(unittest.TestCase):
-    def test_spanish_on_light_in_room_executes_and_turns_on(self):
-        runtime = build_http_runtime(RecordingSimulatedDriver(), devices=[room_lamp()])
-        gate = ExecutionGate(runtime)
-        decision = run_decision("Enciende la luz del cuarto.", runtime)
-
-        result = gate.execute(decision)
-
-        self.assertTrue(result.executed)
-        self.assertEqual(decision.status, EXECUTABLE_CANDIDATE)
-        self.assertEqual(result.device_id, "lamp_1")
-        self.assertEqual(result.arguments, {"state": "true"})
-        self.assertTrue(result.runtime_result.success)
-        self.assertIs(runtime.context.device_registry.get("lamp_1").state.properties["power"], True)
-        self.assertIs(decision.commands_executed, False)
-
-    def test_spanish_off_light_in_room_executes_and_turns_off(self):
-        runtime = build_http_runtime(RecordingSimulatedDriver(), devices=[room_lamp()])
-        gate = ExecutionGate(runtime)
-        decision = run_decision("Apaga la luz del cuarto.", runtime)
-
-        result = gate.execute(decision)
-
-        self.assertTrue(result.executed)
-        self.assertEqual(result.arguments, {"state": "false"})
-        self.assertTrue(result.runtime_result.success)
-        self.assertIs(runtime.context.device_registry.get("lamp_1").state.properties["power"], False)
-        self.assertIs(decision.commands_executed, False)
-
-    def test_e2e_uses_existing_planner_and_mutation_result(self):
-        runtime = build_http_runtime(RecordingSimulatedDriver(), devices=[room_lamp()])
-        gate = ExecutionGate(runtime)
-        decision = run_decision("Enciende la luz del cuarto.", runtime)
-
-        result = gate.execute(decision)
-
-        self.assertEqual(result.runtime_result.data["operation"], APPLY_OPERATION)
-        self.assertEqual(result.runtime_result.data["capability"], "power.switch")
-
     def test_ambiguous_request_stops_before_runtime(self):
         driver = RecordingSimulatedDriver()
         runtime = build_http_runtime(driver, devices=two_room_lamps())
@@ -401,24 +798,47 @@ class ExecutionGateE2ETests(unittest.TestCase):
         decision = run_decision("Enciende la luz.", runtime)
 
         self.assertEqual(decision.status, NEEDS_CLARIFICATION)
-        result = gate.execute(decision)
+        result = gate.prepare(decision)
 
-        self.assertFalse(result.executed)
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
         self.assertEqual(result.reason, REJECT_DECISION_NOT_EXECUTABLE)
         self.assertEqual(driver.apply_calls, 0)
 
-    def test_fabricated_device_request_stops_before_runtime(self):
+    def test_fabricated_room_request_stops_before_runtime(self):
         driver = RecordingSimulatedDriver()
         runtime = build_http_runtime(driver, devices=[room_lamp()])
         gate = ExecutionGate(runtime)
         decision = run_decision("Enciende la luz del garage.", runtime)
 
         self.assertEqual(decision.status, NEEDS_CLARIFICATION)
-        result = gate.execute(decision)
+        result = gate.prepare(decision)
 
-        self.assertFalse(result.executed)
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
         self.assertEqual(result.reason, REJECT_DECISION_NOT_EXECUTABLE)
         self.assertEqual(driver.apply_calls, 0)
+
+    def test_full_vertical_requires_confirmation_then_executes(self):
+        driver = RecordingSimulatedDriver()
+        runtime = build_http_runtime(driver, devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        decision = run_decision("Enciende la luz del cuarto.", runtime)
+
+        self.assertEqual(decision.status, EXECUTABLE_CANDIDATE)
+        prepared = gate.prepare(decision)
+        self.assertEqual(prepared.status, GATE_STATUS_CONFIRMATION_REQUIRED)
+        self.assertEqual(
+            runtime.context.device_registry.get("lamp_1").state.properties.get("power"),
+            None,
+        )
+        self.assertEqual(driver.apply_calls, 0)
+
+        confirmed = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+        self.assertEqual(confirmed.status, GATE_STATUS_EXECUTED)
+        self.assertEqual(driver.apply_calls, 1)
+        self.assertIs(
+            runtime.context.device_registry.get("lamp_1").state.properties["power"],
+            True,
+        )
 
 
 class ExecutionGateImportBoundaryTests(unittest.TestCase):
@@ -429,6 +849,7 @@ class ExecutionGateImportBoundaryTests(unittest.TestCase):
             "jarvis_core/ai/understanding.py",
             "jarvis_core/ai/validation.py",
             "jarvis_core/ai/contracts.py",
+            "jarvis_core/ai/confirmation.py",
             "jarvis_core/ai/context.py",
         ):
             with open(path, encoding="utf-8") as handle:
@@ -492,27 +913,68 @@ class ExecutionGateImportBoundaryTests(unittest.TestCase):
 
 
 class ExecutionGateCliTests(unittest.TestCase):
-    def test_tool_reports_executed_on_room_light(self):
+    def test_default_tool_run_never_executes(self):
         payload = run_ai_execution_gate("Enciende la luz del cuarto.")
 
         self.assertEqual(payload["provider"], "demo-understanding-provider")
         self.assertEqual(payload["decision"]["status"], EXECUTABLE_CANDIDATE)
         self.assertIs(payload["decision"]["commands_executed"], False)
         gate = payload["gate"]
-        self.assertTrue(gate["executed"])
+        self.assertEqual(gate["status"], GATE_STATUS_CONFIRMATION_REQUIRED)
+        self.assertIs(gate["commands_executed"], False)
+        self.assertTrue(gate["confirmation_id"])
+        self.assertTrue(gate["plan_digest"])
+        self.assertIsNone(gate["runtime"])
+        self.assertIs(payload["execution"]["runtime"], False)
+        self.assertIsNone(payload["device_state"]["power"])
+
+    def test_tool_confirm_flag_turns_lamp_on(self):
+        payload = run_ai_execution_gate(
+            "Enciende la luz del cuarto.",
+            confirm=True,
+        )
+
+        gate = payload["gate"]
+        self.assertEqual(gate["status"], GATE_STATUS_EXECUTED)
+        self.assertIs(gate["commands_executed"], True)
         self.assertEqual(gate["device_id"], "lamp_1")
         self.assertEqual(gate["arguments"], {"state": "true"})
-        self.assertIsNone(gate["reason"])
         self.assertTrue(gate["runtime"]["success"])
+        self.assertIs(payload["execution"]["runtime"], True)
         self.assertIs(payload["execution"]["hardware"], False)
+        self.assertIs(payload["device_state"]["power"], True)
+
+    def test_tool_confirm_flag_turns_lamp_off(self):
+        payload = run_ai_execution_gate(
+            "Apaga la luz del cuarto.",
+            confirm=True,
+        )
+
+        gate = payload["gate"]
+        self.assertEqual(gate["status"], GATE_STATUS_EXECUTED)
+        self.assertIs(gate["commands_executed"], True)
+        self.assertEqual(gate["arguments"], {"state": "false"})
+        self.assertIs(payload["device_state"]["power"], False)
 
     def test_tool_reports_blocked_for_unknown_room(self):
         payload = run_ai_execution_gate("Apaga la luz del garage.")
 
         gate = payload["gate"]
-        self.assertFalse(gate["executed"])
+        self.assertEqual(gate["status"], GATE_STATUS_REJECTED)
         self.assertEqual(gate["reason"], REJECT_DECISION_NOT_EXECUTABLE)
+        self.assertIs(gate["commands_executed"], False)
         self.assertIsNone(gate["runtime"])
+        self.assertIs(payload["execution"]["runtime"], False)
+
+    def test_format_gate_text_payload_renders_confirmation_required(self):
+        payload = run_ai_execution_gate("Enciende la luz del cuarto.")
+        rendered = format_gate_text_payload(payload)
+
+        self.assertIn("status: confirmation_required", rendered)
+        self.assertIn("commands_executed: false", rendered)
+        self.assertIn("confirmation_id: ", rendered)
+        self.assertIn("plan_digest: ", rendered)
+        self.assertIn("lamp_power: none", rendered)
 
     def test_tool_argument_parser_has_no_bypass_flags(self):
         parser = build_argument_parser()
@@ -524,7 +986,6 @@ class ExecutionGateCliTests(unittest.TestCase):
         for forbidden in (
             "--force",
             "--bypass",
-            "--confirm",
             "--allow-mutation",
             "--allow-unsafe",
             "--no-gate",
@@ -534,6 +995,7 @@ class ExecutionGateCliTests(unittest.TestCase):
             "--request",
             "--json",
             "--show-canonical",
+            "--confirm",
         ):
             self.assertIn(required, option_strings)
 
@@ -571,7 +1033,13 @@ class StaticUnderstandingProvider:
         return self.output
 
 
-def executable_decision(command, *, target="lamp_1", capability="power.switch"):
+def executable_decision(
+    command,
+    *,
+    target="lamp_1",
+    capability="power.switch",
+    confirmation_required=True,
+):
     return LocalUnderstandingDecision(
         provider_id="p",
         model_id="m",
@@ -579,13 +1047,28 @@ def executable_decision(command, *, target="lamp_1", capability="power.switch"):
         proposal_valid=True,
         resolver_kind=PLAN_KIND_EXECUTE,
         planner_kind=DEVICE_EXECUTE_COMMAND,
-        confirmation_required=True,
-        plan=execute_plan(command, target=target, capability=capability),
+        confirmation_required=confirmation_required,
+        plan=execute_plan(
+            command,
+            target=target,
+            capability=capability,
+            confirmation_required=confirmation_required,
+        ),
         commands_executed=False,
     )
 
 
-def execute_plan(command, *, target="lamp_1", capability="power.switch"):
+def execute_plan(
+    command,
+    *,
+    target="lamp_1",
+    capability="power.switch",
+    confirmation_required=True,
+):
+    policy_flags = ("device_mutation",) if not confirmation_required else (
+        "device_mutation",
+        "requires_confirmation",
+    )
     return AIActionPlan(
         schema_version=PLAN_SCHEMA_VERSION,
         kind=PLAN_KIND_EXECUTE,
@@ -597,13 +1080,13 @@ def execute_plan(command, *, target="lamp_1", capability="power.switch"):
                 target_device_id=target,
                 capability_name=capability,
                 action_kind=ACTION_KIND_MUTATE,
-                requires_confirmation=True,
-                policy_flags=("device_mutation", "requires_confirmation"),
+                requires_confirmation=confirmation_required,
+                policy_flags=policy_flags,
             ),
         ),
         safe_summary="Prepared a deterministic device plan.",
-        confirmation_required=True,
-        policy_flags=("device_mutation", "requires_confirmation"),
+        confirmation_required=confirmation_required,
+        policy_flags=policy_flags,
     )
 
 
@@ -682,6 +1165,22 @@ def room_lamp():
                 kind="action",
                 parameters={"state": {"type": "string", "required": True}},
             ),
+            DeviceCapability(
+                name="status.read",
+                kind="reading",
+                parameters={},
+            ),
+        ],
+        metadata={"room": "cuarto"},
+    )
+
+
+def reading_only_lamp():
+    return Device(
+        id="lamp_1",
+        name="Lamp",
+        type="light",
+        capabilities=[
             DeviceCapability(
                 name="status.read",
                 kind="reading",
