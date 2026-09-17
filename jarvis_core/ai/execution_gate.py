@@ -46,6 +46,7 @@ Result semantics are explicit and never conflated:
 from __future__ import annotations
 
 from dataclasses import dataclass
+import threading
 from typing import TYPE_CHECKING
 
 from jarvis_core.ai.confirmation import AIConfirmationStore
@@ -110,6 +111,7 @@ REJECT_DEVICE_UNAVAILABLE = "device_unavailable"
 REJECT_CAPABILITY_UNAVAILABLE = "capability_unavailable"
 REJECT_CONFIRMATION_NOT_FOUND = "confirmation_not_found"
 REJECT_CONFIRMATION_DIGEST_MISMATCH = "confirmation_digest_mismatch"
+REJECT_REVALIDATION_FAILED = "revalidation_failed"
 
 REJECT_REASONS = frozenset(
     {
@@ -125,6 +127,7 @@ REJECT_REASONS = frozenset(
         REJECT_CAPABILITY_UNAVAILABLE,
         REJECT_CONFIRMATION_NOT_FOUND,
         REJECT_CONFIRMATION_DIGEST_MISMATCH,
+        REJECT_REVALIDATION_FAILED,
     }
 )
 
@@ -133,6 +136,8 @@ REJECT_MESSAGE = "Execution gate rejected the request."
 CANCELLED_MESSAGE = "AI plan execution was cancelled."
 RUNTIME_EXECUTION_FAILED = "runtime_execution_failed"
 RUNTIME_FAILURE_MESSAGE = "Runtime did not complete the command."
+RUNTIME_RESULT_INVALID = "runtime_result_invalid"
+RUNTIME_RESULT_MESSAGE = "Runtime returned an unexpected result shape."
 
 
 @dataclass(frozen=True)
@@ -262,6 +267,7 @@ class ExecutionGate:
         if not callable(getattr(self.planner, "plan", None)):
             raise TypeError("ExecutionGate expects a planner with plan(text)")
         self.confirmation_store = confirmation_store or AIConfirmationStore()
+        self._lock = threading.Lock()
 
     def prepare(self, decision) -> ExecutionGateResult:
         """Validate a decision and bind a pending confirmation; never executes."""
@@ -271,7 +277,13 @@ class ExecutionGate:
             self._verify_availability(device_id, capability)
         except _GateRejection as rejection:
             return self._rejected(rejection.reason, error=None)
-        state = self.confirmation_store.create(plan)
+        except Exception:
+            return self._rejected(REJECT_REVALIDATION_FAILED, error=None)
+        try:
+            with self._lock:
+                state = self.confirmation_store.create(plan)
+        except Exception:
+            return self._rejected(REJECT_REVALIDATION_FAILED, error=None)
         return ExecutionGateResult(
             status=GATE_STATUS_CONFIRMATION_REQUIRED,
             success=False,
@@ -288,44 +300,58 @@ class ExecutionGate:
         )
 
     def confirm(self, confirmation_id, plan_digest) -> ExecutionGateResult:
-        """Re-validate a stored plan and execute it exactly once, or reject."""
-        pending = self.confirmation_store.pending
-        if pending is None or pending.pending_plan_id != confirmation_id:
-            return self._rejected(
-                REJECT_CONFIRMATION_NOT_FOUND,
-                error=AI_EXECUTION_NOT_CONFIRMED,
-            )
-        if pending.normalized_plan_digest != plan_digest:
-            self.confirmation_store.consume()
-            return self._rejected(
-                REJECT_CONFIRMATION_DIGEST_MISMATCH,
-                error=AI_EXECUTION_NOT_CONFIRMED,
-            )
+        """Claim a confirmation atomically, then re-validate and execute once.
 
-        plan = self.confirmation_store.confirm(
-            confirmation_id,
-            normalized_plan_digest=plan_digest,
-        )
+        The token is claimed (consumed) under the gate lock before any
+        revalidation or Runtime work. From that point the token is unusable:
+        concurrent or replayed confirms, and cancels, all see it as unavailable.
+        """
+        with self._lock:
+            pending = self.confirmation_store.pending
+            if pending is None or pending.pending_plan_id != confirmation_id:
+                return self._rejected(
+                    REJECT_CONFIRMATION_NOT_FOUND,
+                    error=AI_EXECUTION_NOT_CONFIRMED,
+                )
+            if pending.normalized_plan_digest != plan_digest:
+                self.confirmation_store.consume()
+                return self._rejected(
+                    REJECT_CONFIRMATION_DIGEST_MISMATCH,
+                    error=AI_EXECUTION_NOT_CONFIRMED,
+                )
+            plan = self.confirmation_store.consume()
+            claimed_id = pending.pending_plan_id
+            claimed_digest = pending.normalized_plan_digest
+
         try:
             command, device_id, capability, parameters = self._derive(plan)
             self._verify_availability(device_id, capability)
         except _GateRejection as rejection:
-            self.confirmation_store.consume()
             return self._rejected(rejection.reason, error=None)
+        except Exception:
+            return self._rejected(REJECT_REVALIDATION_FAILED, error=None)
 
         try:
             runtime_result = self.runtime.execute(command)
         except Exception:
-            self.confirmation_store.consume()
             return self._execution_failed_after_attempt(
-                confirmation_id=confirmation_id,
-                plan_digest=plan_digest,
+                confirmation_id=claimed_id,
+                plan_digest=claimed_digest,
                 device_id=device_id,
                 capability=capability,
                 parameters=parameters,
             )
-        self.confirmation_store.consume()
-        if not runtime_result.success:
+
+        bounded_result = self._bounded_runtime_result(runtime_result)
+        if bounded_result is None:
+            return self._execution_failed_result_invalid(
+                confirmation_id=claimed_id,
+                plan_digest=claimed_digest,
+                device_id=device_id,
+                capability=capability,
+                parameters=parameters,
+            )
+        if not bounded_result.success:
             return ExecutionGateResult(
                 status=GATE_STATUS_EXECUTION_FAILED,
                 success=False,
@@ -333,11 +359,11 @@ class ExecutionGate:
                 device_id=device_id,
                 capability=capability,
                 arguments=dict(parameters),
-                confirmation_id=confirmation_id,
-                plan_digest=plan_digest,
-                runtime_result=runtime_result,
-                error=runtime_result.error,
-                message=runtime_result.message,
+                confirmation_id=claimed_id,
+                plan_digest=claimed_digest,
+                runtime_result=bounded_result,
+                error=bounded_result.error,
+                message=bounded_result.message,
                 reason=None,
             )
         return ExecutionGateResult(
@@ -347,23 +373,25 @@ class ExecutionGate:
             device_id=device_id,
             capability=capability,
             arguments=dict(parameters),
-            confirmation_id=confirmation_id,
-            plan_digest=plan_digest,
-            runtime_result=runtime_result,
+            confirmation_id=claimed_id,
+            plan_digest=claimed_digest,
+            runtime_result=bounded_result,
             error=None,
-            message=runtime_result.message,
+            message=bounded_result.message,
             reason=None,
         )
 
     def cancel(self, confirmation_id) -> ExecutionGateResult:
         """Invalidate a pending confirmation; never calls Runtime."""
-        pending = self.confirmation_store.pending
-        if pending is None or pending.pending_plan_id != confirmation_id:
-            return self._rejected(
-                REJECT_CONFIRMATION_NOT_FOUND,
-                error=AI_EXECUTION_NOT_CONFIRMED,
-            )
-        self.confirmation_store.cancel(confirmation_id)
+        with self._lock:
+            pending = self.confirmation_store.pending
+            if pending is None or pending.pending_plan_id != confirmation_id:
+                return self._rejected(
+                    REJECT_CONFIRMATION_NOT_FOUND,
+                    error=AI_EXECUTION_NOT_CONFIRMED,
+                )
+            self.confirmation_store.cancel(confirmation_id)
+            claimed_digest = pending.normalized_plan_digest
         return ExecutionGateResult(
             status=GATE_STATUS_CANCELLED,
             success=False,
@@ -372,7 +400,7 @@ class ExecutionGate:
             capability=None,
             arguments=None,
             confirmation_id=confirmation_id,
-            plan_digest=pending.normalized_plan_digest,
+            plan_digest=claimed_digest,
             runtime_result=None,
             error=AI_EXECUTION_NOT_CONFIRMED,
             message=CANCELLED_MESSAGE,
@@ -502,6 +530,57 @@ class ExecutionGate:
             reason=None,
         )
 
+    def _bounded_runtime_result(self, result):
+        if not isinstance(result, CapabilityResult):
+            return None
+        if not isinstance(result.success, bool):
+            return None
+        message = (
+            result.message if isinstance(result.message, str) else RUNTIME_FAILURE_MESSAGE
+        )
+        error = (
+            result.error
+            if isinstance(result.error, str) and result.error.strip()
+            else None
+        )
+        data = result.data if isinstance(result.data, dict) else {}
+        return CapabilityResult(
+            success=result.success,
+            message=message,
+            data=data,
+            error=error,
+        )
+
+    def _execution_failed_result_invalid(
+        self,
+        *,
+        confirmation_id,
+        plan_digest,
+        device_id,
+        capability,
+        parameters,
+    ):
+        result = CapabilityResult(
+            success=False,
+            message=RUNTIME_RESULT_MESSAGE,
+            data={"device_id": device_id, "capability": capability},
+            error=RUNTIME_RESULT_INVALID,
+        )
+        return ExecutionGateResult(
+            status=GATE_STATUS_EXECUTION_FAILED,
+            success=False,
+            commands_executed=True,
+            device_id=device_id,
+            capability=capability,
+            arguments=dict(parameters),
+            confirmation_id=confirmation_id,
+            plan_digest=plan_digest,
+            runtime_result=result,
+            error=RUNTIME_RESULT_INVALID,
+            message=RUNTIME_RESULT_MESSAGE,
+            reason=None,
+        )
+
 
 class _GateRejection(Exception):
     def __init__(self, reason):
@@ -541,6 +620,11 @@ __all__ = [
     "REJECT_MISSING_EXECUTE_PLAN",
     "REJECT_MULTI_STEP_PLAN",
     "REJECT_REASONS",
+    "REJECT_REVALIDATION_FAILED",
     "REJECT_UNSUPPORTED_CAPABILITY",
     "REJECT_UNSUPPORTED_DECISION",
+    "RUNTIME_EXECUTION_FAILED",
+    "RUNTIME_FAILURE_MESSAGE",
+    "RUNTIME_RESULT_INVALID",
+    "RUNTIME_RESULT_MESSAGE",
 ]

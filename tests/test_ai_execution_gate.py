@@ -20,6 +20,7 @@ These tests prove the corrective execution vertical invariants:
 import ast
 from dataclasses import FrozenInstanceError
 from types import SimpleNamespace
+import threading
 import unittest
 
 from jarvis_core.ai.confirmation import AIConfirmationStore, plan_digest
@@ -56,11 +57,15 @@ from jarvis_core.ai.execution_gate import (
     REJECT_DEVICE_UNAVAILABLE,
     REJECT_INVALID_ARGUMENTS,
     REJECT_INVALID_COMMAND,
+    REJECT_MESSAGE,
     REJECT_MULTI_STEP_PLAN,
     REJECT_UNSUPPORTED_CAPABILITY,
     REJECT_UNSUPPORTED_DECISION,
+    REJECT_REVALIDATION_FAILED,
     RUNTIME_EXECUTION_FAILED,
     RUNTIME_FAILURE_MESSAGE,
+    RUNTIME_RESULT_INVALID,
+    RUNTIME_RESULT_MESSAGE,
     ExecutionGate,
     ExecutionGateResult,
 )
@@ -158,6 +163,36 @@ class FlippingPlanner:
         if self.calls <= 1:
             return Planner().plan(text, source=source)
         return Command(name="unknown", args={"text": text}, source=source)
+
+
+class PlannerRaisesOnReplan:
+    def __init__(self, error):
+        self.calls = 0
+        self.error = error
+
+    def plan(self, text, source="cli"):
+        self.calls += 1
+        if self.calls <= 1:
+            return Planner().plan(text, source=source)
+        raise self.error
+
+
+class NoneReturningRuntime(RecordingRuntime):
+    def execute(self, command, correlation_id=None):
+        self.executions.append(command)
+        return None
+
+
+class WeirdReturningRuntime(RecordingRuntime):
+    def execute(self, command, correlation_id=None):
+        self.executions.append(command)
+        return object()
+
+
+class MalformedCapabilityRuntime(RecordingRuntime):
+    def execute(self, command, correlation_id=None):
+        self.executions.append(command)
+        return CapabilityResult(success=None, message=None, error="oops")
 
 
 class ExecutionGateResultInvariantTests(unittest.TestCase):
@@ -788,6 +823,246 @@ class ExecutionGateConfirmTests(unittest.TestCase):
         result = self.gate.confirm(prepared.confirmation_id, "bad")
         self.assertIsNotNone(result.error)
         self.assertIsNone(result.runtime_result)
+
+
+class ExecutionGateConfirmSafetyTests(unittest.TestCase):
+    def setUp(self):
+        self.runtime = RecordingRuntime(devices=[room_lamp()])
+        self.gate = ExecutionGate(self.runtime)
+
+    def prepared(self, command="device apply lamp_1 power.switch state=true"):
+        return self.gate.prepare(executable_decision(command))
+
+    def race_confirm(self, gate, confirmation_id, plan_digest):
+        results = []
+        barrier = threading.Barrier(2)
+
+        def worker():
+            barrier.wait()
+            results.append(gate.confirm(confirmation_id, plan_digest))
+
+        left, right = threading.Thread(target=worker), threading.Thread(target=worker)
+        left.start()
+        right.start()
+        left.join()
+        right.join()
+        return results
+
+    def test_concurrent_confirm_claims_exactly_once(self):
+        prepared = self.prepared()
+        results = self.race_confirm(
+            self.gate,
+            prepared.confirmation_id,
+            prepared.plan_digest,
+        )
+
+        self.assertEqual(len(results), 2)
+        executed = [r for r in results if r.status == GATE_STATUS_EXECUTED]
+        rejected = [r for r in results if r.status == GATE_STATUS_REJECTED]
+        self.assertEqual(len(executed), 1)
+        self.assertEqual(len(rejected), 1)
+        self.assertEqual(rejected[0].reason, REJECT_CONFIRMATION_NOT_FOUND)
+        self.assertEqual(len(self.runtime.executions), 1)
+
+    def test_concurrent_confirm_with_failing_runtime_claims_once(self):
+        runtime = NoneReturningRuntime(devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        prepared = gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+
+        results = self.race_confirm(gate, prepared.confirmation_id, prepared.plan_digest)
+
+        statuses = sorted(result.status for result in results)
+        self.assertEqual(
+            statuses,
+            sorted([GATE_STATUS_EXECUTION_FAILED, GATE_STATUS_REJECTED]),
+        )
+        self.assertEqual(len(runtime.executions), 1)
+
+    def test_confirm_vs_cancel_race_runtime_at_most_once(self):
+        for _ in range(10):
+            runtime = RecordingRuntime(devices=[room_lamp()])
+            gate = ExecutionGate(runtime)
+            prepared = gate.prepare(
+                executable_decision("device apply lamp_1 power.switch state=true")
+            )
+            results = []
+            barrier = threading.Barrier(2)
+
+            def worker(kind):
+                barrier.wait()
+                if kind == "confirm":
+                    results.append(
+                        gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+                    )
+                else:
+                    results.append(gate.cancel(prepared.confirmation_id))
+
+            confirm_thread = threading.Thread(target=worker, args=("confirm",))
+            cancel_thread = threading.Thread(target=worker, args=("cancel",))
+            confirm_thread.start()
+            cancel_thread.start()
+            confirm_thread.join()
+            cancel_thread.join()
+
+            self.assertLessEqual(len(runtime.executions), 1)
+            self.assertIsNone(gate.confirmation_store.pending)
+            replay = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+            self.assertEqual(replay.status, GATE_STATUS_REJECTED)
+            self.assertEqual(replay.reason, REJECT_CONFIRMATION_NOT_FOUND)
+
+    def test_repeated_concurrent_confirm_never_double_executes(self):
+        for _ in range(50):
+            runtime = RecordingRuntime(devices=[room_lamp()])
+            gate = ExecutionGate(runtime)
+            prepared = gate.prepare(
+                executable_decision("device apply lamp_1 power.switch state=true")
+            )
+
+            results = self.race_confirm(
+                gate,
+                prepared.confirmation_id,
+                prepared.plan_digest,
+            )
+
+            self.assertEqual(len(runtime.executions), 1)
+            executed = [r for r in results if r.status == GATE_STATUS_EXECUTED]
+            rejected = [r for r in results if r.status == GATE_STATUS_REJECTED]
+            self.assertEqual(len(executed), 1)
+            self.assertEqual(len(rejected), 1)
+            self.assertIsNone(gate.confirmation_store.pending)
+
+    def test_planner_exception_in_confirm_is_bounded_and_consumes_token(self):
+        gate = ExecutionGate(
+            self.runtime,
+            planner=PlannerRaisesOnReplan(RuntimeError("sensitive planner detail")),
+        )
+        prepared = gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+        self.assertIsNotNone(gate.confirmation_store.pending)
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
+        self.assertEqual(result.reason, REJECT_REVALIDATION_FAILED)
+        self.assertIs(result.commands_executed, False)
+        self.assertEqual(self.runtime.executions, [])
+        self.assertIsNone(gate.confirmation_store.pending)
+        self.assertEqual(result.message, REJECT_MESSAGE)
+        self.assertNotIn("sensitive", str(result))
+
+    def test_unexpected_validation_exception_in_confirm_is_bounded_and_consumes_token(self):
+        gate = ExecutionGate(
+            self.runtime,
+            planner=PlannerRaisesOnReplan(ValueError("sensitive planner detail")),
+        )
+        prepared = gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_REJECTED)
+        self.assertEqual(result.reason, REJECT_REVALIDATION_FAILED)
+        self.assertIs(result.commands_executed, False)
+        self.assertEqual(self.runtime.executions, [])
+        self.assertIsNone(gate.confirmation_store.pending)
+        self.assertNotIn("sensitive", str(result))
+
+    def test_runtime_execute_raise_is_bounded_no_raw_leak(self):
+        runtime = RaisingRuntime(devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        prepared = gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_EXECUTION_FAILED)
+        self.assertIs(result.commands_executed, True)
+        self.assertEqual(result.error, RUNTIME_EXECUTION_FAILED)
+        self.assertEqual(result.runtime_result.message, RUNTIME_FAILURE_MESSAGE)
+        self.assertEqual(len(runtime.executions), 1)
+        self.assertNotIn("boom", str(result))
+
+    def test_runtime_returns_none_is_bounded_execution_failed(self):
+        runtime = NoneReturningRuntime(devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        prepared = gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_EXECUTION_FAILED)
+        self.assertIs(result.commands_executed, True)
+        self.assertEqual(result.error, RUNTIME_RESULT_INVALID)
+        self.assertEqual(result.runtime_result.error, RUNTIME_RESULT_INVALID)
+        self.assertEqual(len(runtime.executions), 1)
+
+    def test_runtime_returns_arbitrary_object_is_bounded_execution_failed(self):
+        runtime = WeirdReturningRuntime(devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        prepared = gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_EXECUTION_FAILED)
+        self.assertIs(result.commands_executed, True)
+        self.assertEqual(result.error, RUNTIME_RESULT_INVALID)
+        self.assertEqual(result.runtime_result.message, RUNTIME_RESULT_MESSAGE)
+        self.assertEqual(len(runtime.executions), 1)
+
+    def test_runtime_returns_malformed_capability_result_is_bounded(self):
+        runtime = MalformedCapabilityRuntime(devices=[room_lamp()])
+        gate = ExecutionGate(runtime)
+        prepared = gate.prepare(
+            executable_decision("device apply lamp_1 power.switch state=true")
+        )
+
+        result = gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+
+        self.assertEqual(result.status, GATE_STATUS_EXECUTION_FAILED)
+        self.assertIs(result.commands_executed, True)
+        self.assertEqual(result.error, RUNTIME_RESULT_INVALID)
+        self.assertEqual(len(runtime.executions), 1)
+
+    def test_wrong_digest_consumes_token_and_blocks_correct_retry(self):
+        prepared = self.prepared()
+
+        wrong = self.gate.confirm(prepared.confirmation_id, "0" * 64)
+        self.assertEqual(wrong.status, GATE_STATUS_REJECTED)
+        self.assertEqual(wrong.reason, REJECT_CONFIRMATION_DIGEST_MISMATCH)
+        self.assertEqual(self.runtime.executions, [])
+
+        retry = self.gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+        self.assertEqual(retry.status, GATE_STATUS_REJECTED)
+        self.assertEqual(retry.reason, REJECT_CONFIRMATION_NOT_FOUND)
+        self.assertEqual(self.runtime.executions, [])
+        self.assertIsNone(self.gate.confirmation_store.pending)
+
+    def test_cancel_after_claim_cannot_enable_replay(self):
+        prepared = self.prepared()
+
+        confirmed = self.gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+        self.assertEqual(confirmed.status, GATE_STATUS_EXECUTED)
+
+        cancelled = self.gate.cancel(prepared.confirmation_id)
+        self.assertEqual(cancelled.status, GATE_STATUS_REJECTED)
+        self.assertEqual(cancelled.reason, REJECT_CONFIRMATION_NOT_FOUND)
+
+        replay = self.gate.confirm(prepared.confirmation_id, prepared.plan_digest)
+        self.assertEqual(replay.status, GATE_STATUS_REJECTED)
+        self.assertEqual(len(self.runtime.executions), 1)
+
+    def test_prepare_still_never_executes_under_lock(self):
+        result = self.prepared()
+        self.assertEqual(result.status, GATE_STATUS_CONFIRMATION_REQUIRED)
+        self.assertEqual(self.runtime.executions, [])
 
 
 class ExecutionGateE2ETests(unittest.TestCase):
