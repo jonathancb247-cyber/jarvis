@@ -44,6 +44,10 @@ ALLOWED_REMOTE_ERRORS = {
 RESPONSE_FIELDS = {"request_id", "ok", "semantic", "error"}
 REQUEST_OPERATIONS = {"read", "apply"}
 
+POWER_SWITCH_CAPABILITY = "power.switch"
+POWER_SWITCH_STATE_KEY = "state"
+POWER_SWITCH_STATES = ("true", "false")
+
 
 @dataclass(frozen=True)
 class MQTTDeviceBinding:
@@ -207,6 +211,12 @@ class MQTTDeviceDriver:
         if capability_name not in binding.allowed_capabilities:
             return DriverResult(False, {}, OPERATION_NOT_SUPPORTED)
 
+        requested_power_state = None
+        if operation == "apply" and capability_name == POWER_SWITCH_CAPABILITY:
+            requested_power_state = _requested_power_switch_state(parameters)
+            if requested_power_state is None:
+                return DriverResult(False, {}, INVALID_PARAMETERS)
+
         request_id = self._new_request_id()
         if request_id is None:
             return DriverResult(False, {}, CONFIGURATION_INVALID)
@@ -238,7 +248,12 @@ class MQTTDeviceDriver:
         except Exception:
             return DriverResult(False, {}, CONNECTION_FAILED)
 
-        return self._driver_result_from_response(response, request_id, binding)
+        return self._driver_result_from_response(
+            response,
+            request_id,
+            binding,
+            requested_power_state,
+        )
 
     def _new_request_id(self):
         request_id = self._request_id_factory()
@@ -275,7 +290,13 @@ class MQTTDeviceDriver:
             return None
         return payload
 
-    def _driver_result_from_response(self, response, request_id, binding):
+    def _driver_result_from_response(
+        self,
+        response,
+        request_id,
+        binding,
+        requested_power_state=None,
+    ):
         try:
             payload = _decode_response(response, self.max_response_bytes)
         except (MQTTResponseTooLargeError, MQTTInvalidJsonError):
@@ -301,6 +322,18 @@ class MQTTDeviceDriver:
                 return DriverResult(False, {}, INVALID_RESPONSE)
             if not _semantic_keys_allowed(semantic, binding.allowed_response_keys):
                 return DriverResult(False, {}, INVALID_RESPONSE)
+            if requested_power_state is not None:
+                observed_state = _power_switch_semantic_state(
+                    semantic,
+                    requested_power_state,
+                )
+                if observed_state is None:
+                    return DriverResult(False, {}, INVALID_RESPONSE)
+                return DriverResult(
+                    True,
+                    {POWER_SWITCH_STATE_KEY: observed_state},
+                    None,
+                )
             return DriverResult(True, semantic.copy(), None)
         if semantic:
             return DriverResult(False, {}, INVALID_RESPONSE)
@@ -340,6 +373,30 @@ def _semantic_keys_allowed(semantic, allowed_response_keys):
         if key not in allowed:
             return False
     return True
+
+
+def _requested_power_switch_state(parameters):
+    if not isinstance(parameters, dict):
+        return None
+    if POWER_SWITCH_STATE_KEY not in parameters:
+        return None
+    state = parameters[POWER_SWITCH_STATE_KEY]
+    if state not in POWER_SWITCH_STATES:
+        return None
+    return state
+
+
+def _power_switch_semantic_state(semantic, requested_state):
+    if not isinstance(semantic, dict):
+        return None
+    if set(semantic) != {POWER_SWITCH_STATE_KEY}:
+        return None
+    state = semantic.get(POWER_SWITCH_STATE_KEY)
+    if type(state) is not bool:
+        return None
+    if state != (requested_state == "true"):
+        return None
+    return state
 
 
 def _validate_topic(topic, field_name):

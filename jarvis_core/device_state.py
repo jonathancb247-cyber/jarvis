@@ -53,6 +53,18 @@ class DeviceStateCoordinator:
                     status="unavailable",
                     properties=device.state.properties.copy(),
                 )
+            if operation == "apply" and device.state.status == "known":
+                # An uncertain mutation (timeout, transport failure, malformed
+                # or mismatched acknowledgement) must NOT leave the previous
+                # value represented as current truth. Retain the previous
+                # semantic value and demote freshness without inventing a value;
+                # a fresh validated acknowledgement restores status to "known".
+                return self._update_state(
+                    device,
+                    registry,
+                    status="stale",
+                    properties=device.state.properties.copy(),
+                )
             if operation == "read" and device.state.status == "known":
                 return self._update_state(
                     device,

@@ -1147,6 +1147,7 @@ class ExecutionGateImportBoundaryTests(unittest.TestCase):
                 "jarvis_core.drivers",
                 "jarvis_core.http_driver",
                 "jarvis_core.mqtt_driver",
+                "jarvis_core.mqtt_paho",
                 "jarvis_core.api",
                 "jarvis_core.dashboard",
             }
@@ -1181,6 +1182,7 @@ class ExecutionGateImportBoundaryTests(unittest.TestCase):
             "jarvis_core.drivers",
             "jarvis_core.http_driver",
             "jarvis_core.mqtt_driver",
+            "jarvis_core.mqtt_paho",
             "jarvis_core.api",
             "jarvis_core.dashboard",
         }

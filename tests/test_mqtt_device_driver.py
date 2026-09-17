@@ -90,7 +90,7 @@ class MQTTDeviceDriverTests(unittest.TestCase):
             response_topic="jarvis/devices/sensor_1/response",
             timeout_seconds=2.0,
             allowed_capabilities=("temperature.read", "power.switch"),
-            allowed_response_keys=("temperature", "power"),
+            allowed_response_keys=("temperature", "power", "state"),
         )
         store.register(binding)
         client = FakeMQTTClient(
@@ -158,7 +158,7 @@ class MQTTDeviceDriverTests(unittest.TestCase):
             response={
                 "request_id": "req-1",
                 "ok": True,
-                "semantic": {"power": True},
+                "semantic": {"state": True},
                 "error": None,
             }
         )
@@ -166,7 +166,7 @@ class MQTTDeviceDriverTests(unittest.TestCase):
         result = driver.apply(self.make_device(), "power.switch", {"state": "true"})
 
         self.assertTrue(result.success)
-        self.assertEqual({"power": True}, result.observations)
+        self.assertEqual({"state": True}, result.observations)
         request = json.loads(client.published[0][1].decode("utf-8"))
         self.assertEqual("apply", request["operation"])
         self.assertEqual({"state": "true"}, request["parameters"])
@@ -333,7 +333,7 @@ class MQTTDeviceRouterIntegrationTests(unittest.TestCase):
                 request_topic="jarvis/devices/sensor_1/request",
                 response_topic="jarvis/devices/sensor_1/response",
                 allowed_capabilities=("temperature.read", "power.switch"),
-                allowed_response_keys=("temperature", "power"),
+                allowed_response_keys=("temperature", "power", "state"),
             )
         )
         driver = MQTTDeviceDriver(

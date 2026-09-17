@@ -198,9 +198,28 @@ class DeviceStateCoordinatorTests(unittest.TestCase):
         self.assertEqual("unknown", state.status)
         self.assertEqual(0, len(registry.update_calls))
 
-    def test_failed_apply_after_known_preserves_current_mutation_semantics(self):
+    def test_failed_apply_after_known_demotes_freshness_to_stale(self):
         device = self.make_device()
         device.state = DeviceState(status="known", properties={"enabled": True})
+        registry = self.make_registry(device)
+        result = DriverResult(False, {}, REQUEST_TIMEOUT)
+
+        state = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            result,
+            registry,
+        )
+
+        self.assertEqual("stale", state.status)
+        self.assertEqual({"enabled": True}, state.properties)
+        self.assertIsNotNone(state.updated_at)
+        self.assertIs(registry.get(device.id).state, state)
+        self.assertEqual(1, len(registry.update_calls))
+
+    def test_failed_apply_after_unknown_preserves_unknown(self):
+        device = self.make_device()
         registry = self.make_registry(device)
         original_state = device.state
         result = DriverResult(False, {}, REQUEST_TIMEOUT)
@@ -214,9 +233,33 @@ class DeviceStateCoordinatorTests(unittest.TestCase):
         )
 
         self.assertIs(original_state, state)
-        self.assertEqual("known", state.status)
-        self.assertEqual({"enabled": True}, state.properties)
+        self.assertEqual("unknown", state.status)
         self.assertEqual(0, len(registry.update_calls))
+
+    def test_failed_apply_after_known_retains_value_and_fresh_ack_restores_known(self):
+        device = self.make_device()
+        device.state = DeviceState(status="known", properties={"enabled": False})
+        registry = self.make_registry(device)
+
+        uncertain = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            DriverResult(False, {}, REQUEST_TIMEOUT),
+            registry,
+        )
+        self.assertEqual("stale", uncertain.status)
+        self.assertEqual({"enabled": False}, uncertain.properties)
+
+        restored = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            DriverResult(True, {"enabled": True}, None),
+            registry,
+        )
+        self.assertEqual("known", restored.status)
+        self.assertEqual({"enabled": True}, restored.properties)
 
     def test_driver_does_not_modify_device_state(self):
         device = self.make_device()
