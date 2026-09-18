@@ -44,6 +44,9 @@ from jarvis_core.ai.understanding_decision import (
 from jarvis_core.bootstrap import build_runtime_from_profile
 from jarvis_core.configuration import RuntimeConfigurationLoader
 from jarvis_core.device_routing import (
+    CAPABILITY_NOT_FOUND_ERROR,
+    DRIVER_UNAVAILABLE_ERROR,
+    INVALID_PARAMETERS_ERROR,
     INVALID_RESPONSE_ERROR,
     REQUEST_TIMEOUT_ERROR,
     DeviceCommandRouter,
@@ -54,6 +57,7 @@ from jarvis_core.domain import Command
 from jarvis_core.drivers import (
     INVALID_PARAMETERS,
     INVALID_RESPONSE,
+    OPERATION_NOT_SUPPORTED,
     REQUEST_TIMEOUT,
 )
 from jarvis_core.mqtt_driver import (
@@ -396,8 +400,27 @@ class MQTTPowerSwitchContractTests(unittest.TestCase):
         for key in ("request_id", "ok", "error", "topic", "payload"):
             self.assertNotIn(key, result.observations)
 
+    def test_unsupported_capability_apply_is_pre_publish(self):
+        client = ScriptedMQTTClient()
+        driver = make_driver(client)
+
+        result = driver.apply(relay_device(), "brightness.set", {"level": 3})
+
+        self.assertFalse(result.success)
+        self.assertEqual(OPERATION_NOT_SUPPORTED, result.error)
+        self.assertEqual([], client.published)
+
     def test_invalid_power_switch_parameters_are_rejected_before_publish(self):
-        for parameters in [{}, {"state": "on"}, {"state": 1}, {"state": None}]:
+        for parameters in [
+            {},
+            {"state": "on"},
+            {"state": "TRUE"},
+            {"state": 1},
+            {"state": 2},
+            {"state": None},
+            {"state": True},
+            {"state": "true", "unexpected": "value"},
+        ]:
             with self.subTest(parameters=parameters):
                 client = ScriptedMQTTClient()
                 result = self.apply(client, parameters)
@@ -407,7 +430,7 @@ class MQTTPowerSwitchContractTests(unittest.TestCase):
 
 
 class MQTTPowerSwitchRouterTests(unittest.TestCase):
-    def make_router(self, client, request_ids=None, state_status="unknown", state_properties=None):
+    def make_router(self, client, request_ids=None, state_status="unknown", state_properties=None, bound=True):
         registry = DeviceRegistry()
         registry.register(
             relay_device(
@@ -415,18 +438,27 @@ class MQTTPowerSwitchRouterTests(unittest.TestCase):
                 state_properties=state_properties,
             )
         )
-        driver = make_driver(client, request_ids=request_ids)
+        if bound:
+            driver = make_driver(client, request_ids=request_ids)
+        else:
+            driver = MQTTDeviceDriver(
+                MQTTDeviceBindingStore(),
+                client=client,
+                request_id_factory=request_ids or (lambda: "req-1"),
+            )
         router = DeviceCommandRouter(registry, driver, DeviceStateCoordinator())
         return router, registry
 
-    def command(self, state):
+    def command(self, state, parameters=None):
+        params = {"state": state}
+        params.update(parameters or {})
         return Command(
             name="device.execute",
             args={
                 "device_id": "relay_1",
                 "capability": "power.switch",
                 "operation": "apply",
-                "parameters": {"state": state},
+                "parameters": params,
             },
             source="test",
         )
@@ -490,6 +522,90 @@ class MQTTPowerSwitchRouterTests(unittest.TestCase):
                 "error": None,
             },
         )
+
+        result = router.route(self.command("true"))
+
+        self.assertFalse(result.success)
+        self.assertEqual(INVALID_RESPONSE_ERROR, result.error)
+        state = registry.get("relay_1").state
+        self.assertEqual("stale", state.status)
+        self.assertEqual({"state": False}, state.properties)
+
+    def test_invalid_parameters_after_known_keeps_state_known(self):
+        client = ScriptedMQTTClient()
+        router, registry = self.make_router(
+            client,
+            request_ids=sequential_request_ids(),
+            state_status="known",
+            state_properties={"state": False},
+        )
+
+        result = router.route(self.command("true", {"unexpected": "value"}))
+
+        self.assertFalse(result.success)
+        self.assertEqual(INVALID_PARAMETERS_ERROR, result.error)
+        self.assertEqual([], client.published)
+        state = registry.get("relay_1").state
+        self.assertEqual("known", state.status)
+        self.assertEqual({"state": False}, state.properties)
+
+    def test_missing_binding_after_known_keeps_state_known(self):
+        client = ScriptedMQTTClient()
+        router, registry = self.make_router(
+            client,
+            request_ids=sequential_request_ids(),
+            state_status="known",
+            state_properties={"state": False},
+            bound=False,
+        )
+
+        result = router.route(self.command("true"))
+
+        self.assertFalse(result.success)
+        self.assertEqual(DRIVER_UNAVAILABLE_ERROR, result.error)
+        self.assertEqual([], client.published)
+        state = registry.get("relay_1").state
+        self.assertEqual("known", state.status)
+        self.assertEqual({"state": False}, state.properties)
+
+    def test_missing_capability_after_known_keeps_state_known(self):
+        client = ScriptedMQTTClient()
+        router, registry = self.make_router(
+            client,
+            request_ids=sequential_request_ids(),
+            state_status="known",
+            state_properties={"state": False},
+        )
+
+        result = router.route(
+            Command(
+                name="device.execute",
+                args={
+                    "device_id": "relay_1",
+                    "capability": "brightness.set",
+                    "operation": "apply",
+                    "parameters": {"level": 3},
+                },
+                source="test",
+            )
+        )
+
+        self.assertFalse(result.success)
+        self.assertEqual(CAPABILITY_NOT_FOUND_ERROR, result.error)
+        self.assertEqual([], client.published)
+        state = registry.get("relay_1").state
+        self.assertEqual("known", state.status)
+        self.assertEqual({"state": False}, state.properties)
+
+    def test_malformed_ack_after_known_marks_state_stale(self):
+        client = ScriptedMQTTClient()
+        router, registry = self.make_router(
+            client,
+            request_ids=sequential_request_ids(),
+            state_status="known",
+            state_properties={"state": False},
+        )
+        client.seed("req-1", b"{")
 
         result = router.route(self.command("true"))
 

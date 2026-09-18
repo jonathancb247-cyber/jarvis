@@ -46,6 +46,12 @@ class DeviceStateCoordinator:
             return device.state
 
         if not driver_result.success:
+            if operation == "apply" and not driver_result.mutation_uncertain:
+                # Deterministic failure before any device command could be
+                # dispatched (invalid parameters, missing binding, pre-publish
+                # unavailability): the physical outcome is known unchanged, so
+                # preserve the previous known/current state untouched.
+                return device.state
             if driver_result.error == DRIVER_UNAVAILABLE:
                 return self._update_state(
                     device,

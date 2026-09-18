@@ -23,11 +23,19 @@ OPERATION_NOT_SUPPORTED = "operation_not_supported"
 
 @dataclass
 class DriverResult:
-    """Internal result for experimental driver-boundary operations."""
+    """Internal result for experimental driver-boundary operations.
+
+    ``mutation_uncertain`` is a bounded, transport-neutral signal only
+    consulted for failed ``apply`` results: True means the physical mutation
+    outcome is uncertain (the device command may have been dispatched);
+    False means the failure provably happened before any device command
+    could have been sent.
+    """
 
     success: bool
     observations: dict = field(default_factory=dict)
     error: str = None
+    mutation_uncertain: bool = True
 
     def __post_init__(self):
         if not isinstance(self.success, bool):
@@ -38,6 +46,8 @@ class DriverResult:
             not isinstance(self.error, str) or not self.error
         ):
             raise ValueError("DriverResult error must be None or a non-empty string")
+        if not isinstance(self.mutation_uncertain, bool):
+            raise ValueError("DriverResult mutation_uncertain must be a bool")
 
 
 class SimulatedDriver:

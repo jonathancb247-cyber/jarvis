@@ -186,7 +186,7 @@ class MQTTDeviceDriver:
 
     def apply(self, device, capability_name, parameters):
         if not isinstance(parameters, dict):
-            return DriverResult(False, {}, INVALID_PARAMETERS)
+            return _pre_publish_failure(INVALID_PARAMETERS)
         return self._execute(device, capability_name, parameters.copy(), "apply")
 
     def close(self):
@@ -198,28 +198,28 @@ class MQTTDeviceDriver:
 
     def _execute(self, device, capability_name, parameters, operation):
         if not isinstance(device, Device):
-            return DriverResult(False, {}, INVALID_DEVICE)
+            return _pre_publish_failure(INVALID_DEVICE)
         if not _is_non_empty_string(capability_name):
-            return DriverResult(False, {}, CONFIGURATION_INVALID)
+            return _pre_publish_failure(CONFIGURATION_INVALID)
         if operation not in REQUEST_OPERATIONS:
-            return DriverResult(False, {}, CONFIGURATION_INVALID)
+            return _pre_publish_failure(CONFIGURATION_INVALID)
 
         try:
             binding = self.binding_store.get(device.id)
         except KeyError:
-            return DriverResult(False, {}, DRIVER_UNAVAILABLE)
+            return _pre_publish_failure(DRIVER_UNAVAILABLE)
         if capability_name not in binding.allowed_capabilities:
-            return DriverResult(False, {}, OPERATION_NOT_SUPPORTED)
+            return _pre_publish_failure(OPERATION_NOT_SUPPORTED)
 
         requested_power_state = None
         if operation == "apply" and capability_name == POWER_SWITCH_CAPABILITY:
-            requested_power_state = _requested_power_switch_state(parameters)
+            requested_power_state = _power_switch_requested_state(parameters)
             if requested_power_state is None:
-                return DriverResult(False, {}, INVALID_PARAMETERS)
+                return _pre_publish_failure(INVALID_PARAMETERS)
 
         request_id = self._new_request_id()
         if request_id is None:
-            return DriverResult(False, {}, CONFIGURATION_INVALID)
+            return _pre_publish_failure(CONFIGURATION_INVALID)
         payload = self._request_payload(
             request_id,
             device.id,
@@ -228,7 +228,7 @@ class MQTTDeviceDriver:
             parameters,
         )
         if payload is None:
-            return DriverResult(False, {}, CONFIGURATION_INVALID)
+            return _pre_publish_failure(CONFIGURATION_INVALID)
 
         try:
             self.client.publish(binding.request_topic, payload)
@@ -375,15 +375,19 @@ def _semantic_keys_allowed(semantic, allowed_response_keys):
     return True
 
 
-def _requested_power_switch_state(parameters):
+def _power_switch_requested_state(parameters):
     if not isinstance(parameters, dict):
         return None
-    if POWER_SWITCH_STATE_KEY not in parameters:
+    if set(parameters) != {POWER_SWITCH_STATE_KEY}:
         return None
     state = parameters[POWER_SWITCH_STATE_KEY]
     if state not in POWER_SWITCH_STATES:
         return None
     return state
+
+
+def _pre_publish_failure(error):
+    return DriverResult(False, {}, error, mutation_uncertain=False)
 
 
 def _power_switch_semantic_state(semantic, requested_state):
