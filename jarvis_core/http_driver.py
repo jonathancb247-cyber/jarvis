@@ -240,45 +240,49 @@ class HttpDeviceDriver:
                 self.max_response_bytes,
             )
         except HttpTimeoutError:
-            return DriverResult(False, {}, REQUEST_TIMEOUT)
+            return _uncertain_failure(REQUEST_TIMEOUT)
         except HttpResponseTooLargeError:
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         except HttpInvalidJsonError:
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         except HttpConnectionError:
-            return DriverResult(False, {}, CONNECTION_FAILED)
+            return _uncertain_failure(CONNECTION_FAILED)
         except Exception:
-            return DriverResult(False, {}, CONNECTION_FAILED)
+            return _uncertain_failure(CONNECTION_FAILED)
 
         return self._driver_result_from_response(response)
 
     def _driver_result_from_response(self, response):
         if not isinstance(response, HttpJsonResponse):
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         if response.status_code == 401 or response.status_code == 403:
-            return DriverResult(False, {}, AUTHENTICATION_FAILED)
+            return _uncertain_failure(AUTHENTICATION_FAILED)
         if response.status_code < 200 or response.status_code >= 300:
-            return DriverResult(False, {}, PROTOCOL_ERROR)
+            return _uncertain_failure(PROTOCOL_ERROR)
         if not _is_json_content_type(response.content_type):
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         if not isinstance(response.body, dict):
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
 
         success = response.body.get("success")
         observations = response.body.get("observations", {})
         error = response.body.get("error")
         if not isinstance(success, bool):
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         if not isinstance(observations, dict):
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         if error is not None and (not isinstance(error, str) or not error):
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
 
         if success:
             return DriverResult(True, observations.copy(), None)
         if error in ALLOWED_REMOTE_ERRORS:
-            return DriverResult(False, {}, error)
-        return DriverResult(False, {}, PROTOCOL_ERROR)
+            return _uncertain_failure(error)
+        return _uncertain_failure(PROTOCOL_ERROR)
+
+
+def _uncertain_failure(error):
+    return DriverResult(False, {}, error, mutation_uncertain=True)
 
 
 def _validate_path(path, field_name):

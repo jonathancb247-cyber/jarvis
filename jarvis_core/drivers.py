@@ -26,16 +26,17 @@ class DriverResult:
     """Internal result for experimental driver-boundary operations.
 
     ``mutation_uncertain`` is a bounded, transport-neutral signal only
-    consulted for failed ``apply`` results: True means the physical mutation
-    outcome is uncertain (the device command may have been dispatched);
-    False means the failure provably happened before any device command
-    could have been sent.
+    consulted for failed ``apply`` results. The default is False: a failed
+    result is assumed deterministic unless a driver explicitly marks the
+    physical mutation outcome as uncertain because dispatch may have
+    occurred (post-publish timeout, ambiguous connection loss, malformed or
+    mismatched acknowledgement).
     """
 
     success: bool
     observations: dict = field(default_factory=dict)
     error: str = None
-    mutation_uncertain: bool = True
+    mutation_uncertain: bool = False
 
     def __post_init__(self):
         if not isinstance(self.success, bool):

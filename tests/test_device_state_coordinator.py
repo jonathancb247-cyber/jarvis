@@ -203,7 +203,7 @@ class DeviceStateCoordinatorTests(unittest.TestCase):
         device = self.make_device()
         device.state = DeviceState(status="known", properties={"enabled": True})
         registry = self.make_registry(device)
-        result = DriverResult(False, {}, REQUEST_TIMEOUT)
+        result = DriverResult(False, {}, REQUEST_TIMEOUT, mutation_uncertain=True)
 
         state = DeviceStateCoordinator().coordinate(
             device,
@@ -223,7 +223,7 @@ class DeviceStateCoordinatorTests(unittest.TestCase):
         device = self.make_device()
         registry = self.make_registry(device)
         original_state = device.state
-        result = DriverResult(False, {}, REQUEST_TIMEOUT)
+        result = DriverResult(False, {}, REQUEST_TIMEOUT, mutation_uncertain=True)
 
         state = DeviceStateCoordinator().coordinate(
             device,
@@ -246,7 +246,7 @@ class DeviceStateCoordinatorTests(unittest.TestCase):
             device,
             "power.set",
             "apply",
-            DriverResult(False, {}, REQUEST_TIMEOUT),
+            DriverResult(False, {}, REQUEST_TIMEOUT, mutation_uncertain=True),
             registry,
         )
         self.assertEqual("stale", uncertain.status)
@@ -415,6 +415,35 @@ class DeviceStateCoordinatorTests(unittest.TestCase):
                 DriverResult(True, {"value": 1}, None),
                 registry,
             )
+
+
+def test_uncertainty_signal_alone_decides_not_error_string(self):
+        device = self.make_device()
+        device.state = DeviceState(status="known", properties={"enabled": True})
+        registry = self.make_registry(device)
+        same_error = "request_timeout"
+
+        deterministic = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            DriverResult(False, {}, same_error, mutation_uncertain=False),
+            registry,
+        )
+
+        self.assertEqual("known", deterministic.status)
+        self.assertEqual({"enabled": True}, deterministic.properties)
+
+        uncertain = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            DriverResult(False, {}, same_error, mutation_uncertain=True),
+            registry,
+        )
+
+        self.assertEqual("stale", uncertain.status)
+        self.assertEqual({"enabled": True}, uncertain.properties)
 
 
 if __name__ == "__main__":
