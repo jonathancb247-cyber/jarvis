@@ -43,7 +43,7 @@
         "status.read"
       ],
       "allowed_response_keys": [
-        "power"
+        "state"
       ]
     }
   ],

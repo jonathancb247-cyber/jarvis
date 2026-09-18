@@ -4,6 +4,7 @@ from jarvis_core.device_state import DeviceStateCoordinator
 from jarvis_core.devices import Device, DeviceCapability, DeviceRegistry, DeviceState
 from jarvis_core.drivers import (
     DRIVER_UNAVAILABLE,
+    INVALID_PARAMETERS,
     REQUEST_TIMEOUT,
     DriverResult,
     SimulatedDriver,
@@ -198,12 +199,80 @@ class DeviceStateCoordinatorTests(unittest.TestCase):
         self.assertEqual("unknown", state.status)
         self.assertEqual(0, len(registry.update_calls))
 
-    def test_failed_apply_after_known_preserves_current_mutation_semantics(self):
+    def test_failed_apply_after_known_demotes_freshness_to_stale(self):
         device = self.make_device()
         device.state = DeviceState(status="known", properties={"enabled": True})
         registry = self.make_registry(device)
+        result = DriverResult(False, {}, REQUEST_TIMEOUT, mutation_uncertain=True)
+
+        state = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            result,
+            registry,
+        )
+
+        self.assertEqual("stale", state.status)
+        self.assertEqual({"enabled": True}, state.properties)
+        self.assertIsNotNone(state.updated_at)
+        self.assertIs(registry.get(device.id).state, state)
+        self.assertEqual(1, len(registry.update_calls))
+
+    def test_failed_apply_after_unknown_preserves_unknown(self):
+        device = self.make_device()
+        registry = self.make_registry(device)
         original_state = device.state
-        result = DriverResult(False, {}, REQUEST_TIMEOUT)
+        result = DriverResult(False, {}, REQUEST_TIMEOUT, mutation_uncertain=True)
+
+        state = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            result,
+            registry,
+        )
+
+        self.assertIs(original_state, state)
+        self.assertEqual("unknown", state.status)
+        self.assertEqual(0, len(registry.update_calls))
+
+    def test_failed_apply_after_known_retains_value_and_fresh_ack_restores_known(self):
+        device = self.make_device()
+        device.state = DeviceState(status="known", properties={"enabled": False})
+        registry = self.make_registry(device)
+
+        uncertain = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            DriverResult(False, {}, REQUEST_TIMEOUT, mutation_uncertain=True),
+            registry,
+        )
+        self.assertEqual("stale", uncertain.status)
+        self.assertEqual({"enabled": False}, uncertain.properties)
+
+        restored = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            DriverResult(True, {"enabled": True}, None),
+            registry,
+        )
+        self.assertEqual("known", restored.status)
+        self.assertEqual({"enabled": True}, restored.properties)
+
+    def test_deterministic_apply_failure_after_known_preserves_known(self):
+        device = self.make_device()
+        device.state = DeviceState(status="known", properties={"enabled": False})
+        registry = self.make_registry(device)
+        original_state = device.state
+        result = DriverResult(
+            False,
+            {},
+            INVALID_PARAMETERS,
+            mutation_uncertain=False,
+        )
 
         state = DeviceStateCoordinator().coordinate(
             device,
@@ -215,7 +284,55 @@ class DeviceStateCoordinatorTests(unittest.TestCase):
 
         self.assertIs(original_state, state)
         self.assertEqual("known", state.status)
-        self.assertEqual({"enabled": True}, state.properties)
+        self.assertEqual({"enabled": False}, state.properties)
+        self.assertEqual(0, len(registry.update_calls))
+
+    def test_deterministic_apply_failure_after_known_missing_binding_preserves_known(self):
+        device = self.make_device()
+        device.state = DeviceState(status="known", properties={"enabled": False})
+        registry = self.make_registry(device)
+        original_state = device.state
+        result = DriverResult(
+            False,
+            {},
+            DRIVER_UNAVAILABLE,
+            mutation_uncertain=False,
+        )
+
+        state = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            result,
+            registry,
+        )
+
+        self.assertIs(original_state, state)
+        self.assertEqual("known", state.status)
+        self.assertEqual({"enabled": False}, state.properties)
+        self.assertEqual(0, len(registry.update_calls))
+
+    def test_deterministic_apply_failure_after_unknown_preserves_unknown(self):
+        device = self.make_device()
+        registry = self.make_registry(device)
+        original_state = device.state
+        result = DriverResult(
+            False,
+            {},
+            INVALID_PARAMETERS,
+            mutation_uncertain=False,
+        )
+
+        state = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            result,
+            registry,
+        )
+
+        self.assertIs(original_state, state)
+        self.assertEqual("unknown", state.status)
         self.assertEqual(0, len(registry.update_calls))
 
     def test_driver_does_not_modify_device_state(self):
@@ -298,6 +415,35 @@ class DeviceStateCoordinatorTests(unittest.TestCase):
                 DriverResult(True, {"value": 1}, None),
                 registry,
             )
+
+
+def test_uncertainty_signal_alone_decides_not_error_string(self):
+        device = self.make_device()
+        device.state = DeviceState(status="known", properties={"enabled": True})
+        registry = self.make_registry(device)
+        same_error = "request_timeout"
+
+        deterministic = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            DriverResult(False, {}, same_error, mutation_uncertain=False),
+            registry,
+        )
+
+        self.assertEqual("known", deterministic.status)
+        self.assertEqual({"enabled": True}, deterministic.properties)
+
+        uncertain = DeviceStateCoordinator().coordinate(
+            device,
+            "power.set",
+            "apply",
+            DriverResult(False, {}, same_error, mutation_uncertain=True),
+            registry,
+        )
+
+        self.assertEqual("stale", uncertain.status)
+        self.assertEqual({"enabled": True}, uncertain.properties)
 
 
 if __name__ == "__main__":

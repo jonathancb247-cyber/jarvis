@@ -46,11 +46,29 @@ class DeviceStateCoordinator:
             return device.state
 
         if not driver_result.success:
+            if operation == "apply" and not driver_result.mutation_uncertain:
+                # Deterministic failure before any device command could be
+                # dispatched (invalid parameters, missing binding, pre-publish
+                # unavailability): the physical outcome is known unchanged, so
+                # preserve the previous known/current state untouched.
+                return device.state
             if driver_result.error == DRIVER_UNAVAILABLE:
                 return self._update_state(
                     device,
                     registry,
                     status="unavailable",
+                    properties=device.state.properties.copy(),
+                )
+            if operation == "apply" and device.state.status == "known":
+                # An uncertain mutation (timeout, transport failure, malformed
+                # or mismatched acknowledgement) must NOT leave the previous
+                # value represented as current truth. Retain the previous
+                # semantic value and demote freshness without inventing a value;
+                # a fresh validated acknowledgement restores status to "known".
+                return self._update_state(
+                    device,
+                    registry,
+                    status="stale",
                     properties=device.state.properties.copy(),
                 )
             if operation == "read" and device.state.status == "known":

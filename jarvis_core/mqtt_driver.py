@@ -44,6 +44,10 @@ ALLOWED_REMOTE_ERRORS = {
 RESPONSE_FIELDS = {"request_id", "ok", "semantic", "error"}
 REQUEST_OPERATIONS = {"read", "apply"}
 
+POWER_SWITCH_CAPABILITY = "power.switch"
+POWER_SWITCH_STATE_KEY = "state"
+POWER_SWITCH_STATES = ("true", "false")
+
 
 @dataclass(frozen=True)
 class MQTTDeviceBinding:
@@ -182,7 +186,7 @@ class MQTTDeviceDriver:
 
     def apply(self, device, capability_name, parameters):
         if not isinstance(parameters, dict):
-            return DriverResult(False, {}, INVALID_PARAMETERS)
+            return _pre_publish_failure(INVALID_PARAMETERS)
         return self._execute(device, capability_name, parameters.copy(), "apply")
 
     def close(self):
@@ -194,22 +198,28 @@ class MQTTDeviceDriver:
 
     def _execute(self, device, capability_name, parameters, operation):
         if not isinstance(device, Device):
-            return DriverResult(False, {}, INVALID_DEVICE)
+            return _pre_publish_failure(INVALID_DEVICE)
         if not _is_non_empty_string(capability_name):
-            return DriverResult(False, {}, CONFIGURATION_INVALID)
+            return _pre_publish_failure(CONFIGURATION_INVALID)
         if operation not in REQUEST_OPERATIONS:
-            return DriverResult(False, {}, CONFIGURATION_INVALID)
+            return _pre_publish_failure(CONFIGURATION_INVALID)
 
         try:
             binding = self.binding_store.get(device.id)
         except KeyError:
-            return DriverResult(False, {}, DRIVER_UNAVAILABLE)
+            return _pre_publish_failure(DRIVER_UNAVAILABLE)
         if capability_name not in binding.allowed_capabilities:
-            return DriverResult(False, {}, OPERATION_NOT_SUPPORTED)
+            return _pre_publish_failure(OPERATION_NOT_SUPPORTED)
+
+        requested_power_state = None
+        if operation == "apply" and capability_name == POWER_SWITCH_CAPABILITY:
+            requested_power_state = _power_switch_requested_state(parameters)
+            if requested_power_state is None:
+                return _pre_publish_failure(INVALID_PARAMETERS)
 
         request_id = self._new_request_id()
         if request_id is None:
-            return DriverResult(False, {}, CONFIGURATION_INVALID)
+            return _pre_publish_failure(CONFIGURATION_INVALID)
         payload = self._request_payload(
             request_id,
             device.id,
@@ -218,7 +228,7 @@ class MQTTDeviceDriver:
             parameters,
         )
         if payload is None:
-            return DriverResult(False, {}, CONFIGURATION_INVALID)
+            return _pre_publish_failure(CONFIGURATION_INVALID)
 
         try:
             self.client.publish(binding.request_topic, payload)
@@ -228,17 +238,22 @@ class MQTTDeviceDriver:
                 binding.timeout_seconds,
             )
         except MQTTTimeoutError:
-            return DriverResult(False, {}, REQUEST_TIMEOUT)
+            return _uncertain_failure(REQUEST_TIMEOUT)
         except MQTTResponseTooLargeError:
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         except MQTTInvalidJsonError:
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         except (MQTTConnectionError, MQTTPublishError, MQTTClientClosedError):
-            return DriverResult(False, {}, CONNECTION_FAILED)
+            return _uncertain_failure(CONNECTION_FAILED)
         except Exception:
-            return DriverResult(False, {}, CONNECTION_FAILED)
+            return _uncertain_failure(CONNECTION_FAILED)
 
-        return self._driver_result_from_response(response, request_id, binding)
+        return self._driver_result_from_response(
+            response,
+            request_id,
+            binding,
+            requested_power_state,
+        )
 
     def _new_request_id(self):
         request_id = self._request_id_factory()
@@ -275,38 +290,56 @@ class MQTTDeviceDriver:
             return None
         return payload
 
-    def _driver_result_from_response(self, response, request_id, binding):
+    def _driver_result_from_response(
+        self,
+        response,
+        request_id,
+        binding,
+        requested_power_state=None,
+    ):
         try:
             payload = _decode_response(response, self.max_response_bytes)
         except (MQTTResponseTooLargeError, MQTTInvalidJsonError):
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         if not isinstance(payload, dict):
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         if set(payload.keys()) != RESPONSE_FIELDS:
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         if payload["request_id"] != request_id:
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         ok = payload["ok"]
         semantic = payload["semantic"]
         error = payload["error"]
         if not isinstance(ok, bool):
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         if not isinstance(semantic, dict):
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         if error is not None and not _is_non_empty_string(error):
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
 
         if ok:
             if error is not None:
-                return DriverResult(False, {}, INVALID_RESPONSE)
+                return _uncertain_failure(INVALID_RESPONSE)
             if not _semantic_keys_allowed(semantic, binding.allowed_response_keys):
-                return DriverResult(False, {}, INVALID_RESPONSE)
+                return _uncertain_failure(INVALID_RESPONSE)
+            if requested_power_state is not None:
+                observed_state = _power_switch_semantic_state(
+                    semantic,
+                    requested_power_state,
+                )
+                if observed_state is None:
+                    return _uncertain_failure(INVALID_RESPONSE)
+                return DriverResult(
+                    True,
+                    {POWER_SWITCH_STATE_KEY: observed_state},
+                    None,
+                )
             return DriverResult(True, semantic.copy(), None)
         if semantic:
-            return DriverResult(False, {}, INVALID_RESPONSE)
+            return _uncertain_failure(INVALID_RESPONSE)
         if error in ALLOWED_REMOTE_ERRORS:
-            return DriverResult(False, {}, error)
-        return DriverResult(False, {}, PROTOCOL_ERROR)
+            return _uncertain_failure(error)
+        return _uncertain_failure(PROTOCOL_ERROR)
 
 
 def _default_request_id():
@@ -340,6 +373,38 @@ def _semantic_keys_allowed(semantic, allowed_response_keys):
         if key not in allowed:
             return False
     return True
+
+
+def _power_switch_requested_state(parameters):
+    if not isinstance(parameters, dict):
+        return None
+    if set(parameters) != {POWER_SWITCH_STATE_KEY}:
+        return None
+    state = parameters[POWER_SWITCH_STATE_KEY]
+    if state not in POWER_SWITCH_STATES:
+        return None
+    return state
+
+
+def _pre_publish_failure(error):
+    return DriverResult(False, {}, error, mutation_uncertain=False)
+
+
+def _uncertain_failure(error):
+    return DriverResult(False, {}, error, mutation_uncertain=True)
+
+
+def _power_switch_semantic_state(semantic, requested_state):
+    if not isinstance(semantic, dict):
+        return None
+    if set(semantic) != {POWER_SWITCH_STATE_KEY}:
+        return None
+    state = semantic.get(POWER_SWITCH_STATE_KEY)
+    if type(state) is not bool:
+        return None
+    if state != (requested_state == "true"):
+        return None
+    return state
 
 
 def _validate_topic(topic, field_name):
