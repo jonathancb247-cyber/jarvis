@@ -1,0 +1,24 @@
+# Gradle
+.gradle/
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Android
+*.apk
+*.aab
+local.properties
+captures/
+
+# Field logs: grabaciones de voz y dumps de logcat de bring-up (>1MB).
+# Se conservan en disco como evidencia local, no se versionan.
+field-logs/artifacts/
+field-logs/bringup_full_*.txt
+field-logs/bringup_pass_2026*.txt
+
+# OS
+.DS_Store
+Thumbs.db

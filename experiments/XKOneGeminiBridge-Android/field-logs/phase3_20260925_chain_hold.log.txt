@@ -1,0 +1,8 @@
+--------- beginning of main
+09-25 21:26:22.394 I/XK_Transport(24647): Connect(ok) a FA:00:11:19:2D:5C
+09-25 21:26:22.399 D/XK_Transport(24647): Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+09-25 21:26:22.400 D/XK_Transport(24647): Intentando conexión SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+09-25 21:26:24.909 I/XK_Gemini(24647): WebSocket abierto, enviando setup
+09-25 21:26:25.068 I/XK_Transport(24647): RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+09-25 21:26:25.170 I/XK_Gemini(24647): setupCompleto sessionId=- model=-
+09-25 21:26:26.217 I/XK_Gemini(24647): WebSocket cerrado (1000): 

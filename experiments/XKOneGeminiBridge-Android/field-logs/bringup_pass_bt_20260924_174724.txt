@@ -1,0 +1,14 @@
+﻿
+09-24 17:46:08.116 32292 22114 I XK_Transport: Connect(ok) a FA:00:11:19:2D:5C
+09-24 17:46:08.126 32292 22114 D XK_Transport: Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+09-24 17:46:08.127 32292 22114 D XK_Transport: Intentando conexi├│n SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+09-24 17:46:08.449 18547 18690 W bt_sdp  : process_service_search_attr_rsp
+09-24 17:46:08.449 18547 18690 W bt_sdp  : sdp_copy_raw_data: list_len:87 cpy_len:87 p:0xb400007d8153980b 
+p_ccb:0x7da7edcde8 p_db:0x7da7e8fa08 raw_size:1800 raw_used:0 raw_data:0x7da7e8f300
+09-24 17:46:08.467 18547 18690 I bt_stack: [INFO:port_api.cc(123)] RFCOMM_CreateConnection BDA: fa:00:11:19:2d:5c
+09-24 17:46:08.507 18547 18690 I bt_snoop: RFCOMM port is opened: handle=20(0x14), lcid=84(0x54), dlci=2(0x2), 
+uuid=4353(0x1101) Credit Based Flow Control enabled
+09-24 17:46:08.507 18547 18690 D bt_btif_sock_rfcomm: on_cli_rfc_connect  mtu = 256 
+09-24 17:46:08.516 32292 22114 I XK_Transport: RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+
+

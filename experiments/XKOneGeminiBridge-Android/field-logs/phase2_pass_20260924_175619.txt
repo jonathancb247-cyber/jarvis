@@ -1,0 +1,98 @@
+﻿PHASE2 XKONE BRIDGE - B0->B2->OPUS->WAV PASS 20260924_175619
+dev FA:00:11:19:2D:5C | app com.xkone.bridge pid 9788
+WAV: xk_one_voice_test_1790294111640.wav (and _1790294113828.wav) 160044 B
+WAVcheck: mono 16-bit 16000Hz 5.000s peak=32768 rms=2764.1 nonSilence=78275 hasAudio=SI
+---- XK_Engine / XK_B2 / XK_Bridge / XK_WAV / XK_Transport ----
+--------- beginning of main
+09-24 17:54:40.292  9788 27684 I XK_Transport: Connect(ok) a FA:00:11:19:2D:5C
+09-24 17:54:40.295  9788 27684 D XK_Transport: Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+09-24 17:54:40.296  9788 27684 D XK_Transport: Intentando conexi├│n SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+09-24 17:54:40.440  9788 27684 I XK_Transport: RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+09-24 17:54:40.470  9788 27685 I XK_Engine: init OK maxPacket=255 aiKit=1
+09-24 17:54:40.598  9788  9788 I XK_Engine: B0 TX start request payload=02
+09-24 17:54:40.631  9788 27685 I XK_Engine: B0 RX type=2 value=1 raw=01 B0 02 00 01 01
+09-24 17:54:40.631  9788 27684 I XK_Engine: B0 TX confirm payload=01
+09-24 17:54:40.654  9788 27706 I XK_Engine: B0 RX type=2 value=1 raw=03 B0 02 00 01 01
+09-24 17:54:40.762  9788 27706 I XK_B2   : PRIMER B2 #1 payloadLen=160 firstBytes=B8 7E D4 0B C0 0B E6 38
+09-24 17:54:41.700  9788 27685 I XK_B2   : B2 #25 payloadLen=160 firstBytes=B8 62 D8 4F 2D 95 80 F8 decoded=15360 err=0
+09-24 17:54:42.701  9788 27685 I XK_B2   : B2 #50 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=31360 err=0
+09-24 17:54:43.701  9788 27685 I XK_B2   : B2 #75 payloadLen=160 firstBytes=B8 6E 1D 7D 6B 11 9E F5 decoded=47360 err=0
+09-24 17:54:44.705  9788 27706 I XK_B2   : B2 #100 payloadLen=160 firstBytes=B8 6F 60 DB 0C 06 44 5D decoded=63360 err=0
+09-24 17:54:45.719  9788 27706 I XK_B2   : B2 #125 payloadLen=160 firstBytes=B8 6E B3 95 C0 7E A3 4A decoded=79360 err=0
+09-24 17:54:46.698  9788 27685 I XK_B2   : B2 #150 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=95360 err=0
+09-24 17:54:47.719  9788 27706 I XK_B2   : B2 #175 payloadLen=160 firstBytes=B8 62 51 E6 70 EF 42 03 decoded=111360 err=0
+09-24 17:54:48.716  9788 27706 I XK_B2   : B2 #200 payloadLen=160 firstBytes=B8 64 BA 18 82 8E 06 B5 decoded=127360 err=0
+09-24 17:54:49.704  9788 27685 I XK_B2   : B2 #225 payloadLen=160 firstBytes=B8 63 14 F8 40 B5 1E 2A decoded=143360 err=0
+09-24 17:54:50.704  9788 27685 I XK_B2   : B2 #250 payloadLen=160 firstBytes=B8 7F 85 7C 53 93 B8 26 decoded=159360 err=0
+09-24 17:54:51.700  9788 27706 I XK_B2   : B2 #275 payloadLen=160 firstBytes=B8 7F 85 06 85 17 21 19 decoded=175360 err=0
+09-24 17:54:52.700  9788 27706 I XK_B2   : B2 #300 payloadLen=160 firstBytes=B8 66 DB 48 88 E6 43 39 decoded=191360 err=0
+09-24 17:54:53.702  9788 27706 I XK_B2   : B2 #325 payloadLen=160 firstBytes=B8 64 D0 36 90 1F 82 8F decoded=207360 err=0
+09-24 17:54:54.712  9788 27685 I XK_B2   : B2 #350 payloadLen=160 firstBytes=B8 7F 66 00 38 8E 61 46 decoded=223360 err=0
+09-24 17:54:55.702  9788 27706 I XK_B2   : B2 #375 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=239360 err=0
+09-24 17:54:56.708  9788 27706 I XK_B2   : B2 #400 payloadLen=160 firstBytes=B8 7F 2B 70 AC 4A DA 2C decoded=255360 err=0
+09-24 17:54:57.709  9788 27706 I XK_B2   : B2 #425 payloadLen=160 firstBytes=B8 6D 61 E1 38 54 F6 2B decoded=271360 err=0
+09-24 17:54:58.703  9788 27706 I XK_B2   : B2 #450 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=287360 err=0
+09-24 17:54:59.702  9788 27685 I XK_B2   : B2 #475 payloadLen=160 firstBytes=B8 63 9D 83 BE 10 E7 2A decoded=303360 err=0
+09-24 17:55:00.714  9788 27685 I XK_B2   : B2 #500 payloadLen=160 firstBytes=B8 6E 31 13 78 9F A4 47 decoded=319360 err=0
+09-24 17:55:01.719  9788 27706 I XK_B2   : B2 #525 payloadLen=160 firstBytes=B8 7F 03 97 B5 1D D9 F7 decoded=335360 err=0
+09-24 17:55:02.701  9788 27706 I XK_B2   : B2 #550 payloadLen=160 firstBytes=B8 66 4D 9F A8 A6 7F A6 decoded=351360 err=0
+09-24 17:55:03.702  9788 27685 I XK_B2   : B2 #575 payloadLen=160 firstBytes=B8 7E AE 87 E0 3A 70 AB decoded=367360 err=0
+09-24 17:55:04.700  9788 27685 I XK_B2   : B2 #600 payloadLen=160 firstBytes=B8 64 52 0E 40 4C 5B 51 decoded=383360 err=0
+09-24 17:55:05.722  9788 27685 I XK_B2   : B2 #625 payloadLen=160 firstBytes=B8 64 BB F6 AB E7 5A C6 decoded=399360 err=0
+09-24 17:55:06.717  9788 27685 I XK_B2   : B2 #650 payloadLen=160 firstBytes=B8 7F 75 BB C3 23 B1 F4 decoded=415360 err=0
+09-24 17:55:07.709  9788 27706 I XK_B2   : B2 #675 payloadLen=160 firstBytes=B8 6A 6A 56 BA C6 92 A6 decoded=431360 err=0
+09-24 17:55:08.706  9788 27685 I XK_B2   : B2 #700 payloadLen=160 firstBytes=B8 67 AF 0B 83 85 27 DF decoded=447360 err=0
+09-24 17:55:09.710  9788 27685 I XK_B2   : B2 #725 payloadLen=160 firstBytes=B8 69 A6 66 8C FE A9 05 decoded=463360 err=0
+09-24 17:55:10.703  9788 27685 I XK_B2   : B2 #750 payloadLen=160 firstBytes=B8 7F 47 E9 C5 4A 5A FB decoded=479360 err=0
+09-24 17:55:11.685  9788 27706 I XK_WAV  : WAV guardado: /data/user/0/com.xkone.bridge/files/xk_one_voice_test_1790294111640.wav samples=80000 dur=5.0s
+09-24 17:55:11.708  9788 27706 I XK_B2   : B2 #775 payloadLen=160 firstBytes=B8 6A E1 04 2D 06 21 71 decoded=495360 err=0
+09-24 17:55:12.710  9788 27706 I XK_B2   : B2 #800 payloadLen=160 firstBytes=B8 6D 32 71 4B E9 06 3A decoded=511360 err=0
+09-24 17:55:13.709  9788 27706 I XK_B2   : B2 #825 payloadLen=160 firstBytes=B8 6B D8 65 95 48 12 C0 decoded=527360 err=0
+09-24 17:55:13.832  9788  9788 I XK_WAV  : WAV guardado: /data/user/0/com.xkone.bridge/files/xk_one_voice_test_1790294113828.wav samples=80000 dur=5.0s
+09-24 17:55:14.736  9788 27706 I XK_B2   : B2 #850 payloadLen=160 firstBytes=B8 7F 6E A6 9E 90 77 58 decoded=543360 err=0
+09-24 17:55:15.715  9788 27706 I XK_B2   : B2 #875 payloadLen=160 firstBytes=B8 6A 62 21 45 5E E9 94 decoded=559360 err=0
+09-24 17:55:16.705  9788 27706 I XK_B2   : B2 #900 payloadLen=160 firstBytes=B8 68 7E 22 BF 7C 5C 1E decoded=575360 err=0
+09-24 17:55:17.720  9788 27706 I XK_B2   : B2 #925 payloadLen=160 firstBytes=B8 6F 4E FE 84 81 47 06 decoded=591360 err=0
+09-24 17:55:18.713  9788 27685 I XK_B2   : B2 #950 payloadLen=160 firstBytes=B8 7E 9B C7 33 57 21 37 decoded=607360 err=0
+09-24 17:55:19.702  9788 27706 I XK_B2   : B2 #975 payloadLen=160 firstBytes=B8 7F E7 D2 03 99 76 3F decoded=623360 err=0
+09-24 17:55:20.718  9788 27685 I XK_B2   : B2 #1000 payloadLen=160 firstBytes=B8 64 C7 72 C1 DE 3C 45 decoded=639360 err=0
+09-24 17:55:21.704  9788 27685 I XK_B2   : B2 #1025 payloadLen=160 firstBytes=B8 69 F5 88 9F 8F C5 98 decoded=655360 err=0
+09-24 17:55:22.715  9788 27685 I XK_B2   : B2 #1050 payloadLen=160 firstBytes=B8 64 F7 14 41 E2 45 64 decoded=671360 err=0
+09-24 17:55:23.728  9788 27685 I XK_B2   : B2 #1075 payloadLen=160 firstBytes=B8 67 B0 D8 30 17 E2 94 decoded=687360 err=0
+09-24 17:55:24.715  9788 27685 I XK_B2   : B2 #1100 payloadLen=160 firstBytes=B8 6B FC 0F 2D A2 AA BB decoded=703360 err=0
+09-24 17:55:25.721  9788 27706 I XK_B2   : B2 #1125 payloadLen=160 firstBytes=B8 6D 02 F9 73 E0 0A C2 decoded=719360 err=0
+09-24 17:55:26.723  9788 27706 I XK_B2   : B2 #1150 payloadLen=160 firstBytes=B8 6F 1C 17 A7 E4 8A 02 decoded=735360 err=0
+09-24 17:55:27.714  9788 27706 I XK_B2   : B2 #1175 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=751360 err=0
+09-24 17:55:28.722  9788 27685 I XK_B2   : B2 #1200 payloadLen=160 firstBytes=B8 68 3C A7 AC E2 05 83 decoded=767360 err=0
+09-24 17:55:29.718  9788 27685 I XK_B2   : B2 #1225 payloadLen=160 firstBytes=B8 7E E3 F8 68 5C AE 43 decoded=783360 err=0
+09-24 17:55:30.729  9788 27706 I XK_B2   : B2 #1250 payloadLen=160 firstBytes=B8 67 63 BC 32 4B EE C6 decoded=799360 err=0
+09-24 17:55:31.724  9788 27685 I XK_B2   : B2 #1275 payloadLen=160 firstBytes=B8 6C 4D F2 70 70 B5 31 decoded=815360 err=0
+09-24 17:55:32.710  9788 27706 I XK_B2   : B2 #1300 payloadLen=160 firstBytes=B8 68 30 C2 8D 37 FF 12 decoded=831360 err=0
+09-24 17:55:33.710  9788 27685 I XK_B2   : B2 #1325 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=847360 err=0
+09-24 17:55:34.714  9788 27706 I XK_B2   : B2 #1350 payloadLen=160 firstBytes=B8 6B D6 44 F7 6A 50 79 decoded=863360 err=0
+09-24 17:55:35.713  9788 27706 I XK_B2   : B2 #1375 payloadLen=160 firstBytes=B8 67 F9 83 92 6F CC 52 decoded=879360 err=0
+09-24 17:55:36.714  9788 27706 I XK_B2   : B2 #1400 payloadLen=160 firstBytes=B8 7F DE 9B C2 65 06 0B decoded=895360 err=0
+09-24 17:55:37.721  9788 27685 I XK_B2   : B2 #1425 payloadLen=160 firstBytes=B8 62 8D AF 0B A4 5D 41 decoded=911360 err=0
+09-24 17:55:38.715  9788 27685 I XK_B2   : B2 #1450 payloadLen=160 firstBytes=B8 68 3C E9 B5 EB D1 12 decoded=927360 err=0
+09-24 17:55:39.729  9788 27706 I XK_B2   : B2 #1475 payloadLen=160 firstBytes=B8 7F DE BE 16 3B 5C 93 decoded=943360 err=0
+09-24 17:55:40.719  9788 27706 I XK_B2   : B2 #1500 payloadLen=160 firstBytes=B8 64 1C 93 A3 97 B5 97 decoded=959360 err=0
+09-24 17:55:41.729  9788 27685 I XK_B2   : B2 #1525 payloadLen=160 firstBytes=B8 6A 9A 51 91 E2 28 1A decoded=975360 err=0
+09-24 17:55:42.727  9788 27685 I XK_B2   : B2 #1550 payloadLen=160 firstBytes=B8 64 D8 1A D6 EB 48 9C decoded=991360 err=0
+09-24 17:55:43.733  9788 27706 I XK_B2   : B2 #1575 payloadLen=160 firstBytes=B8 68 2D A1 93 A5 3E E7 decoded=1007360 err=0
+09-24 17:55:44.717  9788 27685 I XK_B2   : B2 #1600 payloadLen=160 firstBytes=B8 6C 47 44 18 C4 1B E1 decoded=1023360 err=0
+09-24 17:55:45.719  9788 27706 I XK_B2   : B2 #1625 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1039360 err=0
+09-24 17:55:46.724  9788 27706 I XK_B2   : B2 #1650 payloadLen=160 firstBytes=B8 62 39 34 4F D7 94 B1 decoded=1055360 err=0
+09-24 17:55:47.725  9788 27685 I XK_B2   : B2 #1675 payloadLen=160 firstBytes=B8 6E 2C 25 86 38 BD 6F decoded=1071360 err=0
+09-24 17:55:48.729  9788 27685 I XK_B2   : B2 #1700 payloadLen=160 firstBytes=B8 6F 5F 8F F4 A1 5B 8F decoded=1087360 err=0
+09-24 17:55:49.723  9788 27706 I XK_B2   : B2 #1725 payloadLen=160 firstBytes=B8 7E 60 28 F5 43 C1 89 decoded=1103360 err=0
+09-24 17:55:50.722  9788 27685 I XK_B2   : B2 #1750 payloadLen=160 firstBytes=B8 62 AF 49 90 9B A1 3B decoded=1119360 err=0
+09-24 17:55:51.716  9788 27685 I XK_B2   : B2 #1775 payloadLen=160 firstBytes=B8 6F 8C 93 6E 3F AE A9 decoded=1135360 err=0
+09-24 17:55:52.727  9788 27706 I XK_B2   : B2 #1800 payloadLen=160 firstBytes=B8 6E 21 2B 4B E5 D8 50 decoded=1151360 err=0
+09-24 17:55:53.732  9788 27706 I XK_B2   : B2 #1825 payloadLen=160 firstBytes=B8 7F E5 3B 7F DA D9 1D decoded=1167360 err=0
+09-24 17:55:54.726  9788 27685 I XK_B2   : B2 #1850 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1183360 err=0
+09-24 17:55:55.727  9788 27685 I XK_B2   : B2 #1875 payloadLen=160 firstBytes=B8 7F D0 CE AD 67 BD 52 decoded=1199360 err=0
+09-24 17:55:56.734  9788 27706 I XK_B2   : B2 #1900 payloadLen=160 firstBytes=B8 7F DB AB 10 F1 8A 31 decoded=1215360 err=0
+09-24 17:55:57.730  9788 27685 I XK_B2   : B2 #1925 payloadLen=160 firstBytes=B8 7E 73 18 D3 D1 6A 22 decoded=1231360 err=0
+09-24 17:55:57.876  9788  9788 I XK_B2   : cierre sesi├│n: b2Count=1928 decoded=1233920 err=0 firstB2=1790294080762 lastB2=1790294157839 lastPayloadLen=160 lastFirst=B8 7E 74 CD 54 6C 46 31
+09-24 17:55:57.878  9788 27685 I XK_Engine: B0 TX stop request payload=00
+09-24 17:55:57.932  9788 27685 I XK_Engine: B0 RX type=2 value=0 raw=0F B0 02 00 01 00

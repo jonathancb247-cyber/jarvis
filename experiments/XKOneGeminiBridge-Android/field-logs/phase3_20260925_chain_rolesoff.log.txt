@@ -1,0 +1,10 @@
+--------- beginning of main
+09-25 21:24:31.164 I/XK_Transport(15122): Connect(ok) a FA:00:11:19:2D:5C
+09-25 21:24:31.168 D/XK_Transport(15122): Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+09-25 21:24:31.169 D/XK_Transport(15122): Intentando conexión SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+09-25 21:24:31.883 I/XK_Transport(15122): RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+09-25 21:24:31.956 I/XK_Engine(15122): init OK maxPacket=255 aiKit=1
+09-25 21:24:32.790 W/XK_Transport(15122): Lectura finalizada: bt socket closed, read return: -1
+09-25 21:24:33.679 I/XK_Gemini(15122): WebSocket abierto, enviando setup
+09-25 21:24:33.861 I/XK_Gemini(15122): setupCompleto sessionId=- model=-
+09-25 21:24:35.010 I/XK_Gemini(15122): WebSocket cerrado (1000): 

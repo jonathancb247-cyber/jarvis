@@ -1,0 +1,1455 @@
+﻿--------- beginning of main
+09-24 18:28:14.275 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:14.387 I/XK_B2   (26577): B2 #900 payloadLen=160 firstBytes=B8 6E 25 3E 17 82 78 FC decoded=575360 err=0
+09-24 18:28:14.561 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:14.789 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:15.070 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:15.309 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:15.387 I/XK_B2   (26577): B2 #925 payloadLen=160 firstBytes=B8 6D 07 5A 92 48 61 1C decoded=591360 err=0
+09-24 18:28:15.587 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:15.829 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:16.114 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:16.358 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:16.387 I/XK_B2   (26577): B2 #950 payloadLen=160 firstBytes=B8 6D 53 12 84 4D B5 2A decoded=607360 err=0
+09-24 18:28:16.630 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:16.879 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:17.149 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:17.398 I/XK_B2   (26577): B2 #975 payloadLen=160 firstBytes=B8 6E AA 6E 0B 81 DB 40 decoded=623360 err=0
+09-24 18:28:17.400 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:17.676 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:17.919 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:18.193 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:18.400 I/XK_B2   (26577): B2 #1000 payloadLen=160 firstBytes=B8 7F 92 D9 46 6E 1F 37 decoded=639360 err=0
+09-24 18:28:18.457 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:18.710 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:18.954 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:19.240 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:19.398 I/XK_B2   (26577): B2 #1025 payloadLen=160 firstBytes=B8 6C 22 43 D3 CE 5F 2A decoded=655360 err=0
+09-24 18:28:19.475 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:19.759 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:19.994 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:20.267 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:20.382 I/XK_B2   (26577): B2 #1050 payloadLen=160 firstBytes=B8 7F 86 F5 DB 11 9C BF decoded=671360 err=0
+09-24 18:28:20.516 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:20.795 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:21.031 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:21.314 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:21.387 I/XK_B2   (26577): B2 #1075 payloadLen=160 firstBytes=B8 7F DE 97 63 FF AF 0D decoded=687360 err=0
+09-24 18:28:21.561 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:21.827 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:22.080 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:22.344 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:22.387 I/XK_B2   (26577): B2 #1100 payloadLen=160 firstBytes=B8 6E 21 C1 B7 EC FB 98 decoded=703360 err=0
+09-24 18:28:22.593 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:22.867 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:23.109 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:23.399 I/XK_B2   (26577): B2 #1125 payloadLen=160 firstBytes=B8 64 D2 49 74 D2 E9 C7 decoded=719360 err=0
+09-24 18:28:23.403 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:23.643 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:23.918 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:24.150 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:24.378 I/XK_B2   (26577): B2 #1150 payloadLen=160 firstBytes=B8 7F DD AE 67 03 DA FC decoded=735360 err=0
+09-24 18:28:24.437 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:24.666 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:24.945 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:25.184 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:25.392 I/XK_B2   (26577): B2 #1175 payloadLen=160 firstBytes=B8 6D 6B 51 0F C4 09 18 decoded=751360 err=0
+09-24 18:28:25.468 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:25.717 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:25.994 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:26.246 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:26.389 I/XK_B2   (26577): B2 #1200 payloadLen=160 firstBytes=B8 68 D6 8C 68 28 24 5A decoded=767360 err=0
+09-24 18:28:26.525 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:26.753 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:27.030 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:27.274 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:27.401 I/XK_B2   (26577): B2 #1225 payloadLen=160 firstBytes=B8 7F 88 D0 13 02 88 EC decoded=783360 err=0
+09-24 18:28:27.557 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:27.800 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:28.075 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:28.324 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:28.387 I/XK_B2   (26577): B2 #1250 payloadLen=160 firstBytes=B8 6B 51 34 C8 2A CA 5F decoded=799360 err=0
+09-24 18:28:28.598 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:28.823 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:29.112 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:29.348 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:29.396 I/XK_B2   (26577): B2 #1275 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=815360 err=0
+09-24 18:28:29.639 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:29.876 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:30.143 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:30.398 I/XK_B2   (26577): B2 #1300 payloadLen=160 firstBytes=B8 6D 4D 30 9F C5 FE 6A decoded=831360 err=0
+09-24 18:28:30.400 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:30.497 I/XK_Gemini(26577): transcript usuario: probando probando Hola, ┬┐cu├íl es la capital de Francia?
+09-24 18:28:30.531 I/XK_Gemini(26577): respuesta delta: Hola. La
+09-24 18:28:30.679 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:30.730 I/XK_Gemini(26577): respuesta delta:  capital
+09-24 18:28:30.868 I/XK_Gemini(26577): respuesta delta:  de Francia
+09-24 18:28:30.907 I/XK_Gemini(26577): respuesta delta:  es
+09-24 18:28:30.921 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:31.081 I/XK_Gemini(26577): respuesta delta:  Par├¡s.
+09-24 18:28:31.163 I/XK_Gemini(26577): respuesta delta:  ┬┐Necesitas
+09-24 18:28:31.186 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:31.395 I/XK_Gemini(26577): respuesta delta:  algo
+09-24 18:28:31.396 I/XK_B2   (26577): B2 #1325 payloadLen=160 firstBytes=B8 6F 10 38 62 DB 14 E3 decoded=847360 err=0
+09-24 18:28:31.425 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:31.595 I/XK_Gemini(26577): respuesta delta:  m├ís?
+09-24 18:28:31.707 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:31.964 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:32.241 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:32.398 I/XK_B2   (26577): B2 #1350 payloadLen=160 firstBytes=B8 6D 32 F0 B4 B2 24 B8 decoded=863360 err=0
+09-24 18:28:32.466 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:32.767 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:32.984 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:33.277 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:33.389 I/XK_B2   (26577): B2 #1375 payloadLen=160 firstBytes=B8 6E 9A 9B 48 A6 D1 64 decoded=879360 err=0
+09-24 18:28:33.517 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:33.788 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:34.045 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:34.313 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:34.405 I/XK_B2   (26577): B2 #1400 payloadLen=160 firstBytes=B8 7F 67 F9 F5 BC 82 43 decoded=895360 err=0
+09-24 18:28:34.551 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:34.832 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:35.067 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:35.359 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:35.388 I/XK_B2   (26577): B2 #1425 payloadLen=160 firstBytes=B8 6E 9A 2E D0 44 5E 82 decoded=911360 err=0
+09-24 18:28:35.464 I/XK_Gemini(26577): turno del modelo completado
+09-24 18:28:35.601 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:35.877 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:36.125 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:36.380 I/XK_B2   (26577): B2 #1450 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=927360 err=0
+09-24 18:28:36.387 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:36.638 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:36.912 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:37.155 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:37.388 I/XK_B2   (26577): B2 #1475 payloadLen=160 firstBytes=B8 6F 07 DF 86 53 9E 87 decoded=943360 err=0
+09-24 18:28:37.440 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:37.673 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:37.962 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:38.200 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:38.387 I/XK_B2   (26577): B2 #1500 payloadLen=160 firstBytes=B8 6C 47 40 C5 0A B7 28 decoded=959360 err=0
+09-24 18:28:38.485 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:38.703 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:38.994 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:39.235 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:39.398 I/XK_B2   (26577): B2 #1525 payloadLen=160 firstBytes=B8 6F AC FA 79 46 A3 9A decoded=975360 err=0
+09-24 18:28:39.513 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:39.754 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:40.048 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:40.270 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:40.399 I/XK_B2   (26577): B2 #1550 payloadLen=160 firstBytes=B8 6C 37 DA DD 0A 8C 94 decoded=991360 err=0
+09-24 18:28:40.551 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:40.792 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:41.083 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:41.320 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:41.401 I/XK_B2   (26577): B2 #1575 payloadLen=160 firstBytes=B8 7E 31 29 C2 EB 75 9A decoded=1007360 err=0
+09-24 18:28:41.588 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:41.845 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:42.114 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:42.357 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:42.381 I/XK_B2   (26577): B2 #1600 payloadLen=160 firstBytes=B8 63 80 5F 23 C3 37 85 decoded=1023360 err=0
+09-24 18:28:42.623 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:42.875 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:43.147 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:43.388 I/XK_B2   (26577): B2 #1625 payloadLen=160 firstBytes=B8 6F 13 C0 06 43 B2 75 decoded=1039360 err=0
+09-24 18:28:43.392 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:43.515 I/XK_Gemini(26577): transcript usuario: ┬┐Cu├íl es la capital de Francia?
+09-24 18:28:43.521 I/XK_Gemini(26577): respuesta delta: La capital
+09-24 18:28:43.613 I/XK_Gemini(26577): respuesta delta:  de Francia
+09-24 18:28:43.671 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:43.783 I/XK_Gemini(26577): respuesta delta:  es
+09-24 18:28:43.818 I/XK_Gemini(26577): respuesta delta:  Par├¡s.
+09-24 18:28:43.922 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:43.951 I/XK_Gemini(26577): respuesta delta:  ┬┐En qu├®
+09-24 18:28:44.202 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:44.403 I/XK_B2   (26577): B2 #1650 payloadLen=160 firstBytes=B8 6C 1D C2 86 36 4A FF decoded=1055360 err=0
+09-24 18:28:44.426 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:44.474 I/XK_Gemini(26577): respuesta delta:  puedo
+09-24 18:28:44.495 I/XK_Gemini(26577): respuesta delta:  ayudarte
+09-24 18:28:44.512 I/XK_Gemini(26577): respuesta delta:  con eso?
+09-24 18:28:44.718 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:44.950 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:45.227 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:45.394 I/XK_B2   (26577): B2 #1675 payloadLen=160 firstBytes=B8 6F 14 4A 15 35 AA 97 decoded=1071360 err=0
+09-24 18:28:45.478 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:45.767 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:45.984 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:46.266 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:46.383 I/XK_B2   (26577): B2 #1700 payloadLen=160 firstBytes=B8 6C 3D 42 0D 00 63 70 decoded=1087360 err=0
+09-24 18:28:46.508 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:46.791 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:47.041 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:47.309 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:47.395 I/XK_B2   (26577): B2 #1725 payloadLen=160 firstBytes=B8 6F AB 8F 53 A1 24 2D decoded=1103360 err=0
+09-24 18:28:47.550 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:47.643 I/XK_Gemini(26577): turno del modelo completado
+09-24 18:28:47.829 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:48.080 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:48.346 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:48.396 I/XK_B2   (26577): B2 #1750 payloadLen=160 firstBytes=B8 62 33 D0 8B 57 EA 0E decoded=1119360 err=0
+09-24 18:28:48.597 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:48.869 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:49.104 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:49.404 I/XK_B2   (26577): B2 #1775 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1135360 err=0
+09-24 18:28:49.407 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:49.638 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:49.917 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:50.164 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:50.403 I/XK_B2   (26577): B2 #1800 payloadLen=160 firstBytes=B8 66 8D A5 49 4A E2 28 decoded=1151360 err=0
+09-24 18:28:50.437 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:50.689 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:50.963 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:51.185 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:51.400 I/XK_B2   (26577): B2 #1825 payloadLen=160 firstBytes=B8 6E 00 48 FB DA 11 A2 decoded=1167360 err=0
+09-24 18:28:51.474 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:51.708 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:51.988 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:52.232 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:52.390 I/XK_B2   (26577): B2 #1850 payloadLen=160 firstBytes=B8 6A E1 37 53 73 14 9C decoded=1183360 err=0
+09-24 18:28:52.505 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:52.757 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:53.022 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:53.274 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:53.396 I/XK_B2   (26577): B2 #1875 payloadLen=160 firstBytes=B8 65 DF 76 FA 2B 89 30 decoded=1199360 err=0
+09-24 18:28:53.555 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:53.797 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:54.061 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:54.314 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:54.391 I/XK_B2   (26577): B2 #1900 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1215360 err=0
+09-24 18:28:54.587 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:54.825 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:55.108 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:55.241 I/XK_Gemini(26577): transcript usuario: Hola, ┬┐cu├íl es la capital de Francia?
+09-24 18:28:55.245 I/XK_Gemini(26577): respuesta delta: Es Par├¡s.
+09-24 18:28:55.346 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:55.382 I/XK_Gemini(26577): respuesta delta:  ┬┐Te gustar├¡a
+09-24 18:28:55.382 I/XK_B2   (26577): B2 #1925 payloadLen=160 firstBytes=B8 63 9F 2F AB 63 DD 58 decoded=1231360 err=0
+09-24 18:28:55.650 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:55.671 I/XK_Gemini(26577): respuesta delta:  saber
+09-24 18:28:55.856 I/XK_Gemini(26577): respuesta delta:  algo
+09-24 18:28:55.867 I/XK_Gemini(26577): respuesta delta:  m├ís
+09-24 18:28:55.884 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:55.888 I/XK_Gemini(26577): respuesta delta:  sobre
+09-24 18:28:55.894 I/XK_Gemini(26577): respuesta delta:  esta
+09-24 18:28:55.984 I/XK_Gemini(26577): respuesta delta:  ciudad?
+09-24 18:28:56.145 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:56.387 I/XK_B2   (26577): B2 #1950 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1247360 err=0
+09-24 18:28:56.390 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:56.677 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:56.903 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:57.190 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:57.396 I/XK_B2   (26577): B2 #1975 payloadLen=160 firstBytes=B8 6D 6A BF 19 74 D7 78 decoded=1263360 err=0
+09-24 18:28:57.446 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:57.713 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:57.948 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:58.238 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:58.386 I/XK_B2   (26577): B2 #2000 payloadLen=160 firstBytes=B8 62 BB 86 11 9A 67 EC decoded=1279360 err=0
+09-24 18:28:58.477 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:58.686 I/XK_Gemini(26577): turno del modelo completado
+09-24 18:28:58.756 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:58.990 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:59.286 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:59.384 I/XK_B2   (26577): B2 #2025 payloadLen=160 firstBytes=B8 6F 8C F8 DE 06 FD 60 decoded=1295360 err=0
+09-24 18:28:59.506 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:28:59.785 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:00.033 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:00.312 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:00.380 I/XK_B2   (26577): B2 #2050 payloadLen=160 firstBytes=B8 64 66 11 0E E6 96 C0 decoded=1311360 err=0
+09-24 18:29:00.553 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:00.832 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:01.065 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:01.355 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:01.383 I/XK_B2   (26577): B2 #2075 payloadLen=160 firstBytes=B8 6A 7E B3 98 7C 13 0C decoded=1327360 err=0
+09-24 18:29:01.586 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:01.869 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:02.103 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:02.394 I/XK_B2   (26577): B2 #2100 payloadLen=160 firstBytes=B8 62 D6 8C 08 70 28 5C decoded=1343360 err=0
+09-24 18:29:02.399 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:02.632 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:02.916 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:03.143 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:03.394 I/XK_B2   (26577): B2 #2125 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1359360 err=0
+09-24 18:29:03.423 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:03.669 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:03.949 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:04.183 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:04.393 I/XK_B2   (26577): B2 #2150 payloadLen=160 firstBytes=B8 64 58 A0 9F 5B 6F FF decoded=1375360 err=0
+09-24 18:29:04.468 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:04.707 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:04.982 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:05.018 I/XK_Gemini(26577): transcript usuario: subir
+09-24 18:29:05.019 I/XK_Gemini(26577): respuesta delta: ┬┐Podr├¡as aclararme
+09-24 18:29:05.038 I/XK_Gemini(26577): respuesta delta:  qu├® te
+09-24 18:29:05.040 I/XK_Gemini(26577): respuesta delta:  gustar├¡a
+09-24 18:29:05.045 I/XK_Gemini(26577): respuesta delta:  subir?
+09-24 18:29:05.052 I/XK_Gemini(26577): respuesta delta:  ┬┐El volumen,
+09-24 18:29:05.233 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:05.387 I/XK_B2   (26577): B2 #2175 payloadLen=160 firstBytes=B8 7F 65 46 D1 83 81 6D decoded=1391360 err=0
+09-24 18:29:05.398 I/XK_Gemini(26577): respuesta delta:  algo
+09-24 18:29:05.419 I/XK_Gemini(26577): respuesta delta:  en una
+09-24 18:29:05.434 I/XK_Gemini(26577): respuesta delta:  p├ígina
+09-24 18:29:05.457 I/XK_Gemini(26577): respuesta delta:  web,
+09-24 18:29:05.501 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:05.550 I/XK_Gemini(26577): respuesta delta:  o algo
+09-24 18:29:05.715 I/XK_Gemini(26577): respuesta delta:  m├ís?
+09-24 18:29:05.762 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:06.044 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:06.274 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:06.397 I/XK_B2   (26577): B2 #2200 payloadLen=160 firstBytes=B8 68 F8 DD 62 EA C2 42 decoded=1407360 err=0
+09-24 18:29:06.549 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:06.791 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:07.083 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:07.324 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:07.396 I/XK_B2   (26577): B2 #2225 payloadLen=160 firstBytes=B8 67 8F 91 C3 AB 6E B8 decoded=1423360 err=0
+09-24 18:29:07.594 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:07.839 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:08.114 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:08.343 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:08.384 I/XK_B2   (26577): B2 #2250 payloadLen=160 firstBytes=B8 7F E7 D2 9B E8 E9 A3 decoded=1439360 err=0
+09-24 18:29:08.624 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:08.880 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:09.154 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:09.381 I/XK_B2   (26577): B2 #2275 payloadLen=160 firstBytes=B8 6E 04 E1 09 41 CF 3E decoded=1455360 err=0
+09-24 18:29:09.386 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:09.663 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:09.908 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:10.218 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:10.398 I/XK_B2   (26577): B2 #2300 payloadLen=160 firstBytes=B8 6F 0B B7 D0 7A 90 FB decoded=1471360 err=0
+09-24 18:29:10.442 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:10.722 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:10.945 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:10.961 I/XK_Gemini(26577): turno del modelo completado
+09-24 18:29:11.239 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:11.393 I/XK_B2   (26577): B2 #2325 payloadLen=160 firstBytes=B8 6D 5D 21 5A 5C AB AA decoded=1487360 err=0
+09-24 18:29:11.489 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:11.749 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:12.010 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:12.291 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:12.386 I/XK_B2   (26577): B2 #2350 payloadLen=160 firstBytes=B8 6D 68 62 FE 60 8D 3E decoded=1503360 err=0
+09-24 18:29:12.520 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:12.816 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:13.029 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:13.312 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:13.394 I/XK_B2   (26577): B2 #2375 payloadLen=160 firstBytes=B8 6F 16 F7 EE 8C 4C 8A decoded=1519360 err=0
+09-24 18:29:13.556 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:13.821 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:14.075 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:14.355 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:14.389 I/XK_B2   (26577): B2 #2400 payloadLen=160 firstBytes=B8 68 32 86 61 D0 11 B5 decoded=1535360 err=0
+09-24 18:29:14.609 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:14.891 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:15.120 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:15.392 I/XK_B2   (26577): B2 #2425 payloadLen=160 firstBytes=B8 67 F8 B8 91 3D 88 9B decoded=1551360 err=0
+09-24 18:29:15.395 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:15.626 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:15.912 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:16.165 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:16.387 I/XK_B2   (26577): B2 #2450 payloadLen=160 firstBytes=B8 62 92 64 DE 25 6B D4 decoded=1567360 err=0
+09-24 18:29:16.432 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:16.680 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:16.951 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:17.199 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:17.385 I/XK_B2   (26577): B2 #2475 payloadLen=160 firstBytes=B8 68 5B 0D 9D B6 75 D8 decoded=1583360 err=0
+09-24 18:29:17.466 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:17.729 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:18.002 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:18.236 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:18.399 I/XK_B2   (26577): B2 #2500 payloadLen=160 firstBytes=B8 63 A2 91 AD 1C 87 45 decoded=1599360 err=0
+09-24 18:29:18.505 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:18.753 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:19.043 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:19.271 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:19.385 I/XK_B2   (26577): B2 #2525 payloadLen=160 firstBytes=B8 6D FC 14 E9 29 F0 22 decoded=1615360 err=0
+09-24 18:29:19.550 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:19.791 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:20.072 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:20.323 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:20.398 I/XK_B2   (26577): B2 #2550 payloadLen=160 firstBytes=B8 7F 24 9A 24 C0 5F 13 decoded=1631360 err=0
+09-24 18:29:20.591 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:20.827 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:21.120 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:21.360 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:21.403 I/XK_B2   (26577): B2 #2575 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1647360 err=0
+09-24 18:29:21.639 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:21.889 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:22.157 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:22.385 I/XK_B2   (26577): B2 #2600 payloadLen=160 firstBytes=B8 7F CB EF 28 C4 9C 10 decoded=1663360 err=0
+09-24 18:29:22.386 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:22.687 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:22.912 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:23.189 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:23.386 I/XK_B2   (26577): B2 #2625 payloadLen=160 firstBytes=B8 62 05 7F F7 E1 51 9B decoded=1679360 err=0
+09-24 18:29:23.436 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:23.713 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:23.967 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:24.233 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:24.395 I/XK_B2   (26577): B2 #2650 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1695360 err=0
+09-24 18:29:24.469 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:24.757 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:24.993 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:25.015 I/XK_Gemini(26577): transcript usuario: Hola. ┬┐Cu├íl es la capital de Francia?
+09-24 18:29:25.025 I/XK_Gemini(26577): respuesta delta: La capital
+09-24 18:29:25.038 I/XK_Gemini(26577): respuesta delta:  de Francia
+09-24 18:29:25.041 I/XK_Gemini(26577): respuesta delta:  es
+09-24 18:29:25.042 I/XK_Gemini(26577): respuesta delta:  Par├¡s.
+09-24 18:29:25.046 I/XK_Gemini(26577): respuesta delta:  ┬┐Hay algo
+09-24 18:29:25.056 I/XK_Gemini(26577): respuesta delta:  m├ís
+09-24 18:29:25.064 I/XK_Gemini(26577): respuesta delta:  que quieras
+09-24 18:29:25.080 I/XK_Gemini(26577): respuesta delta:  saber?
+09-24 18:29:25.264 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:25.390 I/XK_B2   (26577): B2 #2675 payloadLen=160 firstBytes=B8 7F F2 BB 04 FA 77 B3 decoded=1711360 err=0
+09-24 18:29:25.503 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:25.798 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:26.051 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:26.302 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:26.394 I/XK_B2   (26577): B2 #2700 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1727360 err=0
+09-24 18:29:26.543 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:26.821 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:27.080 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:27.352 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:27.386 I/XK_B2   (26577): B2 #2725 payloadLen=160 firstBytes=B8 7F 33 39 5B 6C 31 ED decoded=1743360 err=0
+09-24 18:29:27.603 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:27.866 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:28.108 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:28.402 I/XK_B2   (26577): B2 #2750 payloadLen=160 firstBytes=B8 63 A4 DD 09 32 F5 64 decoded=1759360 err=0
+09-24 18:29:28.405 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:28.637 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:28.916 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:29.117 I/XK_Gemini(26577): turno del modelo completado
+09-24 18:29:29.155 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:29.384 I/XK_B2   (26577): B2 #2775 payloadLen=160 firstBytes=B8 68 3E 82 BE D5 AF DB decoded=1775360 err=0
+09-24 18:29:29.429 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:29.681 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:29.954 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:30.190 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:30.388 I/XK_B2   (26577): B2 #2800 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1791360 err=0
+09-24 18:29:30.461 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:30.712 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:31.002 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:31.232 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:31.387 I/XK_B2   (26577): B2 #2825 payloadLen=160 firstBytes=B8 62 91 E2 5A 31 9E F3 decoded=1807360 err=0
+09-24 18:29:31.523 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:31.759 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:32.049 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:32.271 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:32.388 I/XK_B2   (26577): B2 #2850 payloadLen=160 firstBytes=B8 63 F1 C3 1D 68 45 33 decoded=1823360 err=0
+09-24 18:29:32.563 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:32.803 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:33.087 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:33.307 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:33.392 I/XK_B2   (26577): B2 #2875 payloadLen=160 firstBytes=B8 68 27 5A 81 BE B9 C7 decoded=1839360 err=0
+09-24 18:29:33.587 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:33.830 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:34.103 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:34.353 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:34.395 I/XK_B2   (26577): B2 #2900 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1855360 err=0
+09-24 18:29:34.630 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:34.875 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:35.159 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:35.396 I/XK_B2   (26577): B2 #2925 payloadLen=160 firstBytes=B8 7E F3 48 8C 6B BB E8 decoded=1871360 err=0
+09-24 18:29:35.399 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:35.667 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:35.903 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:36.205 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:36.388 I/XK_B2   (26577): B2 #2950 payloadLen=160 firstBytes=B8 7E 00 6C 26 3B D4 07 decoded=1887360 err=0
+09-24 18:29:36.434 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:36.709 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:36.954 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:37.236 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:37.378 I/XK_B2   (26577): B2 #2975 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1903360 err=0
+09-24 18:29:37.473 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:37.760 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:37.995 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:38.270 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:38.401 I/XK_B2   (26577): B2 #3000 payloadLen=160 firstBytes=B8 7E AD 0A CF 18 3B EF decoded=1919360 err=0
+09-24 18:29:38.510 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:38.802 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:39.043 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:39.332 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:39.397 I/XK_B2   (26577): B2 #3025 payloadLen=160 firstBytes=B8 62 4D F6 A3 D0 39 E3 decoded=1935360 err=0
+09-24 18:29:39.560 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:39.836 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:40.066 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:40.348 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:40.386 I/XK_B2   (26577): B2 #3050 payloadLen=160 firstBytes=B8 6C 44 7A CB D3 D3 1C decoded=1951360 err=0
+09-24 18:29:40.614 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:40.870 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:41.118 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:41.386 I/XK_B2   (26577): B2 #3075 payloadLen=160 firstBytes=B8 68 3C EF 9F D5 6C D6 decoded=1967360 err=0
+09-24 18:29:41.388 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:41.631 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:41.923 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:42.158 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:42.386 I/XK_B2   (26577): B2 #3100 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=1983360 err=0
+09-24 18:29:42.420 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:42.668 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:42.950 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:43.187 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:43.383 I/XK_B2   (26577): B2 #3125 payloadLen=160 firstBytes=B8 7F EE 84 FC 17 29 41 decoded=1999360 err=0
+09-24 18:29:43.464 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:43.723 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:43.989 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:44.228 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:44.383 I/XK_B2   (26577): B2 #3150 payloadLen=160 firstBytes=B8 6A 86 B0 31 83 3A BF decoded=2015360 err=0
+09-24 18:29:44.511 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:44.762 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:45.038 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:45.267 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:45.384 I/XK_B2   (26577): B2 #3175 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2031360 err=0
+09-24 18:29:45.548 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:45.785 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:46.076 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:46.308 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:46.389 I/XK_B2   (26577): B2 #3200 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2047360 err=0
+09-24 18:29:46.587 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:46.841 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:47.115 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:47.342 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:47.390 I/XK_B2   (26577): B2 #3225 payloadLen=160 firstBytes=B8 7F 67 61 93 01 50 A3 decoded=2063360 err=0
+09-24 18:29:47.631 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:47.888 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:48.154 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:48.385 I/XK_B2   (26577): B2 #3250 payloadLen=160 firstBytes=B8 62 00 AC 8E BB E3 76 decoded=2079360 err=0
+09-24 18:29:48.389 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:48.684 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:48.916 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:49.203 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:49.385 I/XK_B2   (26577): B2 #3275 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2095360 err=0
+09-24 18:29:49.440 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:49.701 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:49.949 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:50.238 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:50.395 I/XK_B2   (26577): B2 #3300 payloadLen=160 firstBytes=B8 64 B7 A9 F1 4C C6 90 decoded=2111360 err=0
+09-24 18:29:50.468 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:50.763 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:50.986 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:51.276 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:51.402 I/XK_B2   (26577): B2 #3325 payloadLen=160 firstBytes=B8 6E 2B 28 59 5D 4A 08 decoded=2127360 err=0
+09-24 18:29:51.516 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:51.798 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:52.029 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:52.316 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:52.393 I/XK_B2   (26577): B2 #3350 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2143360 err=0
+09-24 18:29:52.563 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:52.845 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:53.067 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:53.354 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:53.403 I/XK_B2   (26577): B2 #3375 payloadLen=160 firstBytes=B8 7F 74 52 DA 9C 17 54 decoded=2159360 err=0
+09-24 18:29:53.603 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:53.869 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:54.126 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:54.392 I/XK_B2   (26577): B2 #3400 payloadLen=160 firstBytes=B8 6F 5A DF AA 76 E4 22 decoded=2175360 err=0
+09-24 18:29:54.393 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:54.642 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:54.918 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:55.153 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:55.387 I/XK_B2   (26577): B2 #3425 payloadLen=160 firstBytes=B8 7E D7 5A D5 64 95 96 decoded=2191360 err=0
+09-24 18:29:55.437 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:55.677 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:55.969 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:56.192 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:56.388 I/XK_B2   (26577): B2 #3450 payloadLen=160 firstBytes=B8 63 A4 9A 7F E3 E9 6C decoded=2207360 err=0
+09-24 18:29:56.467 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:56.711 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:57.004 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:57.246 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:57.399 I/XK_B2   (26577): B2 #3475 payloadLen=160 firstBytes=B8 66 19 06 8F 9B A1 6C decoded=2223360 err=0
+09-24 18:29:57.522 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:57.759 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:58.027 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:58.288 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:58.388 I/XK_B2   (26577): B2 #3500 payloadLen=160 firstBytes=B8 6A 08 1F 12 D1 25 D1 decoded=2239360 err=0
+09-24 18:29:58.550 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:58.798 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:59.071 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:59.315 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:59.401 I/XK_B2   (26577): B2 #3525 payloadLen=160 firstBytes=B8 6E 1D BA DB A6 B2 8C decoded=2255360 err=0
+09-24 18:29:59.599 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:29:59.836 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:00.102 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:00.368 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:00.408 I/XK_B2   (26577): B2 #3550 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2271360 err=0
+09-24 18:30:00.628 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:00.887 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:01.153 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:01.394 I/XK_B2   (26577): B2 #3575 payloadLen=160 firstBytes=B8 6F 84 BC 8D A4 C7 EA decoded=2287360 err=0
+09-24 18:30:01.400 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:01.686 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:01.922 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:02.206 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:02.396 I/XK_B2   (26577): B2 #3600 payloadLen=160 firstBytes=B8 7F 6A 05 0B 75 23 72 decoded=2303360 err=0
+09-24 18:30:02.436 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:02.707 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:02.956 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:03.240 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:03.385 I/XK_B2   (26577): B2 #3625 payloadLen=160 firstBytes=B8 6F 5B 44 4D 7A E5 50 decoded=2319360 err=0
+09-24 18:30:03.482 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:03.756 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:03.990 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:04.271 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:04.414 I/XK_B2   (26577): B2 #3650 payloadLen=160 firstBytes=B8 7F E7 87 18 5B FF 6F decoded=2335360 err=0
+09-24 18:30:04.518 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:04.796 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:05.029 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:05.310 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:05.399 I/XK_B2   (26577): B2 #3675 payloadLen=160 firstBytes=B8 7F DB 88 E3 9F 76 9B decoded=2351360 err=0
+09-24 18:30:05.564 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:05.836 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:06.086 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:06.356 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:06.395 I/XK_B2   (26577): B2 #3700 payloadLen=160 firstBytes=B8 6A AC 43 7E 4A 09 3E decoded=2367360 err=0
+09-24 18:30:06.606 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:06.881 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:07.111 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:07.384 I/XK_B2   (26577): B2 #3725 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2383360 err=0
+09-24 18:30:07.387 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:07.628 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:07.904 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:08.150 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:08.395 I/XK_B2   (26577): B2 #3750 payloadLen=160 firstBytes=B8 6F 17 51 52 AE 92 63 decoded=2399360 err=0
+09-24 18:30:08.428 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:08.668 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:08.959 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:09.199 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:09.401 I/XK_B2   (26577): B2 #3775 payloadLen=160 firstBytes=B8 6A 82 D4 1A 4C 7A 89 decoded=2415360 err=0
+09-24 18:30:09.481 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:09.720 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:09.996 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:10.229 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:10.385 I/XK_B2   (26577): B2 #3800 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2431360 err=0
+09-24 18:30:10.509 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:10.755 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:11.037 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:11.268 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:11.402 I/XK_B2   (26577): B2 #3825 payloadLen=160 firstBytes=B8 7F E7 BE 86 0F 44 F8 decoded=2447360 err=0
+09-24 18:30:11.544 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:11.795 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:12.088 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:12.331 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:12.390 I/XK_B2   (26577): B2 #3850 payloadLen=160 firstBytes=B8 7F 72 7D 1F E2 B0 2C decoded=2463360 err=0
+09-24 18:30:12.605 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:12.838 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:13.106 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:13.352 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:13.399 I/XK_B2   (26577): B2 #3875 payloadLen=160 firstBytes=B8 62 93 32 70 37 E9 98 decoded=2479360 err=0
+09-24 18:30:13.646 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:13.885 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:14.157 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:14.385 I/XK_B2   (26577): B2 #3900 payloadLen=160 firstBytes=B8 6A BA 6D 7D 90 80 36 decoded=2495360 err=0
+09-24 18:30:14.389 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:14.673 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:14.912 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:15.185 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:15.384 I/XK_B2   (26577): B2 #3925 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2511360 err=0
+09-24 18:30:15.432 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:15.704 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:15.947 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:16.246 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:16.324 I/XK_Gemini(26577): transcript usuario: ├¡simo
+09-24 18:30:16.329 I/XK_Gemini(26577): respuesta delta: ┬íDe nada!
+09-24 18:30:16.399 I/XK_B2   (26577): B2 #3950 payloadLen=160 firstBytes=B8 65 94 30 7D 54 66 7B decoded=2527360 err=0
+09-24 18:30:16.465 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:16.544 I/XK_Gemini(26577): respuesta delta:  Si tienes
+09-24 18:30:16.757 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:16.940 I/XK_Gemini(26577): respuesta delta:  otra
+09-24 18:30:16.951 I/XK_Gemini(26577): respuesta delta:  pregunta,
+09-24 18:30:16.975 I/XK_Gemini(26577): respuesta delta:  no
+09-24 18:30:16.982 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:17.059 I/XK_Gemini(26577): respuesta delta:  dudes
+09-24 18:30:17.158 I/XK_Gemini(26577): respuesta delta:  en hacerla.
+09-24 18:30:17.268 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:17.397 I/XK_B2   (26577): B2 #3975 payloadLen=160 firstBytes=B8 62 48 96 70 52 80 8D decoded=2543360 err=0
+09-24 18:30:17.503 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:17.793 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:18.046 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:18.318 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:18.405 I/XK_B2   (26577): B2 #4000 payloadLen=160 firstBytes=B8 68 1E FE 4F AF BA E4 decoded=2559360 err=0
+09-24 18:30:18.554 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:18.847 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:19.068 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:19.355 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:19.380 I/XK_B2   (26577): B2 #4025 payloadLen=160 firstBytes=B8 6E BF BE 5D 2C 33 D1 decoded=2575360 err=0
+09-24 18:30:19.598 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:19.867 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:20.062 I/XK_Gemini(26577): turno del modelo completado
+09-24 18:30:20.123 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:20.384 I/XK_B2   (26577): B2 #4050 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2591360 err=0
+09-24 18:30:20.388 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:20.640 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:20.911 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:21.153 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:21.397 I/XK_B2   (26577): B2 #4075 payloadLen=160 firstBytes=B8 7F B7 7A 56 B9 ED 89 decoded=2607360 err=0
+09-24 18:30:21.424 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:21.671 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:21.946 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:22.196 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:22.386 I/XK_B2   (26577): B2 #4100 payloadLen=160 firstBytes=B8 64 5B 1D BB 0C 57 67 decoded=2623360 err=0
+09-24 18:30:22.480 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:22.705 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:22.990 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:23.240 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:23.396 I/XK_B2   (26577): B2 #4125 payloadLen=160 firstBytes=B8 64 6F E0 8D 55 9D A1 decoded=2639360 err=0
+09-24 18:30:23.506 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:23.759 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:24.026 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:24.300 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:24.392 I/XK_B2   (26577): B2 #4150 payloadLen=160 firstBytes=B8 68 37 1F 27 3B 8E 6F decoded=2655360 err=0
+09-24 18:30:24.549 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:24.796 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:25.065 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:25.305 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:25.402 I/XK_B2   (26577): B2 #4175 payloadLen=160 firstBytes=B8 7F F3 67 00 BE AF 03 decoded=2671360 err=0
+09-24 18:30:25.587 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:25.843 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:26.113 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:26.348 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:26.396 I/XK_B2   (26577): B2 #4200 payloadLen=160 firstBytes=B8 7F DB 51 B4 EA 1E AF decoded=2687360 err=0
+09-24 18:30:26.638 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:26.876 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:27.161 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:27.384 I/XK_B2   (26577): B2 #4225 payloadLen=160 firstBytes=B8 6F 08 08 F2 BE 2B D8 decoded=2703360 err=0
+09-24 18:30:27.385 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:27.675 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:27.910 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:28.195 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:28.396 I/XK_B2   (26577): B2 #4250 payloadLen=160 firstBytes=B8 68 3D 2D 7A EA E1 C5 decoded=2719360 err=0
+09-24 18:30:28.427 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:28.718 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:28.973 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:29.248 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:29.390 I/XK_B2   (26577): B2 #4275 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2735360 err=0
+09-24 18:30:29.468 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:29.755 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:29.998 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:30.288 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:30.397 I/XK_B2   (26577): B2 #4300 payloadLen=160 firstBytes=B8 6A 69 F8 81 93 44 20 decoded=2751360 err=0
+09-24 18:30:30.526 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:30.783 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:31.030 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:31.306 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:31.401 I/XK_B2   (26577): B2 #4325 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2767360 err=0
+09-24 18:30:31.562 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:31.837 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:32.083 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:32.359 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:32.395 I/XK_B2   (26577): B2 #4350 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2783360 err=0
+09-24 18:30:32.586 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:32.891 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:33.109 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:33.387 I/XK_B2   (26577): B2 #4375 payloadLen=160 firstBytes=B8 6E B1 6B D9 47 F2 F5 decoded=2799360 err=0
+09-24 18:30:33.395 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:33.630 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:33.913 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:34.145 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:34.386 I/XK_B2   (26577): B2 #4400 payloadLen=160 firstBytes=B8 6F 1C 1D CE F5 93 BA decoded=2815360 err=0
+09-24 18:30:34.431 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:34.681 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:34.964 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:35.186 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:35.385 I/XK_B2   (26577): B2 #4425 payloadLen=160 firstBytes=B8 64 64 6E 41 DD 70 0F decoded=2831360 err=0
+09-24 18:30:35.477 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:35.710 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:36.005 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:36.232 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:36.386 I/XK_B2   (26577): B2 #4450 payloadLen=160 firstBytes=B8 62 42 C8 F5 6D 47 14 decoded=2847360 err=0
+09-24 18:30:36.509 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:36.745 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:37.025 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:37.273 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:37.413 I/XK_B2   (26577): B2 #4475 payloadLen=160 firstBytes=B8 6C 3A D8 6A 0B D9 4A decoded=2863360 err=0
+09-24 18:30:37.555 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:37.796 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:38.076 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:38.319 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:38.411 I/XK_B2   (26577): B2 #4500 payloadLen=160 firstBytes=B8 6D 6B 48 1E 8D 5F AB decoded=2879360 err=0
+09-24 18:30:38.602 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:38.826 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:39.120 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:39.347 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:39.387 I/XK_B2   (26577): B2 #4525 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2895360 err=0
+09-24 18:30:39.627 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:39.880 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:40.148 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:40.396 I/XK_B2   (26577): B2 #4550 payloadLen=160 firstBytes=B8 7F 2E 48 65 CB 4F 52 decoded=2911360 err=0
+09-24 18:30:40.400 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:40.680 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:40.914 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:41.184 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:41.387 I/XK_B2   (26577): B2 #4575 payloadLen=160 firstBytes=B8 6A 95 3A B3 70 C8 82 decoded=2927360 err=0
+09-24 18:30:41.428 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:41.713 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:41.951 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:42.226 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:42.387 I/XK_B2   (26577): B2 #4600 payloadLen=160 firstBytes=B8 6D 4A A8 64 6B 41 CF decoded=2943360 err=0
+09-24 18:30:42.479 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:42.745 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:42.986 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:43.270 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:43.401 I/XK_B2   (26577): B2 #4625 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=2959360 err=0
+09-24 18:30:43.534 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:43.804 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:44.034 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:44.313 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:44.381 I/XK_B2   (26577): B2 #4650 payloadLen=160 firstBytes=B8 6A 6D 7F 2D 2D 15 1C decoded=2975360 err=0
+09-24 18:30:44.561 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:44.826 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:45.071 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:45.348 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:45.389 I/XK_B2   (26577): B2 #4675 payloadLen=160 firstBytes=B8 6A A2 3C 50 24 F0 19 decoded=2991360 err=0
+09-24 18:30:45.592 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:45.889 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:46.112 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:46.390 I/XK_B2   (26577): B2 #4700 payloadLen=160 firstBytes=B8 6C 3C 99 C2 77 A9 AE decoded=3007360 err=0
+09-24 18:30:46.393 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:46.637 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:46.903 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:47.169 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:47.387 I/XK_B2   (26577): B2 #4725 payloadLen=160 firstBytes=B8 7E 95 4C 17 18 8A 84 decoded=3023360 err=0
+09-24 18:30:47.437 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:47.671 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:47.954 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:48.194 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:48.380 I/XK_B2   (26577): B2 #4750 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3039360 err=0
+09-24 18:30:48.470 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:48.724 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:48.992 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:49.231 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:49.383 I/XK_B2   (26577): B2 #4775 payloadLen=160 firstBytes=B8 67 6E 10 D9 61 45 8C decoded=3055360 err=0
+09-24 18:30:49.509 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:49.751 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:50.037 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:50.284 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:50.397 I/XK_B2   (26577): B2 #4800 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3071360 err=0
+09-24 18:30:50.564 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:50.791 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:51.070 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:51.310 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:51.396 I/XK_B2   (26577): B2 #4825 payloadLen=160 firstBytes=B8 6F 4F 2E 90 2B 2E EF decoded=3087360 err=0
+09-24 18:30:51.588 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:51.841 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:52.128 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:52.360 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:52.386 I/XK_B2   (26577): B2 #4850 payloadLen=160 firstBytes=B8 64 75 8F 96 E8 3C C0 decoded=3103360 err=0
+09-24 18:30:52.627 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:52.880 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:53.166 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:53.387 I/XK_B2   (26577): B2 #4875 payloadLen=160 firstBytes=B8 6C 4B F4 A2 63 55 3C decoded=3119360 err=0
+09-24 18:30:53.391 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:53.668 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:53.915 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:54.188 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:54.400 I/XK_B2   (26577): B2 #4900 payloadLen=160 firstBytes=B8 7F DE 9D D6 85 7B FB decoded=3135360 err=0
+09-24 18:30:54.440 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:54.721 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:54.953 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:55.235 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:55.394 I/XK_B2   (26577): B2 #4925 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3151360 err=0
+09-24 18:30:55.480 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:55.760 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:55.993 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:56.278 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:56.384 I/XK_B2   (26577): B2 #4950 payloadLen=160 firstBytes=B8 67 63 EF 16 AD 79 12 decoded=3167360 err=0
+09-24 18:30:56.511 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:56.788 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:57.042 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:57.314 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:57.404 I/XK_B2   (26577): B2 #4975 payloadLen=160 firstBytes=B8 6F 51 0E 2F AA 40 05 decoded=3183360 err=0
+09-24 18:30:57.560 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:57.830 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:58.071 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:58.364 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:58.385 I/XK_B2   (26577): B2 #5000 payloadLen=160 firstBytes=B8 62 9B 74 D0 A8 83 DD decoded=3199360 err=0
+09-24 18:30:58.589 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:58.878 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:59.115 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:59.385 I/XK_B2   (26577): B2 #5025 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3215360 err=0
+09-24 18:30:59.387 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:59.626 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:30:59.909 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:00.144 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:00.382 I/XK_B2   (26577): B2 #5050 payloadLen=160 firstBytes=B8 64 59 3D 6A FA A4 D5 decoded=3231360 err=0
+09-24 18:31:00.445 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:00.680 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:01.250 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:01.467 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:01.674 I/XK_B2   (26577): B2 #5075 payloadLen=160 firstBytes=B8 6A 43 8A B3 8A 57 96 decoded=3247360 err=0
+09-24 18:31:01.751 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:01.987 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:02.274 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:02.526 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:02.675 I/XK_B2   (26577): B2 #5100 payloadLen=160 firstBytes=B8 63 A0 79 B4 D6 82 C5 decoded=3263360 err=0
+09-24 18:31:02.796 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:03.030 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:03.316 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:03.550 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:03.661 I/XK_B2   (26577): B2 #5125 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3279360 err=0
+09-24 18:31:03.833 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:04.085 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:04.356 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:04.589 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:04.668 I/XK_B2   (26577): B2 #5150 payloadLen=160 firstBytes=B8 64 CF F8 9D C2 E2 C7 decoded=3295360 err=0
+09-24 18:31:04.869 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:05.116 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:05.388 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:05.631 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:05.679 I/XK_B2   (26577): B2 #5175 payloadLen=160 firstBytes=B8 7F 57 B5 1A 50 6F C6 decoded=3311360 err=0
+09-24 18:31:05.913 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:06.146 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:06.431 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:06.681 I/XK_B2   (26577): B2 #5200 payloadLen=160 firstBytes=B8 7F 8A 33 ED C9 D4 98 decoded=3327360 err=0
+09-24 18:31:06.684 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:06.964 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:07.189 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:07.480 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:07.673 I/XK_B2   (26577): B2 #5225 payloadLen=160 firstBytes=B8 7F B5 13 EC A1 24 24 decoded=3343360 err=0
+09-24 18:31:07.724 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:08.000 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:08.227 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:08.507 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:08.675 I/XK_B2   (26577): B2 #5250 payloadLen=160 firstBytes=B8 6F 5F 95 3F 6F AF B7 decoded=3359360 err=0
+09-24 18:31:08.752 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:09.028 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:09.277 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:09.562 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:09.671 I/XK_B2   (26577): B2 #5275 payloadLen=160 firstBytes=B8 7F 81 94 63 78 D6 C0 decoded=3375360 err=0
+09-24 18:31:09.795 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:10.082 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:10.312 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:10.592 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:10.674 I/XK_B2   (26577): B2 #5300 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3391360 err=0
+09-24 18:31:10.835 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:11.133 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:11.350 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:11.638 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:11.683 I/XK_B2   (26577): B2 #5325 payloadLen=160 firstBytes=B8 7F 02 1B 25 18 05 33 decoded=3407360 err=0
+09-24 18:31:11.872 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:12.511 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:12.631 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:12.908 I/XK_B2   (26577): B2 #5350 payloadLen=160 firstBytes=B8 6D 58 30 8B D7 2B EC decoded=3423360 err=0
+09-24 18:31:12.909 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:13.496 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:14.055 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:14.233 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:14.462 I/XK_B2   (26577): B2 #5375 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3439360 err=0
+09-24 18:31:14.510 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:14.761 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:15.034 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:15.278 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:15.811 I/XK_B2   (26577): B2 #5400 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3455360 err=0
+09-24 18:31:16.276 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:16.397 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:16.674 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:16.913 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:17.073 I/XK_B2   (26577): B2 #5425 payloadLen=160 firstBytes=B8 6D 57 25 E5 64 3E 32 decoded=3471360 err=0
+09-24 18:31:17.192 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:17.429 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:17.705 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:17.959 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:18.059 I/XK_B2   (26577): B2 #5450 payloadLen=160 firstBytes=B8 6A 86 76 C0 63 56 88 decoded=3487360 err=0
+09-24 18:31:18.244 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:18.473 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:18.762 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:18.991 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:19.074 I/XK_B2   (26577): B2 #5475 payloadLen=160 firstBytes=B8 64 2C FE FE 03 5E 68 decoded=3503360 err=0
+09-24 18:31:19.285 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:19.525 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:19.794 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:20.035 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:20.070 I/XK_B2   (26577): B2 #5500 payloadLen=160 firstBytes=B8 6F 1A C6 22 A9 00 D0 decoded=3519360 err=0
+09-24 18:31:20.327 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:20.549 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:20.825 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:21.062 I/XK_B2   (26577): B2 #5525 payloadLen=160 firstBytes=B8 65 89 AA 77 53 5B 87 decoded=3535360 err=0
+09-24 18:31:21.069 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:21.353 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:21.592 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:21.871 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:22.081 I/XK_B2   (26577): B2 #5550 payloadLen=160 firstBytes=B8 63 73 C9 F3 BA D9 B5 decoded=3551360 err=0
+09-24 18:31:22.117 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:22.394 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:22.637 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:22.920 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:23.095 I/XK_B2   (26577): B2 #5575 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3567360 err=0
+09-24 18:31:23.149 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:23.442 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:23.671 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:23.949 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:24.066 I/XK_B2   (26577): B2 #5600 payloadLen=160 firstBytes=B8 68 26 E5 E5 3F A4 7B decoded=3583360 err=0
+09-24 18:31:24.202 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:24.469 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:24.719 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:24.994 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:25.071 I/XK_B2   (26577): B2 #5625 payloadLen=160 firstBytes=B8 6A 60 E0 3A 8F 67 D4 decoded=3599360 err=0
+09-24 18:31:25.235 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:25.529 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:25.748 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:25.784 I/XK_Gemini(26577): transcript usuario: cambiando de par├ímetro a otro valor diferente que
+09-24 18:31:26.042 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:26.064 I/XK_B2   (26577): B2 #5650 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3615360 err=0
+09-24 18:31:26.275 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:26.549 I/XK_Gemini(26577): respuesta delta: Entendido. ┬┐A
+09-24 18:31:26.557 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:26.790 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:27.068 I/XK_B2   (26577): B2 #5675 payloadLen=160 firstBytes=B8 6A 8A CF 0D 10 72 46 decoded=3631360 err=0
+09-24 18:31:27.069 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:27.132 I/XK_Gemini(26577): respuesta delta:  qu├® par├ímetro
+09-24 18:31:27.297 I/XK_Gemini(26577): respuesta delta:  te refieres
+09-24 18:31:27.311 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:27.346 I/XK_Gemini(26577): respuesta delta:  y a
+09-24 18:31:27.508 I/XK_Gemini(26577): respuesta delta:  qu├® nuevo
+09-24 18:31:27.536 I/XK_Gemini(26577): respuesta delta:  valor
+09-24 18:31:27.599 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:27.599 I/XK_Gemini(26577): respuesta delta:  quieres
+09-24 18:31:27.768 I/XK_Gemini(26577): respuesta delta:  cambiarlo?
+09-24 18:31:27.826 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:27.917 I/XK_Gemini(26577): respuesta delta:  As├¡
+09-24 18:31:28.084 I/XK_B2   (26577): B2 #5700 payloadLen=160 firstBytes=B8 6A 6A 78 F3 32 E1 00 decoded=3647360 err=0
+09-24 18:31:28.116 I/XK_Gemini(26577): respuesta delta:  podr├®
+09-24 18:31:28.123 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:28.130 I/XK_Gemini(26577): respuesta delta:  ayudarte
+09-24 18:31:28.237 I/XK_Gemini(26577): respuesta delta:  mejor.
+09-24 18:31:28.346 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:28.632 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:28.885 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:29.070 I/XK_B2   (26577): B2 #5725 payloadLen=160 firstBytes=B8 67 F7 74 0E CA 8F 21 decoded=3663360 err=0
+09-24 18:31:29.165 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:29.409 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:29.676 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:29.911 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:30.076 I/XK_B2   (26577): B2 #5750 payloadLen=160 firstBytes=B8 6F 1B 96 0F DE 0B 2C decoded=3679360 err=0
+09-24 18:31:30.212 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:30.430 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:30.709 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:30.947 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:31.071 I/XK_B2   (26577): B2 #5775 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3695360 err=0
+09-24 18:31:31.225 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:31.467 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:31.766 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:31.997 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:32.074 I/XK_B2   (26577): B2 #5800 payloadLen=160 firstBytes=B8 64 BA 90 EF 2E D2 29 decoded=3711360 err=0
+09-24 18:31:32.277 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:32.511 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:32.787 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:33.008 I/XK_Gemini(26577): turno del modelo completado
+09-24 18:31:33.027 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:33.072 I/XK_B2   (26577): B2 #5825 payloadLen=160 firstBytes=B8 64 13 C1 9A 45 82 23 decoded=3727360 err=0
+09-24 18:31:33.326 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:33.560 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:33.844 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:34.072 I/XK_B2   (26577): B2 #5850 payloadLen=160 firstBytes=B8 65 D4 1C 5C 64 38 9C decoded=3743360 err=0
+09-24 18:31:34.075 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:34.358 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:34.587 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:34.869 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:35.076 I/XK_B2   (26577): B2 #5875 payloadLen=160 firstBytes=B8 62 E8 42 FE 7E 04 AC decoded=3759360 err=0
+09-24 18:31:35.102 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:35.387 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:35.632 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:35.917 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:36.079 I/XK_B2   (26577): B2 #5900 payloadLen=160 firstBytes=B8 6E B9 95 FC 2B 92 58 decoded=3775360 err=0
+09-24 18:31:36.161 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:36.446 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:36.670 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:36.963 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:37.085 I/XK_B2   (26577): B2 #5925 payloadLen=160 firstBytes=B8 6E B4 30 B7 D7 7A 3C decoded=3791360 err=0
+09-24 18:31:37.202 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:37.472 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:37.715 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:38.001 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:38.073 I/XK_B2   (26577): B2 #5950 payloadLen=160 firstBytes=B8 7F EC F5 74 24 5E 54 decoded=3807360 err=0
+09-24 18:31:38.239 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:38.507 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:38.742 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:39.024 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:39.069 I/XK_B2   (26577): B2 #5975 payloadLen=160 firstBytes=B8 62 41 29 12 8E 1F 39 decoded=3823360 err=0
+09-24 18:31:39.278 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:39.547 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:39.798 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:40.076 I/XK_B2   (26577): B2 #6000 payloadLen=160 firstBytes=B8 67 5E 45 31 9E 21 45 decoded=3839360 err=0
+09-24 18:31:40.079 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:40.324 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:40.590 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:40.828 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:41.067 I/XK_B2   (26577): B2 #6025 payloadLen=160 firstBytes=B8 6A B3 5C 03 6C CD 14 decoded=3855360 err=0
+09-24 18:31:41.112 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:41.365 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:41.631 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:41.885 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:42.067 I/XK_B2   (26577): B2 #6050 payloadLen=160 firstBytes=B8 62 9C 52 9D DC E1 A0 decoded=3871360 err=0
+09-24 18:31:42.154 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:42.395 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:42.674 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:42.910 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:43.071 I/XK_B2   (26577): B2 #6075 payloadLen=160 firstBytes=B8 6A AC 65 D3 78 6B BD decoded=3887360 err=0
+09-24 18:31:43.199 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:43.435 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:43.719 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:43.956 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:44.059 I/XK_Gemini(26577): transcript usuario: ┬┐Cu├íl es la capital de Francia?
+09-24 18:31:44.062 I/XK_Gemini(26577): respuesta delta: La capital
+09-24 18:31:44.071 I/XK_B2   (26577): B2 #6100 payloadLen=160 firstBytes=B8 6D 61 E2 FD 1D 55 71 decoded=3903360 err=0
+09-24 18:31:44.238 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:44.252 I/XK_Gemini(26577): respuesta delta:  de Francia
+09-24 18:31:44.379 I/XK_Gemini(26577): respuesta delta:  es
+09-24 18:31:44.432 I/XK_Gemini(26577): respuesta delta:  Par├¡s.
+09-24 18:31:44.477 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:44.586 I/XK_Gemini(26577): respuesta delta:  ┬┐Necesitas
+09-24 18:31:44.757 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:44.945 I/XK_Gemini(26577): turno del modelo completado
+09-24 18:31:44.989 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:45.083 I/XK_B2   (26577): B2 #6125 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3919360 err=0
+09-24 18:31:45.273 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:45.518 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:45.794 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:46.040 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:46.070 I/XK_B2   (26577): B2 #6150 payloadLen=160 firstBytes=B8 7E E2 DD E1 9B 1B 4F decoded=3935360 err=0
+09-24 18:31:46.310 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:46.561 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:46.833 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:47.086 I/XK_B2   (26577): B2 #6175 payloadLen=160 firstBytes=B8 6C 33 50 59 AB 42 60 decoded=3951360 err=0
+09-24 18:31:47.089 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:47.175 I/XK_Gemini(26577): transcript usuario: encajes y me est├í entre el nombre de un componente y el nombre de la
+09-24 18:31:47.346 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:47.587 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:47.875 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:48.033 I/XK_Gemini(26577): respuesta delta: Si hay
+09-24 18:31:48.070 I/XK_B2   (26577): B2 #6200 payloadLen=160 firstBytes=B8 6D 4A 90 4D 39 49 3A decoded=3967360 err=0
+09-24 18:31:48.124 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:48.221 I/XK_Gemini(26577): respuesta delta:  un encaje
+09-24 18:31:48.296 I/XK_Gemini(26577): respuesta delta:  o una
+09-24 18:31:48.362 I/XK_Gemini(26577): respuesta delta:  relaci├│n
+09-24 18:31:48.389 I/XK_Gemini(26577): respuesta delta:  entre
+09-24 18:31:48.392 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:48.411 I/XK_Gemini(26577): respuesta delta:  el nombre
+09-24 18:31:48.436 I/XK_Gemini(26577): respuesta delta:  de un
+09-24 18:31:48.584 I/XK_Gemini(26577): respuesta delta:  componente
+09-24 18:31:48.632 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:48.670 I/XK_Gemini(26577): respuesta delta:  y el
+09-24 18:31:48.756 I/XK_Gemini(26577): respuesta delta:  nombre
+09-24 18:31:48.864 I/XK_Gemini(26577): respuesta delta:  de la
+09-24 18:31:48.915 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:49.028 I/XK_Gemini(26577): respuesta delta:  funci├│n,
+09-24 18:31:49.069 I/XK_B2   (26577): B2 #6225 payloadLen=160 firstBytes=B8 7F 9B 26 C3 7E 69 E6 decoded=3983360 err=0
+09-24 18:31:49.072 I/XK_Gemini(26577): respuesta delta:  ┬┐a qu├®
+09-24 18:31:49.145 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:49.226 I/XK_Gemini(26577): respuesta delta:  te refieres
+09-24 18:31:49.436 I/XK_Gemini(26577): respuesta delta:  con exactitud?
+09-24 18:31:49.445 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:49.660 I/XK_Gemini(26577): respuesta delta:  ┬┐Buscas
+09-24 18:31:49.677 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:49.859 I/XK_Gemini(26577): respuesta delta:  una conexi├│n
+09-24 18:31:49.953 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:49.954 I/XK_Gemini(26577): respuesta delta:  l├│gica,
+09-24 18:31:50.074 I/XK_B2   (26577): B2 #6250 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=3999360 err=0
+09-24 18:31:50.182 I/XK_Gemini(26577): respuesta delta:  un est├índar
+09-24 18:31:50.188 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:50.405 I/XK_Gemini(26577): respuesta delta:  de nomenclatura,
+09-24 18:31:50.474 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:50.727 I/XK_Gemini(26577): respuesta delta:  o algo
+09-24 18:31:50.730 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:50.900 I/XK_Gemini(26577): respuesta delta:  m├ís?
+09-24 18:31:50.996 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:51.065 I/XK_B2   (26577): B2 #6275 payloadLen=160 firstBytes=B8 6E 2E A0 1C E7 11 DD decoded=4015360 err=0
+09-24 18:31:51.237 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:51.514 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:51.759 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:52.032 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:52.066 I/XK_B2   (26577): B2 #6300 payloadLen=160 firstBytes=B8 6D 46 9C FC 84 C2 49 decoded=4031360 err=0
+09-24 18:31:52.289 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:52.558 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:52.798 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:53.067 I/XK_B2   (26577): B2 #6325 payloadLen=160 firstBytes=B8 6F 05 F5 59 B3 64 B5 decoded=4047360 err=0
+09-24 18:31:53.071 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:53.319 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:53.589 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:53.836 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:54.068 I/XK_B2   (26577): B2 #6350 payloadLen=160 firstBytes=B8 6E 24 38 64 D6 7A 67 decoded=4063360 err=0
+09-24 18:31:54.123 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:54.357 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:54.642 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:54.875 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:55.077 I/XK_B2   (26577): B2 #6375 payloadLen=160 firstBytes=B8 7E DE C3 6A 90 95 81 decoded=4079360 err=0
+09-24 18:31:55.146 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:55.393 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:55.679 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:55.906 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:56.081 I/XK_B2   (26577): B2 #6400 payloadLen=160 firstBytes=B8 6F 82 65 40 DF E0 E7 decoded=4095360 err=0
+09-24 18:31:56.197 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:56.440 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:56.709 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:56.970 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:57.066 I/XK_B2   (26577): B2 #6425 payloadLen=160 firstBytes=B8 7E DD 4A 94 28 A7 83 decoded=4111360 err=0
+09-24 18:31:57.235 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:57.483 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:57.764 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:57.999 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:58.080 I/XK_B2   (26577): B2 #6450 payloadLen=160 firstBytes=B8 6F 5B 5E 32 FC D8 6F decoded=4127360 err=0
+09-24 18:31:58.269 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:58.511 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:58.802 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:59.034 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:59.064 I/XK_B2   (26577): B2 #6475 payloadLen=160 firstBytes=B8 6C 52 63 35 18 26 80 decoded=4143360 err=0
+09-24 18:31:59.321 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:59.554 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:31:59.712 I/XK_Gemini(26577): turno del modelo completado
+09-24 18:31:59.828 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:00.084 I/XK_B2   (26577): B2 #6500 payloadLen=160 firstBytes=B8 6A 64 BB 70 62 A4 AF decoded=4159360 err=0
+09-24 18:32:00.086 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:00.369 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:00.606 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:00.866 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:01.065 I/XK_B2   (26577): B2 #6525 payloadLen=160 firstBytes=B8 63 89 09 B5 2B 61 81 decoded=4175360 err=0
+09-24 18:32:01.120 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:01.409 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:01.638 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:01.908 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:02.065 I/XK_B2   (26577): B2 #6550 payloadLen=160 firstBytes=B8 64 70 A7 2B 27 F1 18 decoded=4191360 err=0
+09-24 18:32:02.143 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:02.421 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:02.686 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:02.955 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:03.069 I/XK_B2   (26577): B2 #6575 payloadLen=160 firstBytes=B8 6A 9A 0C FE A4 75 77 decoded=4207360 err=0
+09-24 18:32:03.184 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:03.476 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:03.704 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:03.992 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:04.061 I/XK_B2   (26577): B2 #6600 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=4223360 err=0
+09-24 18:32:04.242 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:04.524 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:04.753 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:05.040 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:05.078 I/XK_B2   (26577): B2 #6625 payloadLen=160 firstBytes=B8 7F 66 7F A1 F1 63 59 decoded=4239360 err=0
+09-24 18:32:05.267 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:05.562 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:05.787 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:06.067 I/XK_B2   (26577): B2 #6650 payloadLen=160 firstBytes=B8 67 E6 E1 FA 0F 5E BE decoded=4255360 err=0
+09-24 18:32:06.069 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:06.307 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:06.592 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:06.833 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:07.065 I/XK_B2   (26577): B2 #6675 payloadLen=160 firstBytes=B8 7F 77 98 29 7F BE 2A decoded=4271360 err=0
+09-24 18:32:07.113 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:07.345 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:07.650 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:07.867 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:08.091 I/XK_B2   (26577): B2 #6700 payloadLen=160 firstBytes=B8 68 35 CC 80 88 0C E0 decoded=4287360 err=0
+09-24 18:32:08.143 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:08.387 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:08.678 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:08.907 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:09.094 I/XK_B2   (26577): B2 #6725 payloadLen=160 firstBytes=B8 6E B8 62 AB 73 BF 2E decoded=4303360 err=0
+09-24 18:32:09.192 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:09.433 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:09.726 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:09.963 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:10.063 I/XK_B2   (26577): B2 #6750 payloadLen=160 firstBytes=B8 6F 8B 24 C1 5B 59 69 decoded=4319360 err=0
+09-24 18:32:10.247 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:10.484 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:10.748 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:10.987 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:11.078 I/XK_B2   (26577): B2 #6775 payloadLen=160 firstBytes=B8 6A 99 04 FC EF 39 80 decoded=4335360 err=0
+09-24 18:32:11.273 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:11.511 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:11.796 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:12.030 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:12.069 I/XK_B2   (26577): B2 #6800 payloadLen=160 firstBytes=B8 6A 98 6F 7E 24 99 4E decoded=4351360 err=0
+09-24 18:32:12.304 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:12.556 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:12.830 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:13.079 I/XK_B2   (26577): B2 #6825 payloadLen=160 firstBytes=B8 6A 68 A3 FC 83 08 98 decoded=4367360 err=0
+09-24 18:32:13.082 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:13.360 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:13.589 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:13.881 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:14.082 I/XK_B2   (26577): B2 #6850 payloadLen=160 firstBytes=B8 6A 3A B1 D1 83 10 0C decoded=4383360 err=0
+09-24 18:32:14.123 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:14.398 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:14.642 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:14.908 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:15.061 I/XK_B2   (26577): B2 #6875 payloadLen=160 firstBytes=B8 6D 22 6F 79 D6 23 18 decoded=4399360 err=0
+09-24 18:32:15.161 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:15.427 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:15.687 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:15.954 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:16.073 I/XK_B2   (26577): B2 #6900 payloadLen=160 firstBytes=B8 7F B7 EF 9D 70 8C 5B decoded=4415360 err=0
+09-24 18:32:16.182 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:16.472 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:16.718 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:16.984 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:17.065 I/XK_B2   (26577): B2 #6925 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=4431360 err=0
+09-24 18:32:17.228 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:17.506 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:17.759 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:18.036 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:18.072 I/XK_B2   (26577): B2 #6950 payloadLen=160 firstBytes=B8 6F 1C 1D D1 14 C3 33 decoded=4447360 err=0
+09-24 18:32:18.286 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:18.551 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:18.798 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:19.071 I/XK_B2   (26577): B2 #6975 payloadLen=160 firstBytes=B8 7F E5 51 CF 21 06 1E decoded=4463360 err=0
+09-24 18:32:19.072 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:19.324 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:19.595 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:19.838 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:20.076 I/XK_B2   (26577): B2 #7000 payloadLen=160 firstBytes=B8 62 C4 97 AE 8E 39 82 decoded=4479360 err=0
+09-24 18:32:20.128 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:20.360 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:20.634 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:20.872 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:21.074 I/XK_B2   (26577): B2 #7025 payloadLen=160 firstBytes=B8 64 60 93 57 9F A7 99 decoded=4495360 err=0
+09-24 18:32:21.155 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:21.394 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:21.673 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:21.906 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:22.078 I/XK_B2   (26577): B2 #7050 payloadLen=160 firstBytes=B8 7E E2 4C C1 FA 9B 47 decoded=4511360 err=0
+09-24 18:32:22.190 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:22.437 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:22.713 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:22.964 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:23.064 I/XK_B2   (26577): B2 #7075 payloadLen=160 firstBytes=B8 6A A7 81 46 5E C3 9B decoded=4527360 err=0
+09-24 18:32:23.242 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:23.475 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:23.759 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:23.991 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:24.071 I/XK_B2   (26577): B2 #7100 payloadLen=160 firstBytes=B8 6E 25 61 18 64 B4 F8 decoded=4543360 err=0
+09-24 18:32:24.281 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:24.520 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:24.807 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:25.029 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:25.068 I/XK_B2   (26577): B2 #7125 payloadLen=160 firstBytes=B8 6F 60 6C 26 93 EB 75 decoded=4559360 err=0
+09-24 18:32:25.306 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:25.554 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:25.831 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:26.070 I/XK_B2   (26577): B2 #7150 payloadLen=160 firstBytes=B8 7E 6D A4 5A ED 2F 34 decoded=4575360 err=0
+09-24 18:32:26.071 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:26.342 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:26.594 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:26.867 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:27.069 I/XK_B2   (26577): B2 #7175 payloadLen=160 firstBytes=B8 69 F7 10 DA C3 A5 47 decoded=4591360 err=0
+09-24 18:32:27.115 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:27.386 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:27.624 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:27.910 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:28.068 I/XK_B2   (26577): B2 #7200 payloadLen=160 firstBytes=B8 6C 4B BD 27 3F D8 D9 decoded=4607360 err=0
+09-24 18:32:28.145 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:28.424 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:28.673 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:28.947 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:29.073 I/XK_B2   (26577): B2 #7225 payloadLen=160 firstBytes=B8 6C 33 53 D0 C9 8F 0E decoded=4623360 err=0
+09-24 18:32:29.188 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:29.472 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:29.705 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:29.989 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:30.071 I/XK_B2   (26577): B2 #7250 payloadLen=160 firstBytes=B8 7F 68 87 CC 57 12 93 decoded=4639360 err=0
+09-24 18:32:30.223 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:30.516 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:30.766 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:31.056 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:31.079 I/XK_B2   (26577): B2 #7275 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=4655360 err=0
+09-24 18:32:31.279 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:31.584 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:31.816 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:32.071 I/XK_B2   (26577): B2 #7300 payloadLen=160 firstBytes=B8 64 41 D5 17 77 96 00 decoded=4671360 err=0
+09-24 18:32:32.072 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:32.311 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:32.590 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:32.835 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:33.066 I/XK_B2   (26577): B2 #7325 payloadLen=160 firstBytes=B8 64 C7 40 0D DE E6 4C decoded=4687360 err=0
+09-24 18:32:33.111 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:33.347 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:33.633 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:33.883 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:34.063 I/XK_B2   (26577): B2 #7350 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=4703360 err=0
+09-24 18:32:34.147 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:34.392 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:34.687 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:34.910 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:35.080 I/XK_B2   (26577): B2 #7375 payloadLen=160 firstBytes=B8 64 21 76 70 44 62 71 decoded=4719360 err=0
+09-24 18:32:35.196 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:35.445 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:35.725 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:35.970 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:36.079 I/XK_B2   (26577): B2 #7400 payloadLen=160 firstBytes=B8 6A 67 B2 B8 52 EF 17 decoded=4735360 err=0
+09-24 18:32:36.234 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:36.463 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:36.744 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:36.996 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:37.062 I/XK_B2   (26577): B2 #7425 payloadLen=160 firstBytes=B8 68 2D 18 45 C1 86 AC decoded=4751360 err=0
+09-24 18:32:37.275 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:37.516 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:37.790 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:38.032 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:38.066 I/XK_B2   (26577): B2 #7450 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=4767360 err=0
+09-24 18:32:38.318 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:38.576 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:38.828 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:39.078 I/XK_B2   (26577): B2 #7475 payloadLen=160 firstBytes=B8 63 80 35 B6 70 D6 BA decoded=4783360 err=0
+09-24 18:32:39.086 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:39.366 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:39.639 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:39.879 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:40.072 I/XK_B2   (26577): B2 #7500 payloadLen=160 firstBytes=B8 6C 3D 5F 03 D5 8F 45 decoded=4799360 err=0
+09-24 18:32:40.111 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:40.435 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:40.627 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:40.911 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:41.082 I/XK_B2   (26577): B2 #7525 payloadLen=160 firstBytes=B8 7E C5 23 59 8B 4A 34 decoded=4815360 err=0
+09-24 18:32:41.148 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:41.428 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:41.671 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:41.956 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:42.071 I/XK_B2   (26577): B2 #7550 payloadLen=160 firstBytes=B8 6F 1F 2F BD 6B 13 BC decoded=4831360 err=0
+09-24 18:32:42.184 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:42.473 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:42.720 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:43.006 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:43.068 I/XK_B2   (26577): B2 #7575 payloadLen=160 firstBytes=B8 6E B4 38 EF BD B9 3D decoded=4847360 err=0
+09-24 18:32:43.241 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:43.513 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:43.757 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:44.046 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:44.071 I/XK_B2   (26577): B2 #7600 payloadLen=160 firstBytes=B8 6F 17 3B 8D D6 28 8F decoded=4863360 err=0
+09-24 18:32:44.268 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:44.549 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:44.785 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:45.076 I/XK_B2   (26577): B2 #7625 payloadLen=160 firstBytes=B8 6D 66 C9 F7 5A 49 68 decoded=4879360 err=0
+09-24 18:32:45.078 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:45.328 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:45.595 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:45.827 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:46.063 I/XK_B2   (26577): B2 #7650 payloadLen=160 firstBytes=B8 6D 48 09 95 93 46 39 decoded=4895360 err=0
+09-24 18:32:46.134 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:46.353 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:46.637 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:46.881 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:47.071 I/XK_B2   (26577): B2 #7675 payloadLen=160 firstBytes=B8 6E B9 23 31 F7 C5 A2 decoded=4911360 err=0
+09-24 18:32:47.148 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:47.385 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:47.683 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:47.905 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:48.072 I/XK_B2   (26577): B2 #7700 payloadLen=160 firstBytes=B8 7F BD 4F 09 8B 30 41 decoded=4927360 err=0
+09-24 18:32:48.193 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:48.432 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:48.715 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:48.959 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:49.071 I/XK_B2   (26577): B2 #7725 payloadLen=160 firstBytes=B8 7F 1E 3C C7 A9 7B F8 decoded=4943360 err=0
+09-24 18:32:49.230 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:49.468 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:49.760 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:49.989 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:50.064 I/XK_B2   (26577): B2 #7750 payloadLen=160 firstBytes=B8 FF FE 00 00 00 00 00 decoded=4959360 err=0
+09-24 18:32:50.282 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:50.520 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:50.789 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:51.044 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:51.080 I/XK_B2   (26577): B2 #7775 payloadLen=160 firstBytes=B8 7F CA 3F 6F AD 4B 45 decoded=4975360 err=0
+09-24 18:32:51.326 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:51.542 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:51.831 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:52.080 I/XK_B2   (26577): B2 #7800 payloadLen=160 firstBytes=B8 6A 94 FA BC 9C E3 2B decoded=4991360 err=0
+09-24 18:32:52.082 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:52.358 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:52.602 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:52.862 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:53.072 I/XK_B2   (26577): B2 #7825 payloadLen=160 firstBytes=B8 6A 8A 2B A7 D8 8B 1A decoded=5007360 err=0
+09-24 18:32:53.121 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:53.387 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160
+09-24 18:32:53.646 I/XK_Gemini(26577): PCM->Gemini bytes=8320 samples=4160

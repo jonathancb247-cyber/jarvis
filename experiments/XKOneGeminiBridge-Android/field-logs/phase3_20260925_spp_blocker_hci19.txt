@@ -1,0 +1,89 @@
+﻿== Evidencia 2026-09-25: bloqueo SPP XK One (hciReason 19) ==
+== Teardown (teardown.log.txt) ==
+09-25 21:28:52.907 15762 15818 D BluetoothRemoteDevices: aclStateChangeCallback: Adapter State: ON Connected: FA:00:11:19:2D:5C
+09-25 21:28:55.331 24650 32203 W XK_Transport: Lectura finalizada: bt socket closed, read return: -1
+09-25 21:28:55.407 15762 15876 I bt_snoop: RFCOMM port is closed: handle=22(0x16), lcid=90(0x5a), dlci=2(0x2), uuid=4353(0x1101)
+09-25 21:28:55.407 15762 15876 W bt_rfcomm: port_rfc_closed: RFCOMM connection closed, index=11, state=3 reason=Closed[19], UUID=1101, bd_addr=fa:00:11:19:2d:5c, is_server=0
+09-25 21:28:56.657 15762 15818 D BluetoothRemoteDevices: aclStateChangeCallback: Adapter State: ON Disconnected: FA:00:11:19:2D:5C transportLinkType: 1 hciReason: 19
+
+== Ejemplo estable testigo (window_stack.log.txt, 21:25, sin intents: enlace activo >7s) ==
+09-25 21:25:33.609 24645 30920 I XK_Transport: Connect(ok) a FA:00:11:19:2D:5C
+09-25 21:25:33.613 24645 30920 D XK_Transport: Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+09-25 21:25:33.615 24645 30920 D XK_Transport: Intentando conexiÃ³n SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+09-25 21:25:34.186 24645 30920 I XK_Transport: RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+09-25 21:25:34.353 24645 30919 I XK_Engine: init OK maxPacket=255 aiKit=1
+
+== Cadenas fallidas del dia (resumen por archivo) ==
+-- chain_b0first.log.txt
+   21:12:45.179 I/XK_Transport(24550): Connect(ok) a FA:00:11:19:2D:5C
+   21:12:45.184 D/XK_Transport(24550): Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+   21:12:45.192 D/XK_Transport(24550): Intentando conexiÃ³n SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+   21:12:45.793 I/XK_Transport(24550): RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+   21:12:45.845 I/XK_Engine(24550): init OK maxPacket=255 aiKit=1
+   21:12:46.822 W/XK_Transport(24550): Lectura finalizada: bt socket closed, read return: -1
+   21:12:49.926 I/XK_Gemini(24550): WebSocket abierto, enviando setup
+   21:12:50.080 I/XK_Gemini(24550): setupCompleto sessionId=- model=-
+-- chain_clean.log.txt
+   21:14:33.205 I/XK_Transport(24560): Connect(ok) a FA:00:11:19:2D:5C
+   21:14:33.208 D/XK_Transport(24560): Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+   21:14:33.209 D/XK_Transport(24560): Intentando conexiÃ³n SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+   21:14:33.404 I/XK_Transport(24560): RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+   21:14:33.458 I/XK_Engine(24560): init OK maxPacket=255 aiKit=1
+   21:14:34.605 W/XK_Transport(24560): Lectura finalizada: bt socket closed, read return: -1
+   21:14:35.339 I/XK_Gemini(24560): WebSocket abierto, enviando setup
+   21:14:35.472 I/XK_Gemini(24560): setupCompleto sessionId=- model=-
+   21:14:36.717 I/XK_Gemini(24560): WebSocket cerrado (1000): 
+-- chain_retry.log.txt
+   21:17:55.421 I/XK_Transport(24580): Connect(ok) a FA:00:11:19:2D:5C
+   21:17:55.425 D/XK_Transport(24580): Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+   21:17:55.426 D/XK_Transport(24580): Intentando conexiÃ³n SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+   21:17:55.854 I/XK_Transport(24580): RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+   21:17:55.905 I/XK_Engine(24580): init OK maxPacket=255 aiKit=1
+   21:17:57.004 W/XK_Transport(24580): Lectura finalizada: bt socket closed, read return: -1
+-- chain_afterfree.log.txt
+   21:19:50.367 I/XK_Transport(15116): Connect(ok) a FA:00:11:19:2D:5C
+   21:19:50.370 D/XK_Transport(15116): Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+   21:19:50.371 D/XK_Transport(15116): Intentando conexiÃ³n SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+   21:19:55.635 W/XK_Transport(15116): Fallo UUID SPP primario (IOException: read failed, socket might closed or timeout, read ret: -1). Probando fallback canal 1...
+   21:20:00.775 E/XK_Transport(15116): Fallo fallback canal 1 (IOException: read failed, socket might closed or timeout, read ret: -1)
+-- chain_powercycle.log.txt
+   21:21:12.549 I/XK_Transport(15120): Connect(ok) a FA:00:11:19:2D:5C
+   21:21:12.552 D/XK_Transport(15120): Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+   21:21:12.553 D/XK_Transport(15120): Intentando conexiÃ³n SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+   21:21:12.732 I/XK_Transport(15120): RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+   21:21:12.766 I/XK_Engine(15120): init OK maxPacket=255 aiKit=1
+   21:21:14.180 W/XK_Transport(15120): Lectura finalizada: bt socket closed, read return: -1
+-- chain_rolesoff.log.txt
+   21:24:31.164 I/XK_Transport(15122): Connect(ok) a FA:00:11:19:2D:5C
+   21:24:31.168 D/XK_Transport(15122): Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+   21:24:31.169 D/XK_Transport(15122): Intentando conexiÃ³n SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+   21:24:31.883 I/XK_Transport(15122): RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+   21:24:31.956 I/XK_Engine(15122): init OK maxPacket=255 aiKit=1
+   21:24:32.790 W/XK_Transport(15122): Lectura finalizada: bt socket closed, read return: -1
+   21:24:33.679 I/XK_Gemini(15122): WebSocket abierto, enviando setup
+   21:24:33.861 I/XK_Gemini(15122): setupCompleto sessionId=- model=-
+   21:24:35.010 I/XK_Gemini(15122): WebSocket cerrado (1000): 
+-- chain_hold.log.txt
+   21:26:22.394 I/XK_Transport(24647): Connect(ok) a FA:00:11:19:2D:5C
+   21:26:22.399 D/XK_Transport(24647): Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+   21:26:22.400 D/XK_Transport(24647): Intentando conexiÃ³n SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+   21:26:24.909 I/XK_Gemini(24647): WebSocket abierto, enviando setup
+   21:26:25.068 I/XK_Transport(24647): RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+   21:26:25.170 I/XK_Gemini(24647): setupCompleto sessionId=- model=-
+   21:26:26.217 I/XK_Gemini(24647): WebSocket cerrado (1000): 
+-- chain_case.log.txt
+   21:27:52.415 I/XK_Transport(24648): Connect(ok) a FA:00:11:19:2D:5C
+   21:27:52.422 D/XK_Transport(24648): Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+   21:27:52.424 D/XK_Transport(24648): Intentando conexiÃ³n SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+   21:27:53.849 I/XK_Transport(24648): RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+   21:27:54.008 I/XK_Engine(24648): init OK maxPacket=255 aiKit=1
+   21:27:54.091 W/XK_Transport(24648): Lectura finalizada: bt socket closed, read return: -1
+   21:27:55.181 I/XK_Gemini(24648): WebSocket abierto, enviando setup
+   21:27:55.731 I/XK_Gemini(24648): setupCompleto sessionId=- model=-
+   21:27:56.330 I/XK_Gemini(24648): WebSocket cerrado (1000): 
+
+
+== Intento B (2026-09-25 21:34) - comparativa early-B0 ==
+secuencia: RFCOMM 21:34:32.115 | init OK 21:34:32.159 | intent chat ~21:34:37 | drop 21:34:39.453 (+7.3s post-init)
+close: port_rfc_closed reason=Closed[19] (remoto)
+B0 TX/RX: 0 lineas -> el B0 NO llego a escribirse (la sesion AI no engranó antes de la caida)

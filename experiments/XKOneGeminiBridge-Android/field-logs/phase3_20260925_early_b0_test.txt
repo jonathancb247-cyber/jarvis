@@ -1,0 +1,27 @@
+--------- beginning of main
+09-25 21:34:31.806 I/XK_Transport(30279): Connect(ok) a FA:00:11:19:2D:5C
+09-25 21:34:31.811 D/XK_Transport(30279): Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+09-25 21:34:31.812 D/XK_Transport(30279): Intentando conexión SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+09-25 21:34:31.813 W/bt_l2cap(15762): L2CAP - LCID: 0x0050  st: CLOSED  evt: UPPER_LAYER_CONNECT_REQ
+09-25 21:34:31.814 W/bt_l2cap(15762): L2CAP - LCID: 0x0050  st: CLOSED  evt: SECURITY_COMPLETE
+09-25 21:34:32.048 W/bt_l2cap(15762): L2CAP - LCID: 0x0050  st: W4_L2CAP_CON_RSP  evt: PEER_CONNECT_RSP
+09-25 21:34:32.048 W/bt_l2cap(15762): L2CAP - LCID: 0x0050  st: CONFIG  evt: UPPER_LAYER_CONFIG_REQ
+09-25 21:34:32.049 W/bt_l2cap(15762): L2CAP - LCID: 0x0050  st: CONFIG  evt: PEER_CONFIG_REQ
+09-25 21:34:32.049 W/bt_l2cap(15762): L2CAP - LCID: 0x0050  st: CONFIG  evt: UPPER_LAYER_CONFIG_RSP
+09-25 21:34:32.049 W/bt_l2cap(15762): L2CAP-Upper layer Config_Rsp,Local CID: 0x0050,Remote CID: 0x008e,PSM: 1,our MTU present:1,our MTU:1024
+09-25 21:34:32.055 W/bt_l2cap(15762): L2CAP - LCID: 0x0050  st: CONFIG  evt: PEER_CONFIG_RSP
+09-25 21:34:32.055 I/bt_snoop(15762): L2CAP channel is opened: handle=11(0xb), lcid=80(0x50), rcid=142(0x8e), psm=0x1
+09-25 21:34:32.055 W/bt_l2cap(15762): L2CAP-peer_Config_Rsp,Local CID: 0x0050,Remote CID: 0x008e,PSM: 1,peer MTU present: 0,peer MTU: 192
+09-25 21:34:32.077 W/bt_l2cap(15762): L2CA_DisconnectReq()  CID: 0x0050
+09-25 21:34:32.089 W/bt_l2cap(15762): L2CAP - LCID: 0x0050  st: W4_L2CAP_DISC_RSP  evt: PEER_DISCONNECT_RSP
+09-25 21:34:32.089 I/bt_snoop(15762): L2CAP channel is closed: handle=11(0xb), lcid=80(0x50), rcid=142(0x8e)
+09-25 21:34:32.111 I/bt_snoop(15762): RFCOMM port is opened: handle=11(0xb), lcid=89(0x59), dlci=2(0x2), uuid=4353(0x1101) Credit Based Flow Control enabled
+09-25 21:34:32.111 W/bt_l2cap(15762): L2CA_SetDesireRole() new:x0, disallow_switch:0
+09-25 21:34:32.115 I/XK_Transport(30279): RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+09-25 21:34:32.159 I/XK_Engine(30279): init OK maxPacket=255 aiKit=1
+09-25 21:34:39.453 W/XK_Transport(30279): Lectura finalizada: bt socket closed, read return: -1
+09-25 21:34:39.454 W/bt_l2cap(15762): L2CA_SetDesireRole() new:x0, disallow_switch:0
+09-25 21:34:40.432 W/bt_rfcomm(15762): rfc_port_sm_disc_wait_ua, RFC_EVENT_DM|RFC_EVENT_UA[1], index=28
+09-25 21:34:40.432 W/bt_rfcomm(15762): rfc_port_closed
+09-25 21:34:40.432 I/bt_snoop(15762): RFCOMM port is closed: handle=11(0xb), lcid=89(0x59), dlci=2(0x2), uuid=4353(0x1101)
+09-25 21:34:40.432 W/bt_rfcomm(15762): port_rfc_closed: RFCOMM connection closed, index=28, state=3 reason=Closed[19], UUID=1101, bd_addr=fa:00:11:19:2d:5c, is_server=0

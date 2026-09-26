@@ -1,0 +1,54 @@
+﻿
+09-24 17:42:12.694 32296 16699 I XK_Transport: Connect(ok) a FA:00:11:19:2D:5C
+09-24 17:42:12.698 32296 16699 D XK_Transport: Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+09-24 17:42:12.699 32296 16699 D XK_Transport: Intentando conexi├│n SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+09-24 17:42:12.730 18547 18690 I bt_stack: [INFO:btsnoop.cc(597)] whitelist_l2c_channel: Whitelisting l2cap channel. 
+conn_handle=20 cid=89:77
+09-24 17:42:12.767 18547 18690 W bt_sdp  : process_service_search_attr_rsp
+09-24 17:42:12.767 18547 18690 W bt_sdp  : sdp_copy_raw_data: list_len:87 cpy_len:87 p:0xb400007d8155540b 
+p_ccb:0x7da7edcde8 p_db:0x7da7e8fa08 raw_size:1800 raw_used:0 raw_data:0x7da7e8f300
+09-24 17:42:12.783 18547 18690 I bt_stack: [INFO:btsnoop.cc(645)] clear_l2cap_whitelist: Clearing whitelist from l2cap 
+channel. conn_handle=20 cid=89:77
+09-24 17:42:12.783 18547 18690 I bt_stack: [INFO:port_api.cc(123)] RFCOMM_CreateConnection BDA: fa:00:11:19:2d:5c
+09-24 17:42:12.783 18547 18690 E bt_rfcomm: RFCOMM_CreateConnection - already opened state:2, RFC state:4, MCB state:5
+09-24 17:42:12.783 18547 18690 E bt_btif : bta_jv_rfcomm_connect, RFCOMM_CreateConnection failed
+09-24 17:42:12.783 32296 16699 W XK_Transport: Fallo UUID SPP primario (IOException: read failed, socket might closed 
+or timeout, read ret: -1). Probando fallback canal 1...
+09-24 17:42:12.783 18547 18697 E bt_btif_sock_rfcomm: find_rfc_slot_by_id unable to find RFCOMM slot id: 902
+09-24 17:42:12.783 32296 16699 I om.xkone.bridge: hiddenapi: Accessing hidden method 
+Landroid/bluetooth/BluetoothDevice;->createRfcommSocket(I)Landroid/bluetooth/BluetoothSocket; (runtime_flags=0, 
+domain=platform, api=unsupported) from Lcom/xkone/bridge/transport/BluetoothClassicTransport$connect$2; (domain=app, 
+TargetSdkVersion=35) using reflection: allowed
+09-24 17:42:12.785 18547 18690 I bt_stack: [INFO:port_api.cc(123)] RFCOMM_CreateConnection BDA: fa:00:11:19:2d:5c
+09-24 17:42:12.785 18547 18690 E bt_rfcomm: RFCOMM_CreateConnection - already opened state:3, RFC state:5, MCB state:5
+09-24 17:42:12.785 18547 18690 E bt_btif : bta_jv_rfcomm_connect, RFCOMM_CreateConnection failed
+09-24 17:42:12.785 18547 18690 E bt_rfcomm: RFCOMM_RemoveConnection handle:15, port state 3
+09-24 17:42:12.785 18547 18697 E bt_btif_sock_rfcomm: find_rfc_slot_by_id unable to find RFCOMM slot id: 903
+09-24 17:42:12.785 32296 16699 E XK_Transport: Fallo fallback canal 1 (IOException: read failed, socket might closed 
+or timeout, read ret: -1)
+09-24 17:42:12.786 32296 16696 E XK_Bridge: connect fall├│: java.io.IOException: read failed, socket might closed or 
+timeout, read ret: -1
+09-24 17:42:12.803 18547 18690 W bt_rfcomm: rfc_port_sm_disc_wait_ua, RFC_EVENT_DM|RFC_EVENT_UA[1], index=15
+09-24 17:42:12.803 18547 18690 W bt_rfcomm: rfc_port_closed
+09-24 17:42:12.803 18547 18690 I bt_snoop: RFCOMM port is closed: handle=20(0x14), lcid=84(0x54), dlci=2(0x2), 
+uuid=4353(0x1101)
+09-24 17:42:12.803 18547 18690 W bt_rfcomm: port_rfc_closed: RFCOMM connection closed, index=15, state=3 
+reason=Closed[19], UUID=1101, bd_addr=fa:00:11:19:2d:5c, is_server=0
+09-24 17:42:12.803 18547 18697 E bt_btif_sock_rfcomm: find_rfc_slot_by_id unable to find RFCOMM slot id: 900
+09-24 17:42:12.803 18547 18690 E bt_rfcomm: RFCOMM_RemoveConnection handle:15, port state 0
+09-24 17:42:17.898 18547 18690 I bt_stack: [INFO:btsnoop.cc(597)] whitelist_l2c_channel: Whitelisting l2cap channel. 
+conn_handle=20 cid=70:78
+09-24 17:42:17.978 18547 18690 W bt_sdp  : process_service_search_attr_rsp
+09-24 17:42:17.979 18547 18690 W bt_sdp  : sdp_copy_raw_data: list_len:87 cpy_len:87 p:0xb400007d8152800b 
+p_ccb:0x7da7edcde8 p_db:0x7da7e8fa08 raw_size:1800 raw_used:0 raw_data:0x7da7e8f300
+09-24 17:42:17.999 18547 18690 I bt_stack: [INFO:btsnoop.cc(645)] clear_l2cap_whitelist: Clearing whitelist from l2cap 
+channel. conn_handle=20 cid=70:78
+09-24 17:42:18.000 18547 18690 I bt_stack: [INFO:port_api.cc(123)] RFCOMM_CreateConnection BDA: fa:00:11:19:2d:5c
+09-24 17:42:18.037 18547 18690 I bt_snoop: RFCOMM port is opened: handle=20(0x14), lcid=84(0x54), dlci=2(0x2), 
+uuid=4353(0x1101) Credit Based Flow Control enabled
+09-24 17:42:18.037 18547 18690 D bt_btif_sock_rfcomm: on_cli_rfc_connect  mtu = 256 
+09-24 17:42:18.038 18547 18690 W bt_btif : new conn_srvc id:26, app_id:1
+09-24 17:42:18.038 18547 18690 W bt_btif : bta_dm_pm_cback: new conn_srvc id:26, app_id:1 count:7
+09-24 17:42:37.572 18547 31870 E bt_btif : bta_av_co_get_active_peer: active peer index: 0
+
+

@@ -1,0 +1,7 @@
+--------- beginning of main
+09-25 21:21:12.549 I/XK_Transport(15120): Connect(ok) a FA:00:11:19:2D:5C
+09-25 21:21:12.552 D/XK_Transport(15120): Conectando a XK One Pro: xk one Pro (FA:00:11:19:2D:5C)
+09-25 21:21:12.553 D/XK_Transport(15120): Intentando conexión SPP con UUID 00001101-0000-1000-8000-00805f9b34fb
+09-25 21:21:12.732 I/XK_Transport(15120): RFCOMM conectado a xk one Pro (FA:00:11:19:2D:5C)
+09-25 21:21:12.766 I/XK_Engine(15120): init OK maxPacket=255 aiKit=1
+09-25 21:21:14.180 W/XK_Transport(15120): Lectura finalizada: bt socket closed, read return: -1
