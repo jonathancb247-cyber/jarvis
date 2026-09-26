@@ -6,6 +6,7 @@ import android.util.Log
 import com.xkone.bridge.ai.GeminiLiveClient
 import com.xkone.bridge.ai.OkHttpLiveConnection
 import com.xkone.bridge.audio.ConcentusOpusDecoder
+import com.xkone.bridge.audio.GeminiAudioSink
 import com.xkone.bridge.audio.PcmTestRecorder
 import com.xkone.bridge.protocol.B2AudioExtractor
 import com.xkone.bridge.protocol.ProtocolState
@@ -27,7 +28,10 @@ import kotlinx.coroutines.launch
  * Orquesta transporte SPP -> motor de protocolo XK One -> decodificador Opus -> grabadora/playback.
  * Pipeline verificado contra la auditoría 2026-09-24_xkone_spp_b2_protocol_audit.
  */
-class BridgeSession(context: Context) {
+class BridgeSession(
+    context: Context,
+    responseSink: GeminiAudioSink? = null
+) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -38,7 +42,10 @@ class BridgeSession(context: Context) {
     val engine = XkProtocolEngine(transport, scope)
     val decoder = ConcentusOpusDecoder()
     val recorder = PcmTestRecorder(context)
-    val gemini = GeminiLiveClient(connectionFactory = { listener -> OkHttpLiveConnection(listener) })
+    val gemini = GeminiLiveClient(
+        connectionFactory = { listener -> OkHttpLiveConnection(listener) },
+        responseSink = responseSink
+    )
 
     private val _b2FrameCount = MutableStateFlow(0)
     val b2FrameCount: StateFlow<Int> = _b2FrameCount.asStateFlow()

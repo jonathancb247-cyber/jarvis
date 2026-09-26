@@ -49,6 +49,7 @@ import androidx.lifecycle.lifecycleScope
 import com.xkone.bridge.BridgeSession
 import com.xkone.bridge.BuildConfig
 import com.xkone.bridge.ai.GeminiLiveClient
+import com.xkone.bridge.audio.AndroidAudioTrackSink
 import com.xkone.bridge.audio.PcmTestRecorder
 import com.xkone.bridge.protocol.AiChatState
 import com.xkone.bridge.protocol.AiKitSupport
@@ -91,6 +92,7 @@ class MainActivity : ComponentActivity() {
         intent.getStringExtra("xkone_gemini")?.let { actions.emit("gemini:$it") }
         intent.getStringExtra("xkone_gemini_endturn")?.let { actions.emit("geminiTurn:$it") }
         intent.getStringExtra("xkone_gemini_key")?.let { actions.emit("geminiKey:$it") }
+        intent.getStringExtra("xkone_speak")?.let { actions.emit("speak:${it.trim()}") }
     }
 
     private fun requestBluetoothPermissions() {
@@ -112,7 +114,8 @@ private fun XkBridgeApp(
     defaultGeminiKey: String = BuildConfig.GEMINI_API_KEY
 ) {
     val context = LocalContext.current
-    val session = remember { BridgeSession(context).also { it.start() } }
+    val responseSink = remember { AndroidAudioTrackSink() }
+    val session = remember { BridgeSession(context, responseSink).also { it.start() } }
 
     DisposableEffect(session) {
         onDispose { session.close() }
@@ -136,6 +139,10 @@ private fun XkBridgeApp(
                 action.startsWith("gemini:") -> when (action.removePrefix("gemini:")) {
                     "1" -> session.startGemini(apiKey = geminiKey)
                     "0" -> session.stopGemini()
+                }
+                action.startsWith("speak:") -> when (action.removePrefix("speak:")) {
+                    "1" -> session.gemini.setSpeakResponses(true)
+                    "0" -> session.gemini.setSpeakResponses(false)
                 }
                 action.startsWith("chat:") -> when (action.removePrefix("chat:")) {
                     "1" -> {
@@ -176,6 +183,20 @@ private fun XkBridgeApp(
     val geminiTranscript by session.gemini.userTranscript.collectAsState()
     val geminiUsage by session.gemini.lastUsage.collectAsState()
     val geminiError by session.gemini.lastError.collectAsState()
+    val speakResponses by session.gemini.speakResponses.collectAsState()
+    val responseAudioBytes by session.gemini.responseAudioBytes.collectAsState()
+    val responseAudioChunks by session.gemini.responseAudioChunks.collectAsState()
+    val responseAudioError by session.gemini.responseAudioError.collectAsState()
+    var sinkStats by remember { mutableStateOf(responseSink.stats()) }
+    var sinkQueued by remember { mutableStateOf(responseSink.queuedBytes()) }
+
+    LaunchedEffect(session) {
+        while (true) {
+            sinkStats = responseSink.stats()
+            sinkQueued = responseSink.queuedBytes()
+            delay(700)
+        }
+    }
 
     Scaffold { innerPadding ->
         Column(
@@ -286,6 +307,41 @@ private fun XkBridgeApp(
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
+                }
+            }
+
+            Card {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Audio de respuesta (A2DP → XK One)", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "Ruta: Gemini inlineData (PCM base64) → AudioTrack USAGE_MEDIA/STREAM_MUSIC → " +
+                            "dispositivo Bluetooth multimedia activo. Sin SCO, sin micrófono ni altavoz del teléfono."
+                    )
+                    Text("Salida de audio: ${if (speakResponses) "ACTIVADA" else "DESACTIVADA"}")
+                    Text(
+                        "Recibido: $responseAudioChunks chunks / $responseAudioBytes B — " +
+                            "escrito: ${sinkStats.bytesWritten} B | en cola: $sinkQueued B"
+                    )
+                    Text(
+                        "Tracks: ${sinkStats.tracksCreated} | underruns: ${sinkStats.underruns} | " +
+                            "descartado: ${sinkStats.bytesDropped} B (${sinkStats.chunksDropped} chunks) | " +
+                            "errores write: ${sinkStats.writeErrors}"
+                    )
+                    responseAudioError?.let {
+                        Text("Audio rechazado/error: $it", color = MaterialTheme.colorScheme.error)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { session.gemini.setSpeakResponses(!speakResponses) }
+                        ) { Text(if (speakResponses) "Desactivar salida" else "Activar salida") }
+                        OutlinedButton(onClick = { responseSink.flushPending() }) { Text("Vaciar cola") }
+                        OutlinedButton(onClick = { responseSink.stop() }) { Text("Detener salida") }
+                    }
+                    Text(
+                        "En la siguiente prueba física se anotará el MIME y la tasa reales declarados " +
+                            "por el servidor en el log XK_Gemini.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
             }
 

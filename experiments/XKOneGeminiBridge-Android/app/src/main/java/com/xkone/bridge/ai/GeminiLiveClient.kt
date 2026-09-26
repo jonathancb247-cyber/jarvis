@@ -1,6 +1,7 @@
 package com.xkone.bridge.ai
 
 import android.util.Log
+import com.xkone.bridge.audio.GeminiAudioSink
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,13 +17,20 @@ import java.io.ByteArrayOutputStream
  *
  * Respuestas: texto de `serverContent.modelTurn` (streaming), transcript del
  * usuario (`inputTranscription`) si la API lo proporciona, y `usageMetadata`.
+ *
+ * El audio de salida del modelo viaja en `serverContent.modelTurn.parts[].inlineData`
+ * (`audio/pcm` en base64). Cuando hay un [GeminiAudioSink] inyectado, cada chunk
+ * se decodifica y se entrega al sumidero; el sumidero es quien decide la ruta de
+ * salida. El audio de salida nunca se realimenta a [pushPcm]: entrada y salida
+ * son caminos separados.
  */
 class GeminiLiveClient(
     private val connectionFactory: (listener: LiveConnectionListener) -> LiveConnection,
     json: Json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false
-    }
+    },
+    private val responseSink: GeminiAudioSink? = null
 ) : GeminiLiveClient.LiveConnectionListener {
 
     interface LiveConnectionListener {
@@ -50,6 +58,8 @@ class GeminiLiveClient(
     private var connection: LiveConnection? = null
     private var buffered = ByteArrayOutputStream()
     private var bufferedSamples = 0
+    private var firstResponseAudioAtMs = 0L
+    private var lastResponseAudioAtMs = 0L
 
     private val _connectionState = MutableStateFlow(ConnectionState.IDLE)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
@@ -75,6 +85,29 @@ class GeminiLiveClient(
     private val _lastError = MutableStateFlow<String?>(null)
     val lastError: StateFlow<String?> = _lastError.asStateFlow()
 
+    private val _responseAudioBytes = MutableStateFlow(0L)
+    val responseAudioBytes: StateFlow<Long> = _responseAudioBytes.asStateFlow()
+
+    private val _responseAudioChunks = MutableStateFlow(0)
+    val responseAudioChunks: StateFlow<Int> = _responseAudioChunks.asStateFlow()
+
+    private val _responseAudioError = MutableStateFlow<String?>(null)
+    val responseAudioError: StateFlow<String?> = _responseAudioError.asStateFlow()
+
+    private val _speakResponses = MutableStateFlow(true)
+    val speakResponses: StateFlow<Boolean> = _speakResponses.asStateFlow()
+
+    /** Activa o desactiva la salida de audio sin reiniciar la sesión. */
+    fun setSpeakResponses(enabled: Boolean) {
+        _speakResponses.value = enabled
+        if (!enabled) {
+            try { responseSink?.flushPending() } catch (e: Exception) {
+                Log.w(TAG, "flush al desactivar salida fallo: ${e.message}")
+            }
+        }
+        Log.i(TAG, "salida de audio de respuesta ${if (enabled) "ACTIVADA" else "DESACTIVADA"}")
+    }
+
     fun start(model: String = DEFAULT_MODEL, apiKey: String): Boolean {
         if (apiKey.isBlank()) {
             _lastError.value = "Sin API key de Gemini"
@@ -91,6 +124,11 @@ class GeminiLiveClient(
         _userTranscript.value = ""
         _interimTranscript.value = ""
         _lastUsage.value = null
+        _responseAudioBytes.value = 0L
+        _responseAudioChunks.value = 0
+        _responseAudioError.value = null
+        firstResponseAudioAtMs = 0L
+        lastResponseAudioAtMs = 0L
 
         val url = "$WS_URL?key=$apiKey"
         val conn = connectionFactory(this)
@@ -128,6 +166,15 @@ class GeminiLiveClient(
         _connectionState.value = ConnectionState.CLOSED
         buffered.reset()
         bufferedSamples = 0
+        stopSinkQuiet()
+    }
+
+    private fun stopSinkQuiet() {
+        try {
+            responseSink?.stop()
+        } catch (e: Exception) {
+            Log.w(TAG, "stop del sumidero de audio fallo: ${e.message}")
+        }
     }
 
     private fun flushLocked() {
@@ -187,6 +234,15 @@ class GeminiLiveClient(
 
         val sc = msg.serverContent ?: return
 
+        if (sc.interrupted == true) {
+            try {
+                responseSink?.flushPending()
+                Log.i(TAG, "turno interrumpido: cola de salida de audio vaciada")
+            } catch (e: Exception) {
+                Log.w(TAG, "flush por interrupción fallo: ${e.message}")
+            }
+        }
+
         sc.interimInputTranscription?.text?.let {
             _interimTranscript.value = it
         }
@@ -204,15 +260,63 @@ class GeminiLiveClient(
                 _responseText.value = _responseText.value + text
                 Log.i(TAG, "respuesta delta: $text")
             }
+            part.inlineData?.let { inline -> emitResponseAudio(inline) }
         }
         if (sc.turnComplete == true) {
             Log.i(TAG, "turno del modelo completado")
         }
     }
 
+    private fun emitResponseAudio(inline: GeminiLiveProtocol.InlineData) {
+        val now = System.currentTimeMillis()
+        if (firstResponseAudioAtMs == 0L) firstResponseAudioAtMs = now
+        val dtMs = if (lastResponseAudioAtMs == 0L) 0L else now - lastResponseAudioAtMs
+        lastResponseAudioAtMs = now
+
+        when (val parsed = GeminiResponseAudio.parse(inline)) {
+            is ResponseAudioResult.Ok -> {
+                _responseAudioBytes.value = _responseAudioBytes.value + parsed.audio.pcm.size
+                _responseAudioChunks.value = _responseAudioChunks.value + 1
+                val sink = responseSink
+                if (sink == null) {
+                    Log.i(
+                        TAG,
+                        "audio de respuesta recibido (${parsed.audio.pcm.size} B) sin sumidero activo: descartado"
+                    )
+                } else if (!_speakResponses.value) {
+                    Log.i(
+                        TAG,
+                        "audio de respuesta recibido (${parsed.audio.pcm.size} B) con salida desactivada: descartado"
+                    )
+                } else {
+                    try {
+                        sink.submit(parsed.audio.format, parsed.audio.pcm)
+                        Log.i(
+                            TAG,
+                            "audio respuesta->sumidero bytes=${parsed.audio.pcm.size} " +
+                                "rate=${parsed.audio.format.sampleRate} ch=${parsed.audio.format.channels} " +
+                                "declared=${parsed.audio.format.rateDeclaredInMime} dt=${dtMs}ms " +
+                                "sinceFirst=${now - firstResponseAudioAtMs}ms " +
+                                "dur=${parsed.audio.format.durationMsOf(parsed.audio.pcm.size)}ms " +
+                                "mime=${parsed.audio.format.mimeType}"
+                        )
+                    } catch (e: Exception) {
+                        _responseAudioError.value = e.message ?: e.toString()
+                        Log.e(TAG, "sumidero de audio fallo: ${_responseAudioError.value}")
+                    }
+                }
+            }
+            is ResponseAudioResult.Rejected -> {
+                _responseAudioError.value = parsed.reason
+                Log.w(TAG, "audio de respuesta rechazado: ${parsed.reason} mime=${inline.mimeType}")
+            }
+        }
+    }
+
     override fun onFailure(throwable: Throwable) {
         _lastError.value = throwable.message ?: throwable.toString()
         _connectionState.value = ConnectionState.FAILED
+        stopSinkQuiet()
         Log.e(TAG, "fallo de conexión: ${_lastError.value}")
     }
 
@@ -220,6 +324,7 @@ class GeminiLiveClient(
         if (_connectionState.value != ConnectionState.FAILED) {
             _connectionState.value = ConnectionState.CLOSED
         }
+        stopSinkQuiet()
         Log.i(TAG, "WebSocket cerrado ($code): $reason")
     }
 }
