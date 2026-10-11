@@ -23,6 +23,7 @@ class GenerateServer(
     private val modelController: GemmaModelController,
     hostname: String = LOOPBACK_HOST,
     port: Int = DEFAULT_PORT,
+    private val selectedModelId: () -> String? = { null },
 ) : NanoHTTPD(hostname, port) {
 
     /**
@@ -94,6 +95,7 @@ class GenerateServer(
             contentType: String?,
             rawBody: String?,
             modelController: GemmaModelController,
+            selectedModelId: String? = null,
         ): RequestResult {
             val mediaType = (contentType ?: "").split(";")[0].trim().lowercase()
             if (mediaType != "application/json") {
@@ -113,6 +115,14 @@ class GenerateServer(
 
             if (request.length() == 0) {
                 return errorResult(400, "invalid_json", "Request body must be a non-empty JSON object.")
+            }
+
+            // The phone client must never label legacy/default or debug models as approved.
+            if (selectedModelId != null || request.optString("model") == UnderstandingModelStore.MODEL_ID) {
+                if (selectedModelId == null || request.optString("model") != selectedModelId ||
+                    request.optJSONObject("output_contract")?.optBoolean("no_ai_action_plan") != true) {
+                    return errorResult(409, "model_selection_mismatch", "Select the approved understanding model and use its hint-only contract.")
+                }
             }
 
             return when (val outcome = modelController.generateForRequest(request)) {
@@ -160,7 +170,7 @@ class GenerateServer(
         // never torn down by an idle stop that was armed before the request.
         onRequestServed?.invoke()
 
-        val result = evaluate(session.headers["content-type"], rawBody, modelController)
+        val result = evaluate(session.headers["content-type"], rawBody, modelController, selectedModelId())
         return respond(result)
     }
 

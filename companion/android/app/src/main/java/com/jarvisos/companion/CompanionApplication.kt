@@ -3,6 +3,7 @@ package com.jarvisos.companion
 import android.app.Application
 import android.util.Log
 import fi.iki.elonen.NanoHTTPD
+import java.io.File
 
 private const val TAG = "JarvisOSCompanion"
 
@@ -26,10 +27,25 @@ private const val TAG = "JarvisOSCompanion"
  */
 class CompanionApplication : Application() {
 
+    val understandingModelStore by lazy { UnderstandingModelStore(File(filesDir, "understanding-model")) }
+    @Volatile var modelImportInProgress = false
+        private set
+    @Volatile var selectedUnderstandingModelId: String? = null
+        private set
+
     /** Process-owned inference holder used by the HTTP bridge. */
     val modelController: GemmaModelController by lazy {
         GemmaModelController(cacheDir = cacheDir.absolutePath).also {
             it.configureDefaultPath(filesDir.absolutePath)
+            try {
+                understandingModelStore.selected()?.let { selection ->
+                    it.setModelPath(selection.file.absolutePath)
+                    selectedUnderstandingModelId = selection.modelId
+                }
+            } catch (_: Exception) {
+                // Broken explicit selection must never silently fall back to Gemma 3.
+                it.setModelPath(File(filesDir, "invalid-understanding-selection").absolutePath)
+            }
             Log.i(TAG, "Companion model controller configured with default path: ${it.currentModelPath}")
         }
     }
@@ -49,12 +65,14 @@ class CompanionApplication : Application() {
     @Volatile
     var requestActivityListener: (() -> Unit)? = null
 
-    fun startServer(): Boolean {
+    @Synchronized fun startServer(): Boolean {
+        if (modelImportInProgress) return false
         if (generateServer != null) {
             return true
         }
         return try {
-            val server = GenerateServer(modelController = modelController)
+            val server = GenerateServer(modelController = modelController,
+                selectedModelId = { selectedUnderstandingModelId })
             server.onRequestServed = { requestActivityListener?.invoke() }
             server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false)
             generateServer = server
@@ -65,6 +83,27 @@ class CompanionApplication : Application() {
             localAIHostLifecycle = LocalAIHostLifecycle.ERROR
             false
         }
+    }
+
+    @Synchronized fun beginModelImport(): Boolean {
+        if (modelImportInProgress || generateServer != null ||
+            localAIHostLifecycle != LocalAIHostLifecycle.STOPPED || modelController.isLoaded) return false
+        modelImportInProgress = true
+        return true
+    }
+
+    @Synchronized fun endModelImport() { modelImportInProgress = false }
+
+    fun configureSelectedUnderstandingModel(): Boolean = try {
+        val selection = understandingModelStore.selected()
+        if (selection != null && modelController.configureForEvaluation(selection.file.absolutePath, ModelPromptFamily.GEMMA)) {
+            selectedUnderstandingModelId = selection.modelId
+            true
+        } else false
+    } catch (_: Exception) {
+        selectedUnderstandingModelId = null
+        modelController.setModelPath(File(filesDir, "invalid-understanding-selection").absolutePath)
+        false
     }
 
     fun stopServer() {

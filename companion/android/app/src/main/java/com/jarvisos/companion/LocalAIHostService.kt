@@ -164,6 +164,7 @@ class LocalAIHostService : Service() {
      * server, which keeps service/server idempotency intact.
      */
     private fun applyDebugModelOverride(intent: Intent?): Boolean {
+        if (app.modelImportInProgress) return false
         if (app.generateServer != null) {
             return true
         }
@@ -171,6 +172,15 @@ class LocalAIHostService : Service() {
         if (filesDir == null) {
             Log.e(TAG, "App files dir unavailable; cannot configure the bridge model")
             return false
+        }
+        // Explicit persistent understanding selection wins over lab/default paths.
+        // Reject lab overrides rather than serving a different artifact under its model ID.
+        if (app.selectedUnderstandingModelId != null ||
+            java.io.File(filesDir, "understanding-model/selection.properties").exists()) {
+            if (intent?.hasExtra(DebugModelOverride.EXTRA_MODEL_FILENAME) == true ||
+                intent?.hasExtra(DebugModelOverride.EXTRA_MODEL_PATH) == true ||
+                intent?.hasExtra(DebugModelOverride.EXTRA_MODEL_FAMILY) == true) return false
+            return app.configureSelectedUnderstandingModel()
         }
         val appDebuggable =
             (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0

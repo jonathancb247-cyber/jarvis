@@ -30,6 +30,8 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".ModelImportActivity" android:exported="false" />
+
         <!--
             On-demand local AI host (foreground dataSync, so modern Android and
             vendor ROMs allow the Activity-free start; it still self-stops after

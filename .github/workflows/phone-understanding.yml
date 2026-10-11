@@ -1,0 +1,60 @@
+name: Phone understanding APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["feat/poco-phone-local-understanding"]
+  pull_request:
+    paths:
+      - "companion/android/**"
+      - "jarvis_core/ai/**"
+      - "tools/*understanding*.py"
+      - "tests/test*understanding*.py"
+      - ".github/workflows/phone-understanding.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python deterministic tests and default smoke
+        run: |
+          python -m unittest
+          python -m jarvis_core < /dev/null
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Android unit tests and APK (no hardware or model)
+        working-directory: companion/android
+        run: bash gradlew --no-daemon :app:testDebugUnitTest :app:assembleDebug
+      - name: Bundle phone-local Python source and record build identity
+        run: |
+          mkdir -p phone-artifact
+          cp companion/android/app/build/outputs/apk/debug/app-debug.apk phone-artifact/jarvis-understanding-debug.apk
+          git archive --format=zip --prefix=jarvis/ HEAD > phone-artifact/jarvis-phone-source.zip
+          git rev-parse HEAD > phone-artifact/COMMIT.txt
+          cp docs/platforms/PHONE_UNDERSTANDING.md phone-artifact/PHONE_UNDERSTANDING.md
+          cd phone-artifact
+          sha256sum jarvis-understanding-debug.apk jarvis-phone-source.zip > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: poco-phone-understanding-${{ github.sha }}
+          path: phone-artifact/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Android test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-reports-${{ github.sha }}
+          path: companion/android/app/build/reports/tests/
+          if-no-files-found: ignore
