@@ -1,5 +1,6 @@
 package com.jarvisos.companion
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -64,6 +65,14 @@ class MainActivity : AppCompatActivity() {
         refreshStatus()
 
         startLocalAIButton.setOnClickListener { onStartLocalAIHost() }
+        findViewById<Button>(R.id.import_understanding_model).setOnClickListener {
+            // Release the optional debug probe before the importer tests compatibility.
+            if (!busy) {
+                engine?.close()
+                engine = null
+                startActivity(Intent(this, ModelImportActivity::class.java))
+            }
+        }
         loadButton.setOnClickListener { onLoadModel() }
         runPromptButton.setOnClickListener { onRunPrompt() }
         modelPathInput.doAfterTextChanged { refreshButtons() }
@@ -94,13 +103,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshStatus() {
+        // Resolve persisted selection without loading native weights.
+        app.modelController.currentModelPath
         val server = app.generateServer
         val running = server != null
         statusTextView.text = getString(
             R.string.status_format,
             if (running) getString(R.string.status_running) else getString(R.string.status_stopped),
-            if (running) "127.0.0.1:${GenerateServer.DEFAULT_PORT}" else getString(R.string.status_none),
-        )
+            if (running) "127.0.0.1:${BuildConfig.LOOPBACK_PORT}" else getString(R.string.status_none),
+        ) + "\nUnderstanding selection: ${app.selectedUnderstandingModelId ?: "not selected"}"
     }
 
     private fun onLoadModel() {

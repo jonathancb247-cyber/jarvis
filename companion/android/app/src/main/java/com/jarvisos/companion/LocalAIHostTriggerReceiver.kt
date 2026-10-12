@@ -42,6 +42,6 @@ class LocalAIHostTriggerReceiver : BroadcastReceiver() {
 
     companion object {
         const val TAG = "JarvisOSLocalAI"
-        const val ACTION_START_LOCAL_AI = "com.jarvisos.companion.action.START_LOCAL_AI"
+        const val ACTION_START_LOCAL_AI = BuildConfig.APPLICATION_ID + ".action.START_LOCAL_AI"
     }
 }

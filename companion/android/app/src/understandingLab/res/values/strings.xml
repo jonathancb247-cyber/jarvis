@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">JarvisOS Understanding Lab</string>
+    <string name="quick_settings_local_ai">JarvisOS Understanding Lab AI</string>
+    <string name="status_format">Understanding Lab server: %1$s\nEndpoint: %2$s</string>
+</resources>

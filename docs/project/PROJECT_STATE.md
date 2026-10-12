@@ -32,6 +32,7 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - `qwen3:4b` is not declared generally reliable from this single validation case. Broader Real Ollama service/model validation is still pending, and broader local-model bakeoff remains future work.
 - AI Router, provider registry, automatic provider fallback and automatic model switching remain unimplemented.
 - No AI provider is default or production-ready.
+- POCO F5 phone-local understanding diagnostic is implemented as an opt-in companion + Termux workflow: cloud debug APK artifacts, SAF app-private model import, persistent provisional Gemma 4 E2B understanding selection and existing Python deterministic validation. Physical airplane-mode acceptance remains pending; every diagnostic is non-executing. See [phone-local instructions](../platforms/PHONE_UNDERSTANDING.md).
 - Epic 12 is in progress.
 - Phase 12.1 is completed as design: MQTT Driver Boundary.
 - Phase 12.2 is completed: MQTT Request/Response Driver Minimal Implementation merged in PR #43.
@@ -442,7 +443,7 @@ Future/reference only:
 - Arduino Uno.
 - STM32.
 - Raspberry Pi GPIO.
-- Android bridge/node.
+- Android automation/node execution (local inference companion exists; see the phone-local diagnostic guide).
 
 ## Validation Status
 

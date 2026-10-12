@@ -97,10 +97,11 @@ class GemmaModelController(
     }
 
     /**
-     * Apply a debug-only evaluation override (see [DebugModelOverride]) before
+     * Apply an explicit prompt-family selection before
      * anything is loaded. Returns false (without touching state) when the model
      * is already loaded: a loaded engine must never be silently swapped. The
-     * default [configureDefaultPath] remains the only path used in production.
+     * Used by [DebugModelOverride] and the opt-in persistent understanding
+     * selection. Legacy starts without a selection keep [configureDefaultPath].
      */
     fun configureForEvaluation(path: String, family: ModelPromptFamily): Boolean {
         synchronized(lock) {

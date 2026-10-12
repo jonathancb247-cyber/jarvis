@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="24dp">
+        <TextView android:id="@+id/approved_model" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textSize="20sp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="12dp" android:text="@string/model_import_help" />
+        <Button android:id="@+id/stop_host" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="@string/model_stop_host" />
+        <Button android:id="@+id/pick_model" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="@string/model_pick_document" />
+        <EditText android:id="@+id/expected_sha256" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:hint="@string/model_expected_hash"
+            android:inputType="textNoSuggestions" android:maxLength="64" />
+        <Button android:id="@+id/import_model" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="@string/model_import_verify" />
+        <TextView android:id="@+id/import_status" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textIsSelectable="true"
+            android:layout_marginTop="12dp" />
+    </LinearLayout>
+</ScrollView>

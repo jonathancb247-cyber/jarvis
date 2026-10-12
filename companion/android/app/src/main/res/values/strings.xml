@@ -30,4 +30,15 @@
     <string name="notification_text">On-device Gemma serving loopback requests</string>
     <string name="notification_action_ensure_available">Keep available</string>
     <string name="quick_settings_local_ai">JarvisOS local AI</string>
+    <string name="model_import">Import understanding model</string>
+    <string name="model_import_help">Import only the provisionally approved Gemma 4 E2B int4 .litertlm artifact from a trusted source. Paste its trusted SHA-256. The app verifies the copy and LiteRT-LM initialization; this does not attest model identity. No inference or commands run during import.</string>
+    <string name="model_import_initial">Selection persists across app restarts. Stop the bridge before importing; the previous selection survives a failed import.</string>
+    <string name="model_stop_host">Stop local AI bridge</string>
+    <string name="model_host_stop_requested">Stop requested. Wait a moment, then import.</string>
+    <string name="model_pick_document">Choose .litertlm document</string>
+    <string name="model_expected_hash">Trusted artifact SHA-256 (64 hex characters)</string>
+    <string name="model_document_selected">Document selected. Paste the trusted hash and import.</string>
+    <string name="model_import_verify">Verify and select model</string>
+    <string name="model_stop_host_first">Stop the bridge first; the model cannot change while serving.</string>
+    <string name="model_import_progress">Copying and checking model; keep this screen open. This may take several minutes.</string>
 </resources>

@@ -17,6 +17,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildFeatures { buildConfig = true }
+    flavorDimensions += "purpose"
+    productFlavors {
+        create("companion") {
+            dimension = "purpose"
+            buildConfigField("int", "LOOPBACK_PORT", "8767")
+            buildConfigField("boolean", "UNDERSTANDING_LAB", "false")
+            manifestPlaceholders["hostExported"] = "true"
+        }
+        create("understandingLab") {
+            dimension = "purpose"
+            applicationIdSuffix = ".understandinglab"
+            buildConfigField("int", "LOOPBACK_PORT", "8769")
+            buildConfigField("boolean", "UNDERSTANDING_LAB", "true")
+            manifestPlaceholders["hostExported"] = "false"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

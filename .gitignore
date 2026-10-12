@@ -10,6 +10,7 @@ tools/*.local.conf
 # Android companion (companion/android/)
 local.properties
 **/.gradle/
+**/.kotlin/
 **/build/
 *.apk
 *.aab
