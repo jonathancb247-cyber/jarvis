@@ -110,7 +110,7 @@ class MainActivity : AppCompatActivity() {
         statusTextView.text = getString(
             R.string.status_format,
             if (running) getString(R.string.status_running) else getString(R.string.status_stopped),
-            if (running) "127.0.0.1:${GenerateServer.DEFAULT_PORT}" else getString(R.string.status_none),
+            if (running) "127.0.0.1:${BuildConfig.LOOPBACK_PORT}" else getString(R.string.status_none),
         ) + "\nUnderstanding selection: ${app.selectedUnderstandingModelId ?: "not selected"}"
     }
 

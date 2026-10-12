@@ -175,7 +175,7 @@ class LocalAIHostService : Service() {
         }
         // Explicit persistent understanding selection wins over lab/default paths.
         // Reject lab overrides rather than serving a different artifact under its model ID.
-        if (app.selectedUnderstandingModelId != null ||
+        if (BuildConfig.UNDERSTANDING_LAB || app.selectedUnderstandingModelId != null ||
             java.io.File(filesDir, "understanding-model/selection.properties").exists()) {
             if (intent?.hasExtra(DebugModelOverride.EXTRA_MODEL_FILENAME) == true ||
                 intent?.hasExtra(DebugModelOverride.EXTRA_MODEL_PATH) == true ||

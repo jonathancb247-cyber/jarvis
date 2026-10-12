@@ -151,6 +151,16 @@ class PhoneUnderstandingTests(unittest.TestCase):
         self.assertEqual(len(transport.requests), 1)
         self.assertIn("duplicate: true", outputs[-1])
 
+    def test_lab_uses_separate_fixed_loopback_port(self):
+        self.assertEqual(PhoneUnderstandingSession().port, 8767)
+        session = PhoneUnderstandingSession(lab=True)
+        self.assertEqual(session.port, 8769)
+        with patch("tools.phone_understanding.run_ai_understanding_decision", return_value={}) as run:
+            report = session.diagnose("lab-1", "Lee status.read del dispositivo lamp_1.")
+        self.assertEqual(run.call_args.kwargs["host"], "127.0.0.1")
+        self.assertEqual(run.call_args.kwargs["port"], 8769)
+        self.assertFalse(report["commands_executed"])
+
     def test_client_has_no_execution_imports_or_external_host_flags(self):
         source = Path("tools/phone_understanding.py").read_text()
         tree = ast.parse(source)

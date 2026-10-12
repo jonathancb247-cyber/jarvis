@@ -22,6 +22,8 @@ from tools.ai_understanding_decision import (  # noqa: E402
 
 # Approval is provisional and understanding-only: docs/dev/checkpoints/AI_UNDERSTANDING.md.
 MODEL_ID = "gemma-4-e2b-int4"
+COMPANION_PORT = 8767
+LAB_PORT = 8769
 MAX_REQUEST_CHARS = 1024
 MAX_SESSION_REQUESTS = 64
 
@@ -34,7 +36,8 @@ class PhoneUnderstandingSession:
     not durable automation idempotency.
     """
 
-    def __init__(self, *, transport=None, timeout_seconds=120):
+    def __init__(self, *, transport=None, timeout_seconds=120, lab=False):
+        self.port = LAB_PORT if lab else COMPANION_PORT
         self.transport = transport
         self.timeout_seconds = timeout_seconds
         self._results = OrderedDict()
@@ -57,7 +60,7 @@ class PhoneUnderstandingSession:
         # Fixed phone loopback only; no host override, ADB, fallback, or execution flags.
         try:
             payload = run_ai_understanding_decision(
-                request, model=MODEL_ID, host="127.0.0.1", port=8767,
+                request, model=MODEL_ID, host="127.0.0.1", port=self.port,
                 timeout_seconds=self.timeout_seconds, transport=self.transport,
             )
         except Exception:
@@ -99,10 +102,11 @@ def main(argv=None, *, input_fn=input, output_fn=print):
     parser.add_argument("--request", help="One instruction; omit for interactive session")
     parser.add_argument("--request-id", help="Explicit diagnostic ID (one-shot mode)")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--lab", action="store_true", help="Use Understanding Lab loopback (8769)")
     args = parser.parse_args(argv)
     if args.request_id and args.request is None:
         parser.error("--request-id requires --request")
-    session = PhoneUnderstandingSession()
+    session = PhoneUnderstandingSession(lab=args.lab)
     if args.request is not None:
         payload = session.diagnose(args.request_id or uuid4().hex, args.request)
         output_fn(present(payload, as_json=args.json))

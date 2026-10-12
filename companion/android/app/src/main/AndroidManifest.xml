@@ -37,12 +37,12 @@
             vendor ROMs allow the Activity-free start; it still self-stops after
             a bounded idle window). Exported so the lab bridge can start it via
             broadcast/adb without opening an Activity. The service exposes no
-            UI, IPC or data: it only hosts the loopback 127.0.0.1:8767 HTTP
+            UI, IPC or data: it only hosts the loopback flavor-specific loopback HTTP
             bridge and requires no runtime permissions.
         -->
         <service
             android:name=".LocalAIHostService"
-            android:exported="true"
+            android:exported="${hostExported}"
             android:foregroundServiceType="dataSync" />
 
         <service
@@ -64,9 +64,9 @@
         -->
         <receiver
             android:name=".LocalAIHostTriggerReceiver"
-            android:exported="true">
+            android:exported="${hostExported}">
             <intent-filter>
-                <action android:name="com.jarvisos.companion.action.START_LOCAL_AI" />
+                <action android:name="${applicationId}.action.START_LOCAL_AI" />
             </intent-filter>
         </receiver>
     </application>

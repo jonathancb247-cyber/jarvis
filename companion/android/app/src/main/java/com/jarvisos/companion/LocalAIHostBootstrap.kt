@@ -16,7 +16,7 @@ import android.util.Log
  */
 object LocalAIHostBootstrap {
     const val TAG = "JarvisOSLocalAI"
-    const val ACTION_ENSURE_AVAILABLE = "com.jarvisos.companion.action.ENSURE_LOCAL_AI_AVAILABLE"
+    const val ACTION_ENSURE_AVAILABLE = BuildConfig.APPLICATION_ID + ".action.ENSURE_LOCAL_AI_AVAILABLE"
 
     enum class StartPath {
         FOREGROUND_APP,

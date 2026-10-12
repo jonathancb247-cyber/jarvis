@@ -3,7 +3,7 @@
 Status: implemented diagnostic; physical airplane-mode acceptance pending.
 
 This opt-in workflow uses the companion's LiteRT-LM CPU engine and phone
-`127.0.0.1:8767/generate`, then runs existing Python understanding, deterministic
+`127.0.0.1:8769/generate`, then runs existing Python understanding, deterministic
 grounding, refusal precheck and Planner validation in Termux on the same phone.
 No PC, ADB forwarding or Google AI Edge Gallery is needed.
 
@@ -19,20 +19,37 @@ automation, MacroDroid, Shizuku, notification control or MQTT integration.
    ref once the workflow is available on the default branch. No merge is needed
    to download a successful PR build.
 2. Open a successful run for the desired commit. Download artifact
-   `poco-phone-understanding-<commit>` using the mobile browser (desktop view if
+   `poco-phone-understanding-lab-<commit>` using the mobile browser (desktop view if
    necessary). Private-repository artifacts require GitHub sign-in and expire
    after 14 days.
-3. Extract the ZIP. It contains `jarvis-understanding-debug.apk`,
-   `jarvis-phone-source.zip`, `COMMIT.txt`, `SHA256SUMS` and these instructions.
+3. Extract the ZIP. It contains `jarvis-understanding-lab-debug.apk`,
+   `jarvis-phone-source.zip`, `COMMIT.txt`, `SHA256SUMS`, `APK_VERIFICATION.txt` and these instructions.
    Verify the run/commit, then install the APK using Android's package installer.
    Permit installation from your chosen browser/file manager as needed.
 
-The workflow tests Python, default smoke and Android host units, and builds
-`assembleDebug` before delivering artifacts. No model or hardware is needed.
-This is a **debug/lab APK**. Debug signing keys can differ across builds/runners.
-If an existing companion has a different signature, uninstall it before
-installing this APK. Uninstall removes app-private models and selection; keep
-the original model document for re-import. No signing secret is added here.
+The workflow tests Python, default smoke and Android host units for both flavors,
+builds `assembleCompanionDebug` and `assembleUnderstandingLabDebug`, and checks
+both APK manifests/signatures. `APK_VERIFICATION.txt` records the visible labels,
+package IDs, APK SHA-256 and signer certificate fingerprints.
+
+**Do not uninstall, clear data or replace the existing JarvisOS Companion.**
+Install only **JarvisOS Understanding Lab**, package
+`com.jarvisos.companion.understandinglab`. It coexists with
+`com.jarvisos.companion` under a separate Android UID/private data directory.
+No migration, shared UID, shared storage, or access to the original app's models
+is implemented. SAF imports a separate copy into Lab; allow additional disk space.
+
+Lab uses loopback port **8769**, while Companion retains **8767**. Both hosts are
+on-demand (off by default); a bind failure is reported without fallback to the
+other port. Lab host service/receiver are not exported; launch via its visible
+button or its distinctly named Quick Settings tile. Notifications/PendingIntents
+are package-scoped; identical notification IDs do not collide across packages.
+Broadcast action names and dependency provider authorities use the application ID.
+
+This is a debug APK. Debug signing keys can differ between CI runs. A future
+signature conflict for **Lab** does not justify removing Companion; stop and
+retain both data sets until a matching-signer build or Lab-only reinstall is chosen.
+Do not install the Companion flavor APK from build output on this phone.
 
 Install Termux from its official F-Droid or GitHub distribution, then prepare
 Python 3.10+ and storage access before going offline:
@@ -47,7 +64,7 @@ mkdir -p ~/jarvis-phone-artifact
 Substitute the actual downloaded artifact ZIP filename in the following:
 
 ```sh
-unzip ~/storage/downloads/poco-phone-understanding-<commit>.zip -d ~/jarvis-phone-artifact
+unzip ~/storage/downloads/poco-phone-understanding-lab-<commit>.zip -d ~/jarvis-phone-artifact
 cd ~/jarvis-phone-artifact
 sha256sum -c SHA256SUMS
 unzip jarvis-phone-source.zip -d ~/
@@ -75,7 +92,7 @@ and understanding-only, as recorded in
    or redistribute the binary. Computing `sha256sum <file>` records a local
    copy's hash but does not independently establish provenance or identity.
    Do not relabel an arbitrary compatible model as approved.
-3. Open Companion → **Import understanding model**. Tap **Stop local AI bridge**
+3. Open JarvisOS Understanding Lab → **Import understanding model**. Tap **Stop local AI bridge**
    if necessary and wait for shutdown. Import cannot change a serving model.
 4. Tap **Choose .litertlm document**, select the artifact with Android SAF, paste
    its trusted 64-character SHA-256, and tap **Verify and select model**.
@@ -102,7 +119,7 @@ In Termux:
 
 ```sh
 cd ~/jarvis
-python tools/phone_understanding.py
+python tools/phone_understanding.py --lab
 ```
 
 Enter an instruction, `:repeat` to replay the last diagnostic ID without another
@@ -110,19 +127,33 @@ inference, or `:quit`. Use `--json` for JSON reports. A one-shot report is also
 available:
 
 ```sh
-python tools/phone_understanding.py --request-id read-1 --request 'Lee status.read del dispositivo lamp_1.' --json
+python tools/phone_understanding.py --lab --request-id read-1 --request 'Lee status.read del dispositivo lamp_1.' --json
 ```
 
 Outcomes are `executable_candidate` (validated **non-executing** candidate),
 `needs_clarification`, `refused`, `local_ai_unavailable`, or
 `understanding_failed` (fail closed). Canonical commands and raw model output
-are hidden. No confirm/execute/host override options exist.
+are hidden. No confirm/execute/host override options exist. `--lab` selects only the fixed Lab
+port; omitting it retains the existing Companion diagnostic port (8767).
 
 Duplicate suppression is in-memory for 64 IDs per interactive process. Identical
 ID/text returns the cached decision; changed text with the same ID is rejected.
 At capacity, new IDs fail closed without evicting earlier results. Failed results
 are cached too: use a new ID after restoring the host. Separate one-shot runs
 or process restarts start new sessions; this is not durable idempotency.
+
+## Parallel-install acceptance (manual POCO F5 gate)
+
+Before installation, note the original Companion's package/version and data size
+in Android Settings. Install only the Lab APK and confirm that Settings and the
+launcher list **both** apps, with separate app-data entries. Confirm the original
+Companion still opens and retains its model/settings. Import into Lab through SAF
+from an independently accessible document; never clear or migrate Companion data.
+Start Lab and verify its UI endpoint is `127.0.0.1:8769`. Companion's endpoint
+remains `127.0.0.1:8767`; no automatic cross-port retries exist. Parallel package
+installation and actual simultaneous loopback availability still need physical
+verification. Avoid loading two multi-GB engines together unless sufficient RAM
+is available; separate ports do not remove memory/battery constraints.
 
 ## Airplane-mode acceptance
 
@@ -159,7 +190,7 @@ screen-off behavior and airplane-mode acceptance remain manual phone gates.
 
 ## Remaining limits
 
-- Requires Companion plus Termux, not a single integrated APK.
+- Requires Understanding Lab plus Termux, not a single integrated APK.
 - No artifact binary/digest is bundled; operator provenance remains necessary.
 - CPU latency, memory pressure, heat and POCO battery restrictions affect
   availability. The existing host stops after five idle minutes.

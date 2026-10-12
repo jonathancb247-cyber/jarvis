@@ -71,12 +71,13 @@ class CompanionApplication : Application() {
             return true
         }
         return try {
-            val server = GenerateServer(modelController = modelController,
+            val server = GenerateServer(modelController = modelController, port = BuildConfig.LOOPBACK_PORT,
+                understandingOnly = BuildConfig.UNDERSTANDING_LAB,
                 selectedModelId = { selectedUnderstandingModelId })
             server.onRequestServed = { requestActivityListener?.invoke() }
             server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false)
             generateServer = server
-            Log.i(TAG, "Companion server started on 127.0.0.1:${GenerateServer.DEFAULT_PORT}")
+            Log.i(TAG, "Companion server started on 127.0.0.1:${BuildConfig.LOOPBACK_PORT}")
             true
         } catch (error: Exception) {
             Log.e(TAG, "Failed to start companion server", error)

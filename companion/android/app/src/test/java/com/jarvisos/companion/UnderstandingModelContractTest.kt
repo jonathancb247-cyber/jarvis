@@ -30,4 +30,10 @@ class UnderstandingModelContractTest {
         assertEquals(503, result.statusCode)
         assertEquals("model_unavailable", result.payload.getString("error"))
     }
+    @Test fun labRejectsLegacyRequestsEvenWithoutSelection() {
+        val result = GenerateServer.evaluate("application/json", request("legacy", false),
+            GemmaTestFixtures.unconfiguredController(), understandingOnly = true)
+        assertEquals(409, result.statusCode)
+    }
+
 }
