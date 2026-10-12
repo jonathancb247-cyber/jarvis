@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 from pathlib import Path
 
 from jarvis_core.capabilities.device import DeviceRuntimeCapability
@@ -728,6 +730,270 @@ class PassiveAckObserverTests(unittest.TestCase):
         self.assertFalse(plain_record["observer_request_seen"])
         self.assertTrue(observed_record["observer_attached"])
         self.assertTrue(observed_record["observer_request_seen"])
+
+
+class CustomProtocolTests(unittest.TestCase):
+    def test_custom_protocol_and_labels(self):
+        args = pilot._parse_args([
+            "--pairs", "2", "--trial-states", "off", "on", "on", "off",
+            "--trial-fault-cases", "F_BASELINE", "F_BROKER_OFF",
+            "F_RECOVERY_WINDOW", "F_POST_RECOVERY",
+        ])
+        specs = pilot.protocol_trial_specs(args)
+        self.assertEqual([s.requested_state for s in specs], ["off", "on", "on", "off"])
+        self.assertEqual([s.fault_case for s in specs], [
+            "F_BASELINE", "F_BROKER_OFF", "F_RECOVERY_WINDOW", "F_POST_RECOVERY"])
+        harness, _, _, _, bus = make_harness()
+        with tempfile.TemporaryDirectory() as tmp:
+            campaign, _ = run_campaign(harness, bus, tmp, dry_run=True, specs=specs)
+            self.assertEqual([r["fault_case"] for r in campaign.records],
+                             [s.fault_case for s in specs])
+            matrix = json.loads((Path(tmp) / "fault_matrix.json").read_text())
+            self.assertEqual([r["fault_case"] for r in matrix["rows"]],
+                             [s.fault_case for s in specs])
+
+    def test_legacy_cli(self):
+        args = pilot._parse_args(["--pairs", "2", "--fault-case", "legacy"])
+        self.assertEqual([s.requested_state for s in pilot.protocol_trial_specs(args)],
+                         ["off", "on", "off", "on"])
+        harness, _, _, _, bus = make_harness()
+        with tempfile.TemporaryDirectory() as tmp:
+            campaign, _ = run_campaign(harness, bus, tmp, dry_run=True,
+                                      fault_case=args.fault_case)
+            self.assertTrue(all(r["fault_case"] == "legacy" for r in campaign.records))
+
+    def test_invalid_protocol_before_composition_or_artifacts(self):
+        cases = [
+            ["--trial-states", "off"],
+            ["--trial-states", "off", "--trial-fault-cases", "A"],
+            ["--trial-states", "off", "on", "on", "off",
+             "--trial-fault-cases", "A", "B", "C"],
+            ["--trial-states", "off", "on", "invalid", "off",
+             "--trial-fault-cases", "A", "B", "C", "D"],
+            ["--trial-states", "off", "on", "on", "off",
+             "--trial-fault-cases", "A", "B", " ", "D"],
+            ["--ack-observation-window", "nan"],
+            ["--ack-observation-window", "0"],
+        ]
+        for flags in cases:
+            with self.subTest(flags=flags), tempfile.TemporaryDirectory() as tmp:
+                out = Path(tmp) / "new"
+                with patch.object(pilot, "compose_runtime") as compose:
+                    self.assertEqual(pilot.main(["--pairs", "2", "--out-dir", str(out)] + flags), 2)
+                    compose.assert_not_called()
+                    self.assertFalse(out.exists())
+
+
+class FakeSubscriberClient:
+    def __init__(self):
+        self.subscriptions = []
+        self.stopped = False
+
+    def connect(self, host, port, keepalive):
+        self.connection = (host, port, keepalive)
+
+    def loop_start(self):
+        self.on_connect(self, None, None, 0)
+        for mid in range(1, len(self.subscriptions) + 1):
+            self.on_subscribe(self, None, mid, [0])
+
+    def subscribe(self, topic, qos):
+        self.subscriptions.append((topic, qos))
+        return 0, len(self.subscriptions)
+
+    def disconnect(self):
+        pass
+
+    def loop_stop(self):
+        self.stopped = True
+
+    def emit(self, topic, payload, retain=False):
+        self.on_message(self, None, SimpleNamespace(topic=topic, payload=payload, retain=retain))
+
+
+class IndependentAckTests(unittest.TestCase):
+    def setUp(self):
+        self.client = FakeSubscriberClient()
+        self.observer = pilot.PassiveAckSubscriber(
+            self.client, "localhost", 1883, "request", "response")
+        self.observer.start(0.01)
+        self.observer.begin_trial()
+
+    def tearDown(self):
+        self.observer.close()
+
+    def request(self):
+        self.client.emit("request", b'{"request_id":"req"}')
+
+    def fields(self, response=None, late=False, outcome=pilot.OUTCOME_EXECUTION_FAILED):
+        self.request()
+        if late:
+            self.observer.driver_returned()
+        if response is not None:
+            self.client.emit("response", response)
+        observation = self.observer.finish_trial(4, wait_fn=lambda seconds: None)
+        return pilot.derive_observation_fields(observation, fault_case="test",
+            requested_state="off", outcome=outcome, observer_attached=True)
+
+    def test_nominal(self):
+        fields = self.fields(valid_response("req", False), outcome=pilot.OUTCOME_EXECUTED)
+        self.assertTrue(fields["request_id_match"])
+        self.assertTrue(fields["semantic_state_match"])
+        self.assertFalse(fields["late_response"])
+
+    def test_no_response(self):
+        fields = self.fields()
+        self.assertFalse(fields["observer_response_seen"])
+        self.assertIsNone(fields["response_schema_valid"])
+
+    def test_real_callback_after_return(self):
+        self.request()
+        self.observer.driver_returned()
+        waits = []
+        def wait(seconds):
+            waits.append(seconds)
+            self.client.emit("response", valid_response("req", False))
+        observation = self.observer.finish_trial(4, wait_fn=wait)
+        fields = pilot.derive_observation_fields(observation, fault_case="test",
+            requested_state="off", outcome=pilot.OUTCOME_EXECUTION_FAILED, observer_attached=True)
+        self.assertEqual(len(waits), 1)
+        self.assertGreater(waits[0], 0)
+        self.assertLessEqual(waits[0], 4)
+        self.assertTrue(fields["late_response"])
+        self.assertTrue(fields["response_after_driver_return"])
+        self.assertGreater(fields["observer_response_seen_monotonic"], observation.driver_returned_ns)
+        self.assertTrue(fields["observer_saw_response_driver_failed"])
+
+    def test_malformed_late(self):
+        fields = self.fields(b"broken", late=True)
+        self.assertTrue(fields["observer_response_seen"])
+        self.assertTrue(fields["response_after_driver_return"])
+        self.assertFalse(fields["late_response"])
+        self.assertFalse(fields["response_schema_valid"])
+
+    def test_wrong_id_late(self):
+        fields = self.fields(valid_response("other", False), late=True)
+        self.assertFalse(fields["request_id_match"])
+        self.assertFalse(fields["late_response"])
+        self.assertTrue(fields["response_after_driver_return"])
+
+    def test_semantic_mismatch(self):
+        self.assertFalse(self.fields(valid_response("req", True))["semantic_state_match"])
+
+    def test_duplicate_and_unrelated_response_do_not_replace_match(self):
+        self.request()
+        self.client.emit("response", b"bad")
+        self.client.emit("response", valid_response("req", False))
+        self.client.emit("response", valid_response("other", True))
+        fields = self.fields()
+        self.assertTrue(fields["request_id_match"])
+        self.assertTrue(fields["semantic_state_match"])
+
+    def test_only_relevant_nonretained_traffic(self):
+        self.client.emit("request", b'{"request_id":"old"}', retain=True)
+        self.client.emit("other", valid_response("req", False))
+        observation = self.observer.finish_trial(4, wait_fn=lambda seconds: None)
+        self.assertFalse(observation.request_seen)
+        self.assertFalse(observation.response_seen)
+        self.assertEqual(self.client.subscriptions, [("request", 0), ("response", 0)])
+        self.assertFalse(hasattr(self.observer, "publish"))
+
+    def test_subscription_readiness_failure(self):
+        client = FakeSubscriberClient()
+        client.loop_start = lambda: None
+        observer = pilot.PassiveAckSubscriber(client, "localhost", 1883, "request", "response")
+        with self.assertRaisesRegex(RuntimeError, "passive_observer_not_ready"):
+            observer.start(0.001)
+        observer.close()
+
+    def test_reconnect_resubscribes_before_ready(self):
+        self.observer._on_disconnect()
+        self.assertFalse(self.observer._ready.is_set())
+        self.observer._on_connect(self.client, None, None, 0)
+        self.assertFalse(self.observer._ready.is_set())
+        self.observer._on_subscribe(self.client, None, 3, [0])
+        self.assertFalse(self.observer._ready.is_set())
+        self.observer._on_subscribe(self.client, None, 4, [0])
+        self.assertTrue(self.observer._ready.is_set())
+
+    def test_oversized_response_preserves_receipt_without_payload(self):
+        self.observer.max_response_bytes = 32
+        fields = self.fields(b"x" * 33, late=True)
+        self.assertTrue(fields["observer_response_seen"])
+        self.assertFalse(fields["response_schema_valid"])
+        self.assertFalse(fields["late_response"])
+
+    def test_subscription_denial_never_ready(self):
+        self.observer._on_connect(self.client, None, None, 0)
+        self.observer._on_subscribe(self.client, None, 3, [128])
+        self.observer._on_subscribe(self.client, None, 4, [0])
+        self.assertFalse(self.observer._ready.is_set())
+
+    def test_response_outside_window_is_not_observed(self):
+        self.request()
+        with patch.object(pilot, "_now_ns", return_value=100):
+            self.observer.driver_returned()
+        with patch.object(pilot, "_now_ns", return_value=4_000_000_101):
+            self.client.emit("response", valid_response("req", False))
+        self.assertFalse(self.observer._observation.response_seen)
+
+    def test_finished_trial_does_not_capture_next_response(self):
+        self.request()
+        self.observer.finish_trial(4, wait_fn=lambda _: None)
+        self.client.emit("response", valid_response("req", False))
+        self.observer.begin_trial()
+        self.assertFalse(self.observer._observation.response_seen)
+
+    def test_manifest_window_written(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "manifest.json"
+            with patch.object(pilot.manifest_tool, "build_manifest", return_value={}):
+                pilot.build_manifest("test", "label", None, Path("profile"), out,
+                                     ack_observation_window_seconds=3)
+            self.assertEqual(json.loads(out.read_text())["ack_observation_window_seconds"], 3)
+
+    def test_boundary_preserves_result_and_exception(self):
+        inner = FakeRouter()
+        sentinel = object()
+        inner.apply = lambda *args: sentinel
+        boundary = pilot.ObservedDriverBoundary(inner, self.observer)
+        self.assertIs(boundary.apply(None, None, {}), sentinel)
+        self.assertIsNotNone(self.observer._observation.driver_returned_ns)
+        def fail(*args):
+            raise MQTTTimeoutError()
+        inner.apply = fail
+        with self.assertRaises(MQTTTimeoutError):
+            boundary.apply(None, None, {})
+
+    def test_independent_response_cannot_change_failed_execution(self):
+        harness, runtime, driver, command_client, bus = make_fault_runtime(error=MQTTTimeoutError())
+        runtime.context.capability_registry.resolve(pilot.DEVICE_EXECUTE_COMMAND).router.driver._drivers[DEVICE_ID] = (
+            pilot.ObservedDriverBoundary(driver, self.observer))
+        original_publish = command_client.publish
+        def publish(topic, payload):
+            original_publish(topic, payload)
+            self.client.emit("request", payload)
+        command_client.publish = publish
+        original_finish = self.observer.finish_trial
+        def finish(seconds):
+            return original_finish(seconds, wait_fn=lambda _: self.client.emit(
+                "response", valid_response("req-fixed", False)))
+        self.observer.finish_trial = finish
+        with tempfile.TemporaryDirectory() as tmp:
+            campaign = pilot.PilotCampaign(harness=harness, hub=pilot.TimingHub(),
+                out_dir=Path(tmp), specs=single_spec("off"), dry_run=False,
+                confirm_fn=lambda: True, observe_fn=lambda: "off", verbose=False,
+                mqtt_observer_status=pilot.MQTT_OBSERVER_ATTACHED,
+                passive_subscriber=self.observer)
+            campaign.run()
+            record = campaign.records[0]
+        self.assertEqual(record["outcome"], pilot.OUTCOME_EXECUTION_FAILED)
+        self.assertEqual(record["runtime_invocations_delta"], 1)
+        self.assertEqual(len(command_client.published), 1)
+        self.assertTrue(record["late_response"])
+        self.assertTrue(record["observer_saw_response_driver_failed"])
+        self.assertEqual(record["ack_observation_window_seconds"], 4)
+        self.assertIsNone(record["latencies"]["mqtt_round_trip_ms"])
 
 
 if __name__ == "__main__":

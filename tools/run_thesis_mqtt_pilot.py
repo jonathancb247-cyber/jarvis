@@ -43,6 +43,10 @@ Design boundaries (additive evidence tooling; changes no core behavior):
   never reorders execution and never retries. It degrades gracefully to
   ``null`` timings when the seam is unavailable. Use ``--no-mqtt-observer`` to
   disable it entirely.
+- A separate receive-only Paho subscriber observes the exact request/response
+  topics before confirmation and for a bounded post-driver window. Its data
+  cannot satisfy the driver's wait or change execution outcomes. Retained
+  traffic is excluded; absent traffic means not observed, never not emitted.
 - Operator observation is a human judgment recorded separately. Software
   semantic state never proves physical state; the records say so explicitly.
 - Outputs land under the gitignored ``captures/`` tree. No commit, push,
@@ -65,10 +69,13 @@ import argparse
 import datetime as _dt
 import hashlib
 import json
+import math
 import os
 import statistics
 import sys
 import time
+import threading
+from uuid import uuid4
 from pathlib import Path
 from typing import Optional
 
@@ -155,6 +162,7 @@ TRIALS_FILENAME = "trials.jsonl"
 FAULT_MATRIX_FILENAME = "fault_matrix.json"
 FAULT_MATRIX_SCHEMA_VERSION = "1.0"
 DEFAULT_FAULT_CASE = "nominal"
+DEFAULT_ACK_WINDOW_SECONDS = 4.0
 
 OBSERVED_RESPONSE_FIELDS = frozenset({"request_id", "ok", "semantic", "error"})
 POWER_SWITCH_STATE_KEY = "state"
@@ -348,7 +356,7 @@ def derive_observation_fields(
         semantic_state_match = observed_state == (requested_state == REQUESTED_ON)
 
     response_seen = bool(observation.response_seen or observation.late_response_seen)
-    late_response = bool(observation.late_response_seen)
+    late_response = bool(observation.late_response_seen and request_id_match is True)
     response_ns = observation.response_seen_ns
     if response_ns is None:
         response_ns = observation.late_response_ns
@@ -362,7 +370,7 @@ def derive_observation_fields(
         "observer_request_seen_monotonic": observation.request_seen_ns,
         "observer_response_seen_monotonic": response_ns,
         "observer_response_delay_ms": _ms(observation.request_seen_ns, response_ns),
-        "response_after_driver_return": late_response,
+        "response_after_driver_return": bool(observation.late_response_seen),
         "late_response": late_response,
         "response_schema_valid": schema_valid,
         "observed_response_request_id": observed_request_id,
@@ -598,6 +606,178 @@ def attach_mqtt_observer(runtime, hub: TimingHub) -> str:
 # -- record helpers ----------------------------------------------------------
 
 
+class PassiveAckSubscriber:
+    """Independent, receive-only thesis subscriber. No driver response injection.
+
+    Only the first response is retained, unless a later correlated response
+    replaces an uncorrelated/malformed one. Retained traffic is excluded.
+    """
+
+    def __init__(self, client, host, port, request_topic, response_topic,
+                 max_response_bytes=65536,
+                 window_seconds=DEFAULT_ACK_WINDOW_SECONDS):
+        self.client = client
+        self.host, self.port = host, port
+        self.request_topic, self.response_topic = request_topic, response_topic
+        self.max_response_bytes = max_response_bytes
+        self.window_seconds = window_seconds
+        self._lock = threading.Lock()
+        self._ready = threading.Event()
+        self._pending_subscriptions = set()
+        self._observation = None
+        client.on_connect = self._on_connect
+        client.on_subscribe = self._on_subscribe
+        client.on_disconnect = self._on_disconnect
+        client.on_message = self._on_message
+
+    def start(self, timeout_seconds):
+        self.client.connect(self.host, self.port, keepalive=30)
+        self.client.loop_start()
+        if not self._ready.wait(timeout_seconds):
+            raise RuntimeError("passive_observer_not_ready")
+
+    def _on_connect(self, client, userdata, flags, reason_code, properties=None):
+        self._ready.clear()
+        if reason_code != 0:
+            return
+        # Paho invokes SUBACK on the same network thread after this callback.
+        self._pending_subscriptions.clear()
+        for topic in (self.request_topic, self.response_topic):
+            rc, mid = client.subscribe(topic, qos=0)
+            if rc != 0:
+                return
+            self._pending_subscriptions.add(mid)
+
+    def _on_subscribe(self, client, userdata, mid, reason_codes, properties=None):
+        if any(getattr(code, "is_failure", False) or
+               (isinstance(code, int) and code >= 128) for code in reason_codes):
+            return
+        self._pending_subscriptions.discard(mid)
+        if not self._pending_subscriptions:
+            self._ready.set()
+
+    def _on_disconnect(self, *args):
+        self._ready.clear()
+
+    def begin_trial(self):
+        with self._lock:
+            self._observation = TrialObservation(attached=True)
+
+    def driver_returned(self):
+        with self._lock:
+            if self._observation is not None:
+                self._observation.mark_driver_returned(_now_ns())
+
+    def _on_message(self, client, userdata, message):
+        seen_ns = _now_ns()
+        payload = getattr(message, "payload", None)
+        if getattr(message, "retain", False) or not isinstance(payload, bytes):
+            return
+        if len(payload) > self.max_response_bytes:
+            # Preserve receipt evidence without retaining unbounded data.
+            if message.topic != self.response_topic:
+                return
+            payload = b""
+        with self._lock:
+            observation = self._observation
+            if observation is None:
+                return
+            if (observation.driver_returned_ns is not None
+                    and seen_ns > observation.driver_returned_ns + self.window_seconds * 1e9):
+                return
+            if message.topic == self.request_topic:
+                request_id = observed_request_id(payload)
+                if request_id:
+                    observation.mark_request(request_id, seen_ns)
+            elif message.topic == self.response_topic and observation.request_seen:
+                old = observed_response_summary(observation.response)
+                new = observed_response_summary(payload)
+                if observation.response_seen and (
+                    old["request_id"] == observation.request_id
+                    or new["request_id"] != observation.request_id
+                ):
+                    return
+                observation.response_seen = True
+                observation.response = payload
+                observation.response_seen_ns = seen_ns
+                observation.late_response_seen = (
+                    observation.driver_returned_ns is not None
+                    and seen_ns > observation.driver_returned_ns
+                )
+
+    def finish_trial(self, window_seconds, wait_fn=None):
+        with self._lock:
+            returned_ns = (self._observation.driver_returned_ns
+                           if self._observation is not None else None)
+        remaining = window_seconds
+        if returned_ns is not None:
+            remaining = max(0.0, window_seconds - (_now_ns() - returned_ns) / 1e9)
+        (wait_fn or threading.Event().wait)(remaining)
+        with self._lock:
+            observation = self._observation
+            self._observation = None
+            return observation
+
+    def close(self):
+        try:
+            self.client.disconnect()
+        except Exception:
+            pass
+        try:
+            self.client.loop_stop()
+        except Exception:
+            pass
+
+
+class ObservedDriverBoundary:
+    """Delegate unchanged; mark actual driver return, before state coordination."""
+
+    def __init__(self, inner, subscriber):
+        self.inner, self.subscriber = inner, subscriber
+
+    def read(self, *args):
+        try:
+            return self.inner.read(*args)
+        finally:
+            self.subscriber.driver_returned()
+
+    def apply(self, *args):
+        try:
+            return self.inner.apply(*args)
+        finally:
+            self.subscriber.driver_returned()
+
+    def close(self):
+        return self.inner.close()
+
+
+def start_passive_ack_subscriber(runtime, window_seconds=DEFAULT_ACK_WINDOW_SECONDS):
+    """Use the composed broker/binding; create a distinct diagnostic client."""
+    import paho.mqtt.client as mqtt
+
+    capability = runtime.context.capability_registry.resolve(DEVICE_EXECUTE_COMMAND)
+    drivers = capability.router.driver._drivers
+    driver = drivers[guarded.DEVICE_ID]
+    binding = driver.binding_store.get(guarded.DEVICE_ID)
+    inner = driver.client
+    if isinstance(inner, ObservedMqttClient):
+        inner = inner._inner
+    client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+                         client_id="jarvis-thesis-observer-" + uuid4().hex)
+    subscriber = PassiveAckSubscriber(
+        client, inner.host, inner.port, binding.request_topic, binding.response_topic,
+        max_response_bytes=inner.max_response_bytes,
+        window_seconds=window_seconds,
+    )
+    try:
+        subscriber.start(inner.connect_timeout_seconds)
+    except Exception:
+        subscriber.close()
+        raise
+    drivers[guarded.DEVICE_ID] = ObservedDriverBoundary(driver, subscriber)
+    return subscriber
+
+
 def _decision_summary(decision) -> dict:
     if decision is None:
         return {"status": None}
@@ -814,10 +994,11 @@ def write_fault_matrix(
 
 
 class TrialSpec:
-    def __init__(self, index: int, pair_index: int, requested_state: str):
+    def __init__(self, index: int, pair_index: int, requested_state: str, fault_case=None):
         self.index = index
         self.pair_index = pair_index
         self.requested_state = requested_state
+        self.fault_case = fault_case
 
     @property
     def sequence_position(self) -> str:
@@ -843,6 +1024,30 @@ def build_trial_specs(pairs: int) -> list:
         pair_index = (index + 1) // 2
         requested = REQUESTED_OFF if index % 2 == 1 else REQUESTED_ON
         specs.append(TrialSpec(index, pair_index, requested))
+    return specs
+
+
+def protocol_trial_specs(args):
+    if args.pairs < 1:
+        raise ValueError("--pairs must be >= 1")
+    specs = build_trial_specs(args.pairs)
+    states, labels = args.trial_states, args.trial_fault_cases
+    if (states is None) != (labels is None):
+        raise ValueError("--trial-states and --trial-fault-cases must be supplied together")
+    if states is not None:
+        if len(states) != len(specs) or len(labels) != len(specs):
+            raise ValueError("states and fault labels must each contain pairs * 2 values")
+        if any(state not in ("on", "off") for state in states):
+            raise ValueError("trial states must be on/off")
+        if any(not label.strip() for label in labels):
+            raise ValueError("fault labels must be non-empty")
+        specs = [TrialSpec(i + 1, i // 2 + 1, state, labels[i])
+                 for i, state in enumerate(states)]
+    if not args.fault_case.strip():
+        raise ValueError("fault label must be non-empty")
+    if (not math.isfinite(args.ack_observation_window)
+            or not 0 < args.ack_observation_window <= 30):
+        raise ValueError("ACK observation window must be > 0 and <= 30 seconds")
     return specs
 
 
@@ -879,6 +1084,8 @@ class PilotCampaign:
         verbose: bool = True,
         fault_case: str = DEFAULT_FAULT_CASE,
         late_response=None,
+        passive_subscriber=None,
+        ack_observation_window_seconds=DEFAULT_ACK_WINDOW_SECONDS,
     ):
         self.harness = harness
         self.hub = hub
@@ -893,6 +1100,8 @@ class PilotCampaign:
         # Optional out-of-band response injected after the driver returns. It is
         # recorded passively only; it never changes the driver result.
         self.late_response = late_response
+        self.passive_subscriber = passive_subscriber
+        self.ack_observation_window_seconds = ack_observation_window_seconds
         self.trials_path = out_dir / TRIALS_FILENAME
         self.records = []
         self.interrupted = False
@@ -929,6 +1138,8 @@ class PilotCampaign:
 
     def _run_trial(self, spec: TrialSpec) -> dict:
         clock = self.hub.begin()
+        if self.passive_subscriber is not None:
+            self.passive_subscriber.begin_trial()
         t0 = _now_ns()
         started_at = _utc_now_iso()
 
@@ -1015,6 +1226,11 @@ class PilotCampaign:
 
         state_after = self.harness.state_projection()
         runtime_delta = self.harness.evidence.runtime_invocations - runtime_before
+        passive_observation = None
+        if self.passive_subscriber is not None:
+            passive_observation = self.passive_subscriber.finish_trial(
+                self.ack_observation_window_seconds
+            )
 
         observation = None
         if not self.dry_run:
@@ -1024,8 +1240,8 @@ class PilotCampaign:
             self.mqtt_observer_status == MQTT_OBSERVER_ATTACHED
         )
         ack_fields = derive_observation_fields(
-            self.hub.observation,
-            fault_case=self.fault_case,
+            passive_observation if self.passive_subscriber is not None else self.hub.observation,
+            fault_case=spec.fault_case if spec.fault_case is not None else self.fault_case,
             requested_state=spec.requested_state,
             outcome=outcome,
             observer_attached=observer_attached,
@@ -1046,6 +1262,8 @@ class PilotCampaign:
             "schema_version": SCHEMA_VERSION,
             "tool": TOOL_NAME,
             "trial_index": spec.index,
+            "ack_observation_window_seconds": self.ack_observation_window_seconds,
+            "ack_observation_mode": "independent_subscriber" if self.passive_subscriber else "driver_calls_only",
             "pair_index": spec.pair_index,
             "sequence_position": spec.sequence_position,
             "requested_state": spec.requested_state,
@@ -1114,6 +1332,7 @@ class PilotCampaign:
             "tool": TOOL_NAME,
             "experiment_id": self.out_dir.name,
             "dry_run": self.dry_run,
+            "ack_observation_window_seconds": self.ack_observation_window_seconds,
             "interrupted": self.interrupted,
             "started_at_utc": started_at,
             "finished_at_utc": finished_at,
@@ -1207,7 +1426,8 @@ def compose_runtime(config_path: Path, state_mode: str):
     return guarded.compose_runtime(config_path, state_mode)
 
 
-def build_manifest(experiment_id, label, notes, config_path, out_path: Path) -> dict:
+def build_manifest(experiment_id, label, notes, config_path, out_path: Path,
+                   ack_observation_window_seconds=DEFAULT_ACK_WINDOW_SECONDS) -> dict:
     evidence_paths = [
         str(Path(__file__).resolve()),
         str(Path(guarded.__file__).resolve()),
@@ -1223,6 +1443,7 @@ def build_manifest(experiment_id, label, notes, config_path, out_path: Path) -> 
         out=str(out_path),
     )
     manifest = manifest_tool.build_manifest(namespace)
+    manifest["ack_observation_window_seconds"] = ack_observation_window_seconds
     manifest_tool.write_manifest_atomic(manifest, out_path)
     return manifest
 
@@ -1315,6 +1536,13 @@ def _parse_args(argv=None):
             "captures) and write --out-dir/fault_matrix.json."
         ),
     )
+    parser.add_argument("--trial-states", nargs="+", default=None,
+                        help="Ordered on/off states; requires pairs * 2 values and --trial-fault-cases.")
+    parser.add_argument("--trial-fault-cases", nargs="+", default=None,
+                        help="Ordered non-empty per-trial labels; requires --trial-states.")
+    parser.add_argument("--ack-observation-window", type=float,
+                        default=DEFAULT_ACK_WINDOW_SECONDS,
+                        help="Passive post-driver observation seconds; does not change execution timeout.")
     return parser.parse_args(argv)
 
 
@@ -1340,8 +1568,10 @@ def main(argv=None) -> int:
         )
         return 0
 
-    if args.pairs < 1:
-        print("error: --pairs must be >= 1", file=sys.stderr)
+    try:
+        specs = protocol_trial_specs(args)
+    except ValueError as error:
+        print("error: %s" % error, file=sys.stderr)
         return 2
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1372,6 +1602,7 @@ def main(argv=None) -> int:
             args.notes,
             config_path,
             out_dir / "manifest.json",
+            ack_observation_window_seconds=args.ack_observation_window,
         )
     except Exception as error:
         print("error: could not write manifest: %s" % type(error).__name__, file=sys.stderr)
@@ -1413,7 +1644,14 @@ def main(argv=None) -> int:
         observer_status = attach_mqtt_observer(runtime, hub)
     print("mqtt observer:", observer_status)
 
-    specs = build_trial_specs(args.pairs)
+    passive_subscriber = None
+    if not args.dry_run and not args.no_mqtt_observer:
+        try:
+            passive_subscriber = start_passive_ack_subscriber(runtime, args.ack_observation_window)
+        except Exception as error:
+            runtime.shutdown()
+            print("error: passive observer unavailable: %s" % type(error).__name__, file=sys.stderr)
+            return 2
     campaign = PilotCampaign(
         harness=harness,
         hub=hub,
@@ -1424,12 +1662,16 @@ def main(argv=None) -> int:
         observe_fn=default_observe_fn,
         mqtt_observer_status=observer_status,
         fault_case=args.fault_case,
+        passive_subscriber=passive_subscriber,
+        ack_observation_window_seconds=args.ack_observation_window,
     )
 
     summary = None
     try:
         summary = campaign.run()
     finally:
+        if passive_subscriber is not None:
+            passive_subscriber.close()
         try:
             runtime.shutdown()
         except Exception:
