@@ -3,6 +3,7 @@
 import json
 import re
 
+from jarvis_core.ai.contracts import MAX_USER_REQUEST_LENGTH
 from jarvis_core.api import errors
 
 
@@ -12,6 +13,9 @@ MAX_PATH_LENGTH = 512
 MAX_DEVICE_ID_LENGTH = 128
 MAX_STRING_LENGTH = 512
 MAX_JSON_DEPTH = 8
+# The interaction endpoint reuses the existing understanding message bound so a
+# message accepted here is always preservable by the deterministic boundary.
+MAX_INTERACTION_MESSAGE_LENGTH = MAX_USER_REQUEST_LENGTH
 
 COMMAND_FORBIDDEN_PATTERNS = (
     "\n",
@@ -83,6 +87,28 @@ def validate_command_payload(payload):
         raise errors.command_invalid("API command is too long.")
     validate_command_text(command)
     return command
+
+
+def validate_interaction_payload(payload):
+    """Validate a non-executing interaction payload and return its message.
+
+    The message is preserved literally: it must be a printable, already-trimmed
+    string so that ``SafeContextBuilder`` cannot alter it and the deterministic
+    boundary receives exactly the validated text. Unknown or missing fields,
+    non-strings, empty text and oversized messages are rejected.
+    """
+    if not isinstance(payload, dict):
+        raise errors.request_invalid("Interaction payload must be a JSON object.")
+    if set(payload.keys()) != {"message"}:
+        raise errors.request_invalid("Interaction payload fields are invalid.")
+    message = payload["message"]
+    if not isinstance(message, str) or not message.strip():
+        raise errors.request_invalid("Interaction message is invalid.")
+    if len(message) > MAX_INTERACTION_MESSAGE_LENGTH:
+        raise errors.request_invalid("Interaction message is too long.")
+    if message != message.strip() or not message.isprintable():
+        raise errors.request_invalid("Interaction message cannot be preserved.")
+    return message
 
 
 def validate_command_text(command):

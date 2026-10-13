@@ -6,6 +6,7 @@ from threading import Lock
 from urllib.parse import unquote, urlparse
 
 from jarvis_core.api import errors
+from jarvis_core.api.interaction_service import InteractionAuth, LocalInteractionService
 from jarvis_core.api.projections import ApiProjectionBuilder
 from jarvis_core.api.validation import (
     MAX_REQUEST_BYTES,
@@ -13,6 +14,7 @@ from jarvis_core.api.validation import (
     validate_command_payload,
     validate_content_type,
     validate_device_id,
+    validate_interaction_payload,
     validate_path,
 )
 
@@ -30,13 +32,36 @@ class ApiResponse:
 class RuntimeApiAdapter:
     """Optional adapter exposing safe REST/JSON access to a Runtime."""
 
-    def __init__(self, runtime, projection_builder):
+    def __init__(
+        self,
+        runtime,
+        projection_builder,
+        *,
+        interaction_service=None,
+        interaction_auth=None,
+        interaction_only=False,
+    ):
         if not callable(getattr(runtime, "handle_adapter_input", None)):
             raise TypeError("RuntimeApiAdapter requires a Runtime-like object")
         if not isinstance(projection_builder, ApiProjectionBuilder):
             raise TypeError("RuntimeApiAdapter requires an ApiProjectionBuilder")
+        if interaction_service is not None:
+            if not isinstance(interaction_service, LocalInteractionService):
+                raise TypeError(
+                    "RuntimeApiAdapter interaction_service must be a "
+                    "LocalInteractionService"
+                )
+            if not isinstance(interaction_auth, InteractionAuth):
+                raise TypeError(
+                    "an interaction service requires an InteractionAuth"
+                )
+        if interaction_only and interaction_service is None:
+            raise TypeError("interaction_only mode requires an interaction service")
         self._runtime = runtime
         self._projections = projection_builder
+        self._interaction_service = interaction_service
+        self._interaction_auth = interaction_auth
+        self._interaction_only = bool(interaction_only)
         self._command_lock = Lock()
 
     def handle_request(self, method, path, headers=None, body=b""):
@@ -93,7 +118,11 @@ class RuntimeApiAdapter:
         raise errors.route_not_found()
 
     def _handle_post(self, segments, headers, body):
+        if segments == ["api", "v1", "interactions"]:
+            return self._handle_interaction(headers, body)
         if segments != ["api", "v1", "commands"]:
+            raise errors.route_not_found()
+        if self._interaction_only:
             raise errors.route_not_found()
         validate_content_type(_header(headers, "content-type"))
         if len(body) > MAX_REQUEST_BYTES:
@@ -110,6 +139,18 @@ class RuntimeApiAdapter:
                 "error": result.error,
             },
         )
+
+    def _handle_interaction(self, headers, body):
+        if self._interaction_service is None or self._interaction_auth is None:
+            raise errors.route_not_found()
+        self._interaction_auth.authorize(_header(headers, "authorization"))
+        validate_content_type(_header(headers, "content-type"))
+        if len(body) > MAX_REQUEST_BYTES:
+            raise errors.payload_too_large()
+        payload = parse_json_body(body)
+        message = validate_interaction_payload(payload)
+        response = self._interaction_service.handle(message)
+        return self._json(response.status, response.body)
 
     def _json(self, status, body):
         try:

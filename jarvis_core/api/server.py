@@ -29,6 +29,9 @@ class RuntimeApiRequestHandler(BaseHTTPRequestHandler):
     """Route HTTP requests into RuntimeApiAdapter without serving files."""
 
     server_version = "JarvisRuntimeAPI/0.1"
+    # Bound a single slow client socket operation (read/write). Provider request
+    # timeouts remain the authority that bounds a local understanding call.
+    timeout = 30
 
     def do_GET(self):
         self._handle("GET")
@@ -54,9 +57,22 @@ class RuntimeApiRequestHandler(BaseHTTPRequestHandler):
     def _handle(self, method):
         body = b""
         if method == "POST":
+            if _has_header(self.headers, "Transfer-Encoding"):
+                self.close_connection = True
+                self._send_error(
+                    errors.request_invalid("API request framing is invalid.")
+                )
+                return
+            lengths = self.headers.get_all("Content-Length") or []
+            if len(lengths) != 1:
+                self._send_error(errors.request_invalid("Content length is invalid."))
+                return
             try:
-                content_length = int(self.headers.get("Content-Length", ""))
-            except ValueError:
+                content_length = int(lengths[0])
+            except (TypeError, ValueError):
+                self._send_error(errors.request_invalid("Content length is invalid."))
+                return
+            if content_length < 0:
                 self._send_error(errors.request_invalid("Content length is invalid."))
                 return
             if content_length > MAX_REQUEST_BYTES:
@@ -89,6 +105,10 @@ class RuntimeApiRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
+
+
+def _has_header(headers, name):
+    return headers.get(name) is not None
 
 
 def validate_host(host):

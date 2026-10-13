@@ -15,11 +15,13 @@ Do not expose this API to a LAN or the public internet. LAN access requires a fu
 ## Current Limits
 
 - localhost only;
-- JSON requests only for command execution;
+- JSON requests only for command execution and interactions;
 - maximum request body: 16 KiB;
 - maximum canonical command length: 512 characters;
+- maximum interaction message length: 4096 characters;
 - unknown JSON fields rejected;
 - duplicate JSON keys rejected;
+- `Transfer-Encoding` rejected; exactly one `Content-Length` required;
 - unsupported methods rejected;
 - no wildcard CORS headers;
 - no redirects;
@@ -57,12 +59,32 @@ Command requests enter through `Runtime.handle_adapter_input(...)`. The API does
 
 The standard-library server may handle HTTP requests in separate threads. Runtime command execution is protected by an adapter-owned lock in the MVP. This does not define concurrent mutation semantics.
 
+Interaction-only turns are bounded by a non-blocking semaphore; when capacity is
+exhausted the endpoint fails fast with `api_interaction_busy` instead of queuing
+without limit.
+
+## Interaction-only mode authentication
+
+The authenticated interaction endpoint is only mounted in explicit
+interaction-only mode. It requires a constant-time Bearer token read from the
+environment variable named by `--interaction-token-env` (default
+`JARVIS_API_INTERACTION_TOKEN`). The token is never logged or projected, and the
+process fails to start when it is unset or blank (fail closed).
+
+The interaction route reuses the existing non-executing interaction boundary. It
+builds the safe context and permissions server-side from the injected device
+registry and never calls Runtime, Drivers, the Planner, or the ExecutionGate.
+`commands_executed` is always false.
+
+The command and read-only projection routes remain unauthenticated and are not
+intended for any non-loopback exposure. Do not expose this API to a LAN or the
+public internet.
+
 ## Not Implemented
 
-- authentication;
-- authorization;
+- authentication or authorization for the command and projection routes;
+- authorization or per-capability access control for interactions;
 - sessions;
-- API tokens;
 - TLS;
 - LAN mode;
 - WebSocket;
