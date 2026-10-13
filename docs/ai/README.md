@@ -33,6 +33,27 @@ Implemented for Phase 10.9:
 - fake-transport tests for CI;
 - real-provider validation with `gemini-3.6-flash` outside CI.
 
+Minimal safe-interaction increment (`jarvis_core/ai/interaction.py`):
+
+- recognizes a small whitelist of *pure* greetings (`hola`, `hola jarvis`,
+  `buenos días`, and justified variants) deterministically;
+- normalizes case, accents, outer whitespace/punctuation and interior
+  separators without removing significant content, and never intercepts a
+  quoted greeting;
+- answers a pure greeting as a `conversation` result without calling any
+  provider;
+- delegates every other message, including greetings accompanied by an
+  instruction, verbatim to the existing `decide_understanding()` boundary;
+- returns an `InteractionResult` with `schema_version`, `type`, `response_text`,
+  `decision` and `commands_executed=false`, and exposes a JSON-safe
+  `describe_interaction()` projection;
+- never imports or calls Runtime, Drivers, the Planner, the resolver, the
+  ExecutionGate, confirmation, or any provider, and never constructs or
+  dispatches commands. An `executable_candidate` decision remains only a
+  candidate that would still require the normal confirmation/policy path.
+- this increment does not change the `/generate` contract or Companion
+  behavior; the Android macro that currently calls `/generate` is not modified.
+
 Not implemented:
 
 - production-approved AI providers;
