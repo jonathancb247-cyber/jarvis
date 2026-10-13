@@ -23,6 +23,7 @@ Do not expose this API to a LAN or the public internet. LAN access requires a fu
 - duplicate JSON keys rejected;
 - `Transfer-Encoding` rejected; exactly one `Content-Length` required;
 - `Content-Length` must be ASCII digits only (signs, separators, hex, whitespace and non-ASCII digits are rejected) and the body is read to exactly that length, so oversized bodies are rejected before being read;
+- the `Content-Length` digit string is bounded before integer conversion, so an extremely long header is rejected with `payload_too_large` (HTTP 413) instead of raising an internal error; insignificant leading zeros are allowed;
 - unsupported methods rejected;
 - no wildcard CORS headers;
 - no redirects;
@@ -66,9 +67,11 @@ immediately with `api_server_busy` (HTTP 503) and closed instead of spawning
 unbounded threads.
 
 Each request is read under one absolute time budget (default 5 seconds) covering
-both headers and body, so a client that trickles bytes slowly cannot extend the
-total read time. Requests whose body is not delivered within the budget are
-rejected and the connection is closed.
+both headers and body. Request bytes are read directly from the socket and the
+absolute deadline is re-checked before every read, so a client that trickles
+bytes just below the per-operation socket timeout cannot extend the total read
+time or hold a connection slot indefinitely. Requests whose headers or body are
+not delivered within the budget are rejected and the connection is closed.
 
 Interaction-only turns are additionally bounded by a non-blocking semaphore;
 when capacity is exhausted the endpoint fails fast with `api_interaction_busy`

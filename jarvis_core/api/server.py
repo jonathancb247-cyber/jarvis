@@ -23,6 +23,9 @@ DEFAULT_MAX_CONNECTIONS = 16
 # trickles bytes, so it bounds slow-header and slow-body stalls.
 DEFAULT_REQUEST_TOTAL_BUDGET_SECONDS = 5.0
 MAX_BODY_CHUNK = 64 * 1024
+# Bound on significant digits accepted in a Content-Length header. Any value
+# with more digits than the maximum body size is necessarily oversized.
+_MAX_CONTENT_LENGTH_DIGITS = len(str(MAX_REQUEST_BYTES))
 
 
 class RuntimeApiServer(ThreadingHTTPServer):
@@ -86,38 +89,71 @@ class RuntimeApiServer(ThreadingHTTPServer):
                 pass
 
 
-class _DeadlineReader:
-    """Wrap a request stream so every read obeys one absolute deadline.
+class _DeadlineRequestReader:
+    """Read request bytes directly from the socket under one absolute deadline.
 
-    The socket timeout is re-armed with the remaining budget before each read so
-    a slow client cannot extend the total read time by trickling bytes.
+    ``BaseHTTPRequestHandler`` reads through a buffered reader whose internal
+    ``recv`` loop is bounded only by the per-operation socket timeout. A client
+    that trickles a byte just before each timeout keeps a buffered ``readline``
+    alive indefinitely and evades the absolute request deadline. Reading
+    directly from the socket and re-checking the absolute deadline before every
+    ``recv`` bounds slow-request stalls regardless of trickling, without busy
+    waiting.
     """
 
-    def __init__(self, connection, stream, remaining):
+    def __init__(self, connection, remaining, chunk_size=MAX_BODY_CHUNK):
         self._connection = connection
-        self._stream = stream
         self._remaining = remaining
+        self._chunk_size = chunk_size
+        self._buffer = b""
 
-    def _arm(self):
+    def _fill(self):
         remaining = self._remaining()
         if remaining <= 0:
             raise TimeoutError("request read deadline exceeded")
         self._connection.settimeout(remaining)
+        data = self._connection.recv(self._chunk_size)
+        if not data:
+            return False
+        self._buffer += data
+        return True
 
-    def readline(self, *args):
-        self._arm()
-        return self._stream.readline(*args)
+    def readline(self, limit=-1):
+        bounded = limit if isinstance(limit, int) and limit > 0 else None
+        while True:
+            end = bounded if bounded is not None else len(self._buffer)
+            index = self._buffer.find(b"\n", 0, end)
+            if index != -1:
+                line, self._buffer = self._buffer[: index + 1], self._buffer[index + 1 :]
+                return line
+            if bounded is not None and len(self._buffer) >= bounded:
+                line, self._buffer = self._buffer[:bounded], self._buffer[bounded:]
+                return line
+            if not self._fill():
+                line, self._buffer = self._buffer, b""
+                return line
 
-    def read(self, *args):
-        self._arm()
-        return self._stream.read(*args)
+    def read(self, size=-1):
+        if size is None or size < 0:
+            while self._fill():
+                pass
+            data, self._buffer = self._buffer, b""
+            return data
+        while len(self._buffer) < size and self._fill():
+            pass
+        data, self._buffer = self._buffer[:size], self._buffer[size:]
+        return data
 
-    def read1(self, *args):
-        self._arm()
-        return self._stream.read1(*args)
+    def read1(self, size=-1):
+        if not self._buffer and not self._fill():
+            return b""
+        if size is None or size < 0 or size > len(self._buffer):
+            size = len(self._buffer)
+        data, self._buffer = self._buffer[:size], self._buffer[size:]
+        return data
 
-    def __getattr__(self, name):
-        return getattr(self._stream, name)
+    def close(self):
+        return None
 
 
 class RuntimeApiRequestHandler(BaseHTTPRequestHandler):
@@ -132,7 +168,7 @@ class RuntimeApiRequestHandler(BaseHTTPRequestHandler):
     def handle_one_request(self):
         self._deadline = time.monotonic() + self._request_budget()
         original = self.rfile
-        self.rfile = _DeadlineReader(self.connection, original, self._remaining)
+        self.rfile = _DeadlineRequestReader(self.connection, self._remaining)
         try:
             super().handle_one_request()
         except TimeoutError:
@@ -273,10 +309,25 @@ def _parse_content_length(value):
 
     This rejects signs, underscores, whitespace, hex and non-ASCII digits that
     ``int()`` would otherwise tolerate (for example ``+18`` or ``1_8``).
+
+    The digit string is bounded before conversion. ``int()`` refuses strings
+    above a process-wide limit (default 4300 digits), and a hostile client could
+    otherwise send a multi-kilobyte ``Content-Length`` that passes the ASCII
+    digit check and then raises ``ValueError``. Leading zeros are insignificant,
+    so only the significant digits are counted and converted.
     """
     if not isinstance(value, str) or not value.isascii() or not value.isdigit():
         raise errors.request_invalid("Content length is invalid.")
-    return int(value)
+    significant = value.lstrip("0")
+    if len(significant) > _MAX_CONTENT_LENGTH_DIGITS:
+        raise errors.payload_too_large()
+    try:
+        content_length = int(significant or "0")
+    except ValueError:
+        raise errors.payload_too_large()
+    if content_length > MAX_REQUEST_BYTES:
+        raise errors.payload_too_large()
+    return content_length
 
 
 def validate_host(host):

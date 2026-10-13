@@ -584,11 +584,21 @@ class InteractionServerFramingTests(unittest.TestCase):
         self.thread.join(timeout=2)
 
     def _raw_status(self, request_bytes):
+        status = self._raw_status_or_none(request_bytes)
+        self.assertIsNotNone(status, "server returned no HTTP response")
+        return status
+
+    def _raw_status_or_none(self, request_bytes):
         host, port = self.server.server_address
         with socket.create_connection((host, port), timeout=5) as connection:
             connection.sendall(request_bytes)
             connection.settimeout(5)
-            data = connection.recv(2048)
+            try:
+                data = connection.recv(2048)
+            except socket.timeout:
+                return None
+        if not data:
+            return None
         return int(data.split(b" ", 2)[1])
 
     def test_transfer_encoding_is_rejected(self):
@@ -682,6 +692,37 @@ class InteractionServerFramingTests(unittest.TestCase):
         )
         self.assertEqual(status, 401)
 
+    def _interaction_head(self, content_length_bytes):
+        return (
+            b"POST /api/v1/interactions HTTP/1.1\r\n"
+            b"Host: 127.0.0.1\r\n"
+            b"Content-Type: application/json\r\n"
+            b"Authorization: Bearer " + TOKEN.encode("utf-8") + b"\r\n"
+            b"Content-Length: " + content_length_bytes + b"\r\n\r\n"
+        )
+
+    def test_five_thousand_digit_content_length_is_rejected(self):
+        # A huge all-digit length must be refused with a bounded HTTP response,
+        # not crash on int() conversion.
+        status = self._raw_status_or_none(self._interaction_head(b"9" * 5000))
+        self.assertEqual(status, 413)
+
+    def test_thousands_of_zeros_content_length_is_bounded(self):
+        # A long run of leading zeros is a valid representation of zero and must
+        # not raise; with no body the interaction payload is rejected as invalid.
+        status = self._raw_status_or_none(self._interaction_head(b"0" * 5000))
+        self.assertEqual(status, 400)
+
+    def test_valid_request_succeeds_after_malformed_content_lengths(self):
+        for value in (b"9" * 5000, b"0" * 5000, b"+19", b"1_9"):
+            with self.subTest(prefix=value[:8]):
+                self._raw_status_or_none(self._interaction_head(value))
+        body = json.dumps({"message": "hola"}).encode("utf-8")
+        status = self._raw_status_or_none(
+            self._interaction_head(str(len(body)).encode("ascii")) + body
+        )
+        self.assertEqual(status, 200)
+
 
 class ContentLengthParsingTests(unittest.TestCase):
     def test_ascii_digits_only(self):
@@ -712,6 +753,17 @@ class ContentLengthParsingTests(unittest.TestCase):
     def test_non_string_is_rejected(self):
         with self.assertRaises(errors.ApiError):
             _parse_content_length(None)
+
+    def test_thousands_of_digits_is_rejected_without_conversion_error(self):
+        with self.assertRaises(errors.ApiError) as raised:
+            _parse_content_length("9" * 5000)
+        self.assertEqual(raised.exception.status, 413)
+
+    def test_thousands_of_zeros_is_bounded(self):
+        self.assertEqual(_parse_content_length("0" * 5000), 0)
+
+    def test_long_zero_prefix_small_value_is_accepted(self):
+        self.assertEqual(_parse_content_length("0" * 4999 + "18"), 18)
 
 
 class _FakeRequestSocket:
@@ -797,6 +849,112 @@ class InteractionServerDeadlineTests(unittest.TestCase):
             data = connection.recv(2048)
         self.assertLess(time.monotonic() - started, 4)
         self.assertTrue(data == b"" or data.startswith(b"HTTP/1.1"))
+
+
+class InteractionServerSlowlorisTests(unittest.TestCase):
+    MAX_CONNECTIONS = 2
+    BUDGET_SECONDS = 0.3
+
+    def setUp(self):
+        self.adapter, _ = build_adapter(SpyUnderstandingProvider(read_proposal()))
+        self.server = make_server(
+            self.adapter, port=0, max_connections=self.MAX_CONNECTIONS
+        )
+        self.server.request_total_budget_seconds = self.BUDGET_SECONDS
+        self.thread = threading.Thread(
+            target=lambda: self.server.serve_forever(poll_interval=0.02)
+        )
+        self.thread.daemon = True
+        self.thread.start()
+        self._stop = threading.Event()
+        self._connections = []
+        self._workers = []
+
+    def tearDown(self):
+        self._stop.set()
+        for worker in self._workers:
+            worker.join(timeout=2)
+        for connection in self._connections:
+            try:
+                connection.close()
+            except OSError:
+                pass
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join(timeout=2)
+
+    def _start_drip(self, prefix):
+        host, port = self.server.server_address
+        connection = socket.create_connection((host, port), timeout=5)
+        self._connections.append(connection)
+        connection.sendall(prefix)
+
+        def drip():
+            try:
+                while not self._stop.is_set():
+                    connection.sendall(b"X")
+                    time.sleep(0.06)
+            except OSError:
+                pass
+
+        worker = threading.Thread(target=drip)
+        worker.daemon = True
+        worker.start()
+        self._workers.append(worker)
+
+    def _wait_until(self, predicate, timeout):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if predicate():
+                return True
+            time.sleep(0.01)
+        return predicate()
+
+    def _occupied(self):
+        return self.server._admission._value == 0
+
+    def _released(self):
+        return self.server._admission._value == self.MAX_CONNECTIONS
+
+    def test_periodic_request_line_drip_releases_all_slots(self):
+        for _ in range(self.MAX_CONNECTIONS):
+            self._start_drip(b"POST /api/v1/interactions HTTP/1.1")
+        self.assertTrue(self._wait_until(self._occupied, 2), "slots never saturated")
+        release_started = time.monotonic()
+        released = self._wait_until(self._released, 2)
+        elapsed = time.monotonic() - release_started
+        self.assertTrue(released, "drip held slots past the absolute deadline")
+        self.assertLess(elapsed, 1.0)
+
+    def test_periodic_header_drip_releases_all_slots(self):
+        prefix = (
+            b"POST /api/v1/interactions HTTP/1.1\r\n"
+            b"Host: 127.0.0.1\r\n"
+            b"X-Pad: "
+        )
+        for _ in range(self.MAX_CONNECTIONS):
+            self._start_drip(prefix)
+        self.assertTrue(self._wait_until(self._occupied, 2), "slots never saturated")
+        release_started = time.monotonic()
+        released = self._wait_until(self._released, 2)
+        elapsed = time.monotonic() - release_started
+        self.assertTrue(released, "drip held slots past the absolute deadline")
+        self.assertLess(elapsed, 1.0)
+
+    def test_all_slots_released_and_server_remains_usable(self):
+        for _ in range(self.MAX_CONNECTIONS):
+            self._start_drip(b"G")
+        self.assertTrue(self._wait_until(self._occupied, 2), "slots never saturated")
+        self.assertTrue(self._wait_until(self._released, 2), "slots were not released")
+        host, port = self.server.server_address
+        with socket.create_connection((host, port), timeout=5) as connection:
+            connection.sendall(
+                b"GET /api/v1/health HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"
+            )
+            connection.settimeout(5)
+            data = connection.recv(2048)
+        self.assertTrue(data.startswith(b"HTTP/1."), "server did not respond")
+        self.assertEqual(data.split(b" ", 2)[1], b"200")
 
 
 class InteractionCompositionTests(unittest.TestCase):
