@@ -11,6 +11,12 @@ API_COMMAND_INVALID = "api_command_invalid"
 API_RUNTIME_UNAVAILABLE = "api_runtime_unavailable"
 API_RESPONSE_SERIALIZATION_FAILED = "api_response_serialization_failed"
 API_UNSUPPORTED_MEDIA_TYPE = "api_request_invalid"
+API_UNAUTHORIZED = "api_unauthorized"
+API_SERVER_BUSY = "api_server_busy"
+API_INTERACTION_BUSY = "api_interaction_busy"
+API_INTERACTION_PROVIDER_UNAVAILABLE = "api_interaction_provider_unavailable"
+API_INTERACTION_PROVIDER_TIMEOUT = "api_interaction_provider_timeout"
+API_INTERACTION_PROVIDER_INVALID = "api_interaction_provider_invalid"
 
 
 @dataclass(frozen=True)
@@ -56,6 +62,50 @@ def command_invalid(message="API command is invalid."):
 
 def runtime_unavailable():
     return ApiError(API_RUNTIME_UNAVAILABLE, "Runtime is unavailable.", 500)
+
+
+def unauthorized():
+    return ApiError(API_UNAUTHORIZED, "API authentication is required.", 401)
+
+
+def server_busy():
+    return ApiError(
+        API_SERVER_BUSY,
+        "Server connection capacity is temporarily unavailable.",
+        503,
+    )
+
+
+def interaction_busy():
+    return ApiError(
+        API_INTERACTION_BUSY,
+        "Interaction capacity is temporarily unavailable.",
+        503,
+    )
+
+
+def interaction_provider_unavailable():
+    return ApiError(
+        API_INTERACTION_PROVIDER_UNAVAILABLE,
+        "Local understanding provider is unavailable.",
+        503,
+    )
+
+
+def interaction_provider_timeout():
+    return ApiError(
+        API_INTERACTION_PROVIDER_TIMEOUT,
+        "Local understanding provider timed out.",
+        504,
+    )
+
+
+def interaction_provider_invalid():
+    return ApiError(
+        API_INTERACTION_PROVIDER_INVALID,
+        "Local understanding response was invalid.",
+        502,
+    )
 
 
 def serialization_failed():
