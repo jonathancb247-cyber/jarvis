@@ -55,6 +55,10 @@ class RuntimeApiAdapter:
                 raise TypeError(
                     "an interaction service requires an InteractionAuth"
                 )
+            if not interaction_only:
+                raise TypeError(
+                    "interactions may only be mounted in interaction_only mode"
+                )
         if interaction_only and interaction_service is None:
             raise TypeError("interaction_only mode requires an interaction service")
         self._runtime = runtime
@@ -63,6 +67,32 @@ class RuntimeApiAdapter:
         self._interaction_auth = interaction_auth
         self._interaction_only = bool(interaction_only)
         self._command_lock = Lock()
+
+    def pre_authorize(self, method, path, headers=None):
+        """Authenticate a body-carrying request before its body is consumed.
+
+        Returns an :class:`ApiResponse` to short-circuit the request, or ``None``
+        when the request may continue to body framing and dispatch. Only the
+        authenticated interaction route requires this; every other route is left
+        untouched so the existing contracts are unchanged.
+        """
+        headers = headers or {}
+        try:
+            validate_path(path)
+            segments = _path_segments(urlparse(path).path)
+            if method != "POST" or segments != ["api", "v1", "interactions"]:
+                return None
+            if self._interaction_service is None or self._interaction_auth is None:
+                return self._json(
+                    404, errors.error_response(errors.route_not_found())
+                )
+            self._interaction_auth.authorize(_header(headers, "authorization"))
+        except errors.ApiError as error:
+            return self._json(error.status, errors.error_response(error))
+        except Exception:
+            error = errors.runtime_unavailable()
+            return self._json(error.status, errors.error_response(error))
+        return None
 
     def handle_request(self, method, path, headers=None, body=b""):
         """Return a safe JSON API response for an HTTP request."""

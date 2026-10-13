@@ -18,6 +18,7 @@ These tests prove the API interaction increment invariants:
 import json
 import socket
 import threading
+import time
 import unittest
 
 from jarvis_core.ai.contracts import (
@@ -42,12 +43,16 @@ from jarvis_core.ai.understanding_decision import (
 from jarvis_core.api import errors
 from jarvis_core.api.adapter import RuntimeApiAdapter
 from jarvis_core.api.interaction_service import (
+    MIN_INTERACTION_TOKEN_LENGTH,
     InteractionAuth,
     LocalInteractionService,
 )
 from jarvis_core.api.projections import ApiProjectionBuilder
-from jarvis_core.api.server import make_server
-from jarvis_core.api.validation import MAX_INTERACTION_MESSAGE_LENGTH
+from jarvis_core.api.server import _parse_content_length, make_server
+from jarvis_core.api.validation import (
+    MAX_INTERACTION_MESSAGE_LENGTH,
+    MAX_REQUEST_BYTES,
+)
 from jarvis_core.devices import (
     Device,
     DeviceCapability,
@@ -222,6 +227,35 @@ class InteractionAuthTests(unittest.TestCase):
             with self.subTest(token=token):
                 with self.assertRaises(ValueError):
                     InteractionAuth(token)
+
+    def test_token_configuration_is_strict(self):
+        invalid = (
+            "short",  # below minimum length
+            "a" * (MIN_INTERACTION_TOKEN_LENGTH - 1),
+            "with spaces token",  # embedded whitespace
+            "token\twith\ttabs-length",  # control whitespace
+            "tökén-tökén-tökén",  # non-ASCII
+            "token\nnewline-long-enough",  # newline
+        )
+        for token in invalid:
+            with self.subTest(token=token):
+                with self.assertRaises(ValueError):
+                    InteractionAuth(token)
+
+    def test_minimum_length_printable_token_is_accepted(self):
+        token = "a" * MIN_INTERACTION_TOKEN_LENGTH
+        auth = InteractionAuth(token)
+        self.assertIsNone(auth.authorize(f"Bearer {token}"))
+
+    def test_non_ascii_authorization_header_is_unauthorized_not_error(self):
+        auth = InteractionAuth(TOKEN)
+        headers = ("Bearer tökén", "Béarer " + TOKEN, "é", "\u00e9" + TOKEN)
+        for header in headers:
+            with self.subTest(header=header):
+                with self.assertRaises(errors.ApiError) as raised:
+                    auth.authorize(header)
+                self.assertEqual(raised.exception.code, errors.API_UNAUTHORIZED)
+                self.assertEqual(raised.exception.status, 401)
 
 
 class InteractionEndpointAuthTests(unittest.TestCase):
@@ -577,6 +611,208 @@ class InteractionServerFramingTests(unittest.TestCase):
             b"Content-Length: 7\r\n\r\nhello!!"
         )
         self.assertEqual(status, 400)
+
+    def test_non_digit_content_length_is_rejected(self):
+        for value in (b"+19", b"1_9", b"0x13", b"-19", b"19.0"):
+            with self.subTest(value=value):
+                status = self._raw_status(
+                    b"POST /api/v1/interactions HTTP/1.1\r\n"
+                    b"Host: 127.0.0.1\r\n"
+                    b"Content-Type: application/json\r\n"
+                    b"Authorization: Bearer " + TOKEN.encode("utf-8") + b"\r\n"
+                    b"Content-Length: " + value + b"\r\n\r\n"
+                )
+                self.assertEqual(status, 400)
+
+    def test_oversized_content_length_is_rejected_without_reading_body(self):
+        status = self._raw_status(
+            b"POST /api/v1/interactions HTTP/1.1\r\n"
+            b"Host: 127.0.0.1\r\n"
+            b"Content-Type: application/json\r\n"
+            b"Authorization: Bearer " + TOKEN.encode("utf-8") + b"\r\n"
+            b"Content-Length: "
+            + str(MAX_REQUEST_BYTES + 1).encode("ascii")
+            + b"\r\n\r\n"
+        )
+        self.assertEqual(status, 413)
+
+    def test_valid_framed_request_is_dispatched(self):
+        body = json.dumps({"message": "hola"}).encode("utf-8")
+        status = self._raw_status(
+            b"POST /api/v1/interactions HTTP/1.1\r\n"
+            b"Host: 127.0.0.1\r\n"
+            b"Content-Type: application/json\r\n"
+            b"Authorization: Bearer " + TOKEN.encode("utf-8") + b"\r\n"
+            b"Content-Length: " + str(len(body)).encode("ascii") + b"\r\n\r\n" + body
+        )
+        self.assertEqual(status, 200)
+
+    def test_body_is_read_exactly_to_declared_length(self):
+        # The body is longer than Content-Length, so exactly five bytes are read.
+        # The truncated prefix is invalid JSON, proving no over-read occurred.
+        status = self._raw_status(
+            b"POST /api/v1/interactions HTTP/1.1\r\n"
+            b"Host: 127.0.0.1\r\n"
+            b"Content-Type: application/json\r\n"
+            b"Authorization: Bearer " + TOKEN.encode("utf-8") + b"\r\n"
+            b"Content-Length: 5\r\n\r\n"
+            b'{"message": "hola"}'
+        )
+        self.assertEqual(status, 400)
+
+    def test_non_ascii_authorization_header_is_rejected_before_body_read(self):
+        status = self._raw_status(
+            b"POST /api/v1/interactions HTTP/1.1\r\n"
+            b"Host: 127.0.0.1\r\n"
+            b"Content-Type: application/json\r\n"
+            b"Authorization: Bearer t\xf8ken\r\n"
+            b"Content-Length: 1000\r\n\r\n"
+        )
+        self.assertEqual(status, 401)
+
+    def test_invalid_token_is_rejected_before_body_is_read(self):
+        # No body is sent despite a declared Content-Length. A prompt 401 proves
+        # the server authenticated before attempting to read the interaction body.
+        status = self._raw_status(
+            b"POST /api/v1/interactions HTTP/1.1\r\n"
+            b"Host: 127.0.0.1\r\n"
+            b"Content-Type: application/json\r\n"
+            b"Authorization: Bearer wrong-token\r\n"
+            b"Content-Length: 1000\r\n\r\n"
+        )
+        self.assertEqual(status, 401)
+
+
+class ContentLengthParsingTests(unittest.TestCase):
+    def test_ascii_digits_only(self):
+        for value in ("18", "0", "000123"):
+            with self.subTest(value=value):
+                self.assertEqual(_parse_content_length(value), int(value))
+
+    def test_non_ascii_or_non_digit_is_rejected(self):
+        values = (
+            "+18",
+            "1_8",
+            " 18",
+            "18 ",
+            "0x13",
+            "-18",
+            "18.0",
+            "1,8",
+            "\u0661\u0668",  # non-ASCII digits
+            "",
+            "abc",
+        )
+        for value in values:
+            with self.subTest(value=value):
+                with self.assertRaises(errors.ApiError) as raised:
+                    _parse_content_length(value)
+                self.assertEqual(raised.exception.status, 400)
+
+    def test_non_string_is_rejected(self):
+        with self.assertRaises(errors.ApiError):
+            _parse_content_length(None)
+
+
+class _FakeRequestSocket:
+    """Minimal socket stand-in for admission-rejection tests."""
+
+    def __init__(self):
+        self.sent = []
+        self.closed = False
+        self.timeout = None
+
+    def settimeout(self, value):
+        self.timeout = value
+
+    def sendall(self, data):
+        self.sent.append(data)
+
+    def close(self):
+        self.closed = True
+
+
+class InteractionServerAdmissionTests(unittest.TestCase):
+    def test_over_capacity_connection_is_rejected_and_closed(self):
+        adapter, _ = build_adapter(SpyUnderstandingProvider(read_proposal()))
+        server = make_server(adapter, port=0, max_connections=1)
+        try:
+            self.assertTrue(server._admission.acquire(blocking=False))
+            request = _FakeRequestSocket()
+            server.process_request(request, ("127.0.0.1", 0))
+            self.assertTrue(request.sent)
+            self.assertTrue(request.sent[0].startswith(b"HTTP/1.1 503"))
+            self.assertIn(b"api_server_busy", request.sent[0])
+            self.assertTrue(request.closed)
+        finally:
+            server.server_close()
+
+    def test_max_connections_must_be_positive(self):
+        adapter, _ = build_adapter(SpyUnderstandingProvider(read_proposal()))
+        with self.assertRaises(ValueError):
+            make_server(adapter, port=0, max_connections=0)
+
+
+class InteractionServerDeadlineTests(unittest.TestCase):
+    def setUp(self):
+        self.adapter, _ = build_adapter(SpyUnderstandingProvider(read_proposal()))
+        self.server = make_server(self.adapter, port=0)
+        self.server.request_total_budget_seconds = 0.5
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join(timeout=2)
+
+    def test_slow_body_is_bounded_by_total_deadline(self):
+        host, port = self.server.server_address
+        started = time.monotonic()
+        with socket.create_connection((host, port), timeout=5) as connection:
+            connection.sendall(
+                b"POST /api/v1/interactions HTTP/1.1\r\n"
+                b"Host: 127.0.0.1\r\n"
+                b"Content-Type: application/json\r\n"
+                b"Authorization: Bearer " + TOKEN.encode("utf-8") + b"\r\n"
+                b"Content-Length: 1000\r\n\r\n"
+                b"{"
+            )
+            connection.settimeout(5)
+            data = connection.recv(2048)
+        self.assertLess(time.monotonic() - started, 4)
+        if data:
+            self.assertEqual(data.split(b" ", 2)[1], b"400")
+
+    def test_slow_header_is_bounded_by_total_deadline(self):
+        host, port = self.server.server_address
+        started = time.monotonic()
+        with socket.create_connection((host, port), timeout=5) as connection:
+            connection.sendall(
+                b"POST /api/v1/interactions HTTP/1.1\r\n"
+                b"Host: 127.0.0.1\r\n"
+            )
+            connection.settimeout(5)
+            data = connection.recv(2048)
+        self.assertLess(time.monotonic() - started, 4)
+        self.assertTrue(data == b"" or data.startswith(b"HTTP/1.1"))
+
+
+class InteractionCompositionTests(unittest.TestCase):
+    def test_interactions_cannot_be_mounted_without_interaction_only(self):
+        registry = build_registry()
+        service = build_service(
+            SpyUnderstandingProvider(read_proposal()), registry=registry
+        )
+        with self.assertRaises(TypeError):
+            RuntimeApiAdapter(
+                RecordingRuntime(),
+                ApiProjectionBuilder(registry),
+                interaction_service=service,
+                interaction_auth=InteractionAuth(TOKEN),
+                interaction_only=False,
+            )
 
 
 def provider_with(*, body=None, transport_error=None, model="gemma-test"):

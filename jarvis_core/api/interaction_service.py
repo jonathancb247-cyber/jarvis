@@ -52,6 +52,9 @@ INTERACTION_PROVIDER_UNAVAILABLE_STATUS = 503
 INTERACTION_PROVIDER_TIMEOUT_STATUS = 504
 
 DEFAULT_MAX_CONCURRENCY = 2
+# A bearer token must be long enough to resist trivial guessing and is restricted
+# to printable ASCII without whitespace so it survives HTTP header framing intact.
+MIN_INTERACTION_TOKEN_LENGTH = 16
 
 _TERMINAL_DECISION_STATUSES = frozenset(
     {EXECUTABLE_CANDIDATE, NEEDS_CLARIFICATION, REFUSED}
@@ -73,20 +76,33 @@ class InteractionAuth:
     """Constant-time Bearer token check that fails closed when unconfigured."""
 
     def __init__(self, token):
-        if not isinstance(token, str) or not token.strip():
+        if not isinstance(token, str) or not token:
             raise ValueError("an interaction bearer token is required")
-        if any(character in token for character in "\r\n"):
-            raise ValueError("interaction bearer token is invalid")
+        if not token.isascii() or not token.isprintable():
+            raise ValueError("interaction bearer token must be printable ASCII")
+        if any(character.isspace() for character in token):
+            raise ValueError("interaction bearer token must not contain whitespace")
+        if len(token) < MIN_INTERACTION_TOKEN_LENGTH:
+            raise ValueError(
+                "interaction bearer token must be at least "
+                f"{MIN_INTERACTION_TOKEN_LENGTH} characters"
+            )
         self._token = token
 
     def authorize(self, header_value):
-        """Return None when the header carries the expected bearer token."""
-        if not isinstance(header_value, str):
+        """Return None when the header carries the expected bearer token.
+
+        Malformed or non-ASCII headers fail closed with 401 and never surface as
+        an internal error: comparison is only attempted for printable ASCII
+        input, which keeps constant-time comparison valid.
+        """
+        if not isinstance(header_value, str) or not header_value.isascii():
             raise errors.unauthorized()
         parts = header_value.split()
         if len(parts) != 2 or parts[0].lower() != "bearer":
             raise errors.unauthorized()
-        if not hmac.compare_digest(parts[1], self._token):
+        candidate = parts[1]
+        if not candidate.isascii() or not hmac.compare_digest(candidate, self._token):
             raise errors.unauthorized()
 
 
@@ -193,6 +209,7 @@ def _status_for(result):
 
 __all__ = [
     "DEFAULT_MAX_CONCURRENCY",
+    "MIN_INTERACTION_TOKEN_LENGTH",
     "INTERACTION_OK_STATUS",
     "INTERACTION_PROVIDER_INVALID_STATUS",
     "INTERACTION_PROVIDER_TIMEOUT_STATUS",

@@ -12,6 +12,7 @@ API_RUNTIME_UNAVAILABLE = "api_runtime_unavailable"
 API_RESPONSE_SERIALIZATION_FAILED = "api_response_serialization_failed"
 API_UNSUPPORTED_MEDIA_TYPE = "api_request_invalid"
 API_UNAUTHORIZED = "api_unauthorized"
+API_SERVER_BUSY = "api_server_busy"
 API_INTERACTION_BUSY = "api_interaction_busy"
 API_INTERACTION_PROVIDER_UNAVAILABLE = "api_interaction_provider_unavailable"
 API_INTERACTION_PROVIDER_TIMEOUT = "api_interaction_provider_timeout"
@@ -65,6 +66,14 @@ def runtime_unavailable():
 
 def unauthorized():
     return ApiError(API_UNAUTHORIZED, "API authentication is required.", 401)
+
+
+def server_busy():
+    return ApiError(
+        API_SERVER_BUSY,
+        "Server connection capacity is temporarily unavailable.",
+        503,
+    )
 
 
 def interaction_busy():

@@ -152,7 +152,10 @@ python -m jarvis_core.api --config profiles/http-lab.local.json \
 In this mode `POST /api/v1/commands` is disabled (returns `api_route_not_found`)
 and the read-only projections above remain available. The bearer token is read
 from the environment variable named by `--interaction-token-env`
-(default `JARVIS_API_INTERACTION_TOKEN`); the process fails to start without it.
+(default `JARVIS_API_INTERACTION_TOKEN`); the process fails to start without a
+valid token (printable ASCII, no whitespace, at least 16 characters). The token
+is checked before the request body is read; a missing, malformed or non-ASCII
+`Authorization` header is rejected with HTTP 401 (`api_unauthorized`).
 
 ```http
 POST /api/v1/interactions
@@ -233,6 +236,7 @@ API errors use safe codes:
 - `api_runtime_unavailable`;
 - `api_response_serialization_failed`;
 - `api_unauthorized`;
+- `api_server_busy`;
 - `api_interaction_busy`;
 - `api_interaction_provider_unavailable`;
 - `api_interaction_provider_timeout`;
