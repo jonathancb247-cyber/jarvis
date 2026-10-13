@@ -63,9 +63,16 @@ _GREETING_RESPONSES = {
 
 PURE_GREETINGS = frozenset(_GREETING_RESPONSES)
 
-# Outer punctuation is stripped for greeting matching. Quotes are intentionally
-# excluded so a quoted greeting (a citation) is never intercepted as a greeting.
-_EDGE_PUNCTUATION = " \t\r\n.,;:!?¿¡()[]{}<>«»—–-…"
+# Quote and citation delimiters (straight/curly single and double quotes,
+# guillemets, angle quotes, brackets and CJK quote marks). A greeting wrapped in
+# any of these is a citation, not a direct greeting, and must be delegated to the
+# deterministic boundary. They are never stripped during matching.
+_CITATION_DELIMITERS = frozenset(
+    "\"'`«»“”‘’‚‛„‟‹›()[]{}<>「」『』"
+)
+
+# Edge sentence punctuation that is safely stripped for greeting matching.
+_EDGE_PUNCTUATION = " \t\r\n.,;:!?¿¡—–-…"
 _INTERIOR_SEPARATORS = re.compile(r"[,;:]+")
 
 
@@ -105,9 +112,10 @@ class InteractionResult:
 def normalize_greeting(text: str) -> str:
     """Normalize a candidate greeting without removing meaningful content.
 
-    Case, accents, repeated whitespace and *outer* punctuation are normalized;
-    interior separator punctuation (``,`` ``;`` ``:``) is collapsed. Quotes are
-    preserved so a quoted greeting is not mistaken for a greeting.
+    Case, accents, repeated whitespace and *outer* sentence punctuation are
+    normalized; interior separator punctuation (``,`` ``;`` ``:``) is collapsed.
+    Quote and citation delimiters are preserved so a quoted or cited greeting is
+    not mistaken for a direct greeting.
     """
     if not isinstance(text, str):
         return ""
@@ -122,11 +130,12 @@ def normalize_greeting(text: str) -> str:
 def match_greeting(text: str) -> str | None:
     """Return the canonical greeting key for a pure greeting, else ``None``.
 
-    Only an exact whitelist match counts, so a greeting that carries any extra
-    instruction, negation, quote or content is never intercepted here.
+    Only an exact whitelist match counts and the normalized text must not contain
+    any citation delimiter, so a greeting that carries any extra instruction,
+    negation, quote or citation is never intercepted here.
     """
     key = normalize_greeting(text)
-    if key in _GREETING_RESPONSES:
+    if key in _GREETING_RESPONSES and not (_CITATION_DELIMITERS & set(key)):
         return key
     return None
 

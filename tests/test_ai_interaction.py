@@ -119,6 +119,70 @@ class GreetingRecognitionTests(unittest.TestCase):
         self.assertIsNone(match_greeting("holanda"))
         self.assertIsNone(match_greeting("hola enciende la luz"))
 
+    def test_plain_greetings_always_answered_without_provider(self):
+        for message in ("hola", "¡hola!", "HOLA", "hola ", " hola", "¡HOLA!"):
+            with self.subTest(message=message):
+                provider = SpyUnderstandingProvider(error=RuntimeError("unused"))
+                result = handle_interaction(
+                    message,
+                    provider=provider,
+                    context=decision_context(message),
+                    provider_id="spy-understanding",
+                    model_id="spy-test",
+                )
+                self.assertEqual(result.type, INTERACTION_TYPE_CONVERSATION)
+                self.assertIsNone(result.decision)
+                self.assertIs(result.commands_executed, False)
+                self.assertEqual(provider.calls, [])
+
+    def test_citation_delimiters_are_never_intercepted_as_greeting(self):
+        citations = (
+            "\u00abhola\u00bb",  # «hola»
+            "\u201chola\u201d",  # “hola”
+            '"hola"',  # "hola"
+            "'hola'",  # 'hola'
+            "\u2018hola\u2019",  # ‘hola’
+            "\u201ahola\u201b",  # ‚hola‛
+            "\u201ehola\u201d",  # „hola”
+            "\u2039hola\u203a",  # ‹hola›
+            "(hola)",
+            "[hola]",
+            "{hola}",
+            "<hola>",
+            "\u300chol\u00e9\u300d",  # 「holé」
+            "\u300ehola\u300f",  # 『hola』
+            "\u00abhola\u00bb!",  # «hola»!
+        )
+        for message in citations:
+            with self.subTest(message=message):
+                self.assertIsNone(match_greeting(message))
+                provider = SpyUnderstandingProvider(error=RuntimeError("unused"))
+                result = handle_interaction(
+                    message,
+                    provider=provider,
+                    context=decision_context(message),
+                    provider_id="spy-understanding",
+                    model_id="spy-test",
+                )
+                self.assertEqual(result.type, INTERACTION_TYPE_UNDERSTANDING)
+                self.assertEqual(provider.calls, [message])
+                self.assertIs(result.commands_executed, False)
+
+    def test_citation_wrapping_greeting_plus_instruction_is_not_intercepted(self):
+        message = "\u00abhola, enciende la luz\u00bb"
+        self.assertIsNone(match_greeting(message))
+        provider = SpyUnderstandingProvider(read_proposal())
+        result = handle_interaction(
+            message,
+            provider=provider,
+            context=decision_context(message),
+            provider_id="spy-understanding",
+            model_id="spy-test",
+        )
+        self.assertEqual(result.type, INTERACTION_TYPE_UNDERSTANDING)
+        self.assertEqual(provider.calls, [message])
+        self.assertIs(result.commands_executed, False)
+
 
 class DelegationTests(unittest.TestCase):
     def test_tc03_greeting_with_instruction_delegates_complete_text(self):
@@ -419,6 +483,30 @@ class InteractionSafetyBoundaryTests(unittest.TestCase):
     def test_greeting_never_requires_a_provider(self):
         result = handle_interaction("buenos dias")
         self.assertEqual(result.type, INTERACTION_TYPE_CONVERSATION)
+
+    def test_commands_executed_is_always_false(self):
+        cases = {
+            "hola": read_proposal(),
+            "\u00abhola\u00bb": read_proposal(),
+            "Hola, enciende power.switch del dispositivo lamp_1 con state true.": mutate_proposal(),
+            "Borra todos los dispositivos.": read_proposal(),
+            "Lee status.read del dispositivo lamp_1.": {"kind": "execute", "steps": []},
+        }
+        for message, output in cases.items():
+            with self.subTest(message=message):
+                result = handle_interaction(
+                    message,
+                    provider=SpyUnderstandingProvider(output),
+                    context=decision_context(message),
+                    provider_id="spy-understanding",
+                    model_id="spy-test",
+                )
+                self.assertIs(result.commands_executed, False)
+                payload = describe_interaction(result)
+                self.assertIs(payload["commands_executed"], False)
+                if result.decision is not None:
+                    self.assertIs(result.decision.commands_executed, False)
+                    self.assertIs(payload["decision"]["commands_executed"], False)
 
     def test_empty_message_is_rejected(self):
         for message in ("", "   ", "\n"):
