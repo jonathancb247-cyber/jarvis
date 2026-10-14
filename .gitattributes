@@ -1,0 +1,2 @@
+# Termux/shell scripts must keep LF line endings on every platform.
+*.sh text eol=lf

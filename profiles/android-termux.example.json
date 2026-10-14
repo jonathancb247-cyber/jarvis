@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "profile": "android-termux-lab",
+  "devices": [
+    {
+      "id": "lamp_1",
+      "name": "Simulated LED",
+      "type": "light",
+      "capabilities": [
+        {
+          "name": "power.switch",
+          "kind": "action",
+          "parameters": {
+            "state": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "constraints": {},
+          "availability_policy": {}
+        },
+        {
+          "name": "status.read",
+          "kind": "reading",
+          "parameters": {},
+          "constraints": {},
+          "availability_policy": {}
+        }
+      ],
+      "metadata": {}
+    }
+  ],
+  "http_bindings": [],
+  "runtime_options": {}
+}
