@@ -53,6 +53,15 @@ Future Android work must define authentication, authorization, device identity, 
 
 Not available yet.
 
+## Experimental On-Device Guide
+
+An experimental, non-executing runbook for running the Runtime API in
+interaction-only mode inside Termux and driving it from MacroDroid is available:
+
+- [Android / Termux + MacroDroid Integration](../integration/ANDROID_TERMUX_MACRODROID.md)
+
+This guide is Experimental and not yet physically validated.
+
 ## Future Work
 
 - Mobile adapter design.
