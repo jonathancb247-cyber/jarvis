@@ -751,17 +751,50 @@ class ObservedDriverBoundary:
         return self.inner.close()
 
 
+BROKER_CLIENT_ATTRIBUTES = (
+    "host",
+    "port",
+    "max_response_bytes",
+    "connect_timeout_seconds",
+)
+
+
+def broker_capable_client(driver):
+    """Return the composed client that can back an independent subscriber.
+
+    The fail-closed ``UnavailableMQTTClient`` composed when no broker host is
+    configured exposes only ``publish``/``wait_for_response``/``close``. It has
+    no broker coordinates, so it cannot back a real receive-only subscriber.
+    This returns ``None`` in that case rather than letting an ``AttributeError``
+    escape from the independent diagnostic path.
+    """
+    client = getattr(driver, "client", None)
+    if isinstance(client, ObservedMqttClient):
+        client = getattr(client, "_inner", None)
+    if client is None:
+        return None
+    if all(hasattr(client, name) for name in BROKER_CLIENT_ATTRIBUTES):
+        return client
+    return None
+
+
 def start_passive_ack_subscriber(runtime, window_seconds=DEFAULT_ACK_WINDOW_SECONDS):
-    """Use the composed broker/binding; create a distinct diagnostic client."""
+    """Use the composed broker/binding; create a distinct diagnostic client.
+
+    Returns ``None`` when the composed MQTT client is not broker-capable (for
+    example the fail-closed ``UnavailableMQTTClient`` used when no broker host
+    is configured). The independent subscriber is optional diagnostic tooling,
+    so an unconfigured broker degrades gracefully instead of raising.
+    """
     import paho.mqtt.client as mqtt
 
     capability = runtime.context.capability_registry.resolve(DEVICE_EXECUTE_COMMAND)
     drivers = capability.router.driver._drivers
     driver = drivers[guarded.DEVICE_ID]
+    inner = broker_capable_client(driver)
+    if inner is None:
+        return None
     binding = driver.binding_store.get(guarded.DEVICE_ID)
-    inner = driver.client
-    if isinstance(inner, ObservedMqttClient):
-        inner = inner._inner
     client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
                          client_id="jarvis-thesis-observer-" + uuid4().hex)
     subscriber = PassiveAckSubscriber(
@@ -1642,16 +1675,26 @@ def main(argv=None) -> int:
         observer_status = MQTT_OBSERVER_NOT_ATTACHED
     else:
         observer_status = attach_mqtt_observer(runtime, hub)
-    print("mqtt observer:", observer_status)
+    print("timing observer :", observer_status)
 
     passive_subscriber = None
-    if not args.dry_run and not args.no_mqtt_observer:
+    if args.dry_run or args.no_mqtt_observer:
+        print("ack subscriber  : skipped")
+    else:
         try:
             passive_subscriber = start_passive_ack_subscriber(runtime, args.ack_observation_window)
         except Exception as error:
             runtime.shutdown()
-            print("error: passive observer unavailable: %s" % type(error).__name__, file=sys.stderr)
+            print("error: passive ACK subscriber unavailable: %s" % type(error).__name__, file=sys.stderr)
             return 2
+        if passive_subscriber is None:
+            print(
+                "ack subscriber  : unavailable "
+                "(composed MQTT client is not broker-capable; no broker configured)",
+                file=sys.stderr,
+            )
+        else:
+            print("ack subscriber  : attached")
     campaign = PilotCampaign(
         harness=harness,
         hub=hub,

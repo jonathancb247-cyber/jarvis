@@ -9,6 +9,7 @@ State Store, firmware or hardware.
 from __future__ import annotations
 
 import json
+import paho.mqtt.client as paho_mqtt
 import tempfile
 import unittest
 from types import SimpleNamespace
@@ -36,7 +37,9 @@ from jarvis_core.mqtt_driver import (
     MQTTDeviceBindingStore,
     MQTTDeviceDriver,
     MQTTTimeoutError,
+    UnavailableMQTTClient,
 )
+from jarvis_core.mqtt_paho import PahoMQTTClient
 from jarvis_core.planner import Planner
 from jarvis_core.registry import CapabilityRegistry
 from jarvis_core.runtime import (
@@ -207,6 +210,39 @@ def make_fault_runtime(*, response=None, error=None, request_id="req-fixed"):
     evidence = guarded.Evidence()
     harness = guarded.GuardedHardwareValidation(runtime, evidence)
     return harness, runtime, mqtt_driver, client, bus
+
+
+def make_broker_runtime(client):
+    """Build a guarded MQTT runtime with an explicit composed client."""
+    bus = EventBus()
+    device_registry = DeviceRegistry()
+    device_registry.register(_device())
+    store = MQTTDeviceBindingStore()
+    store.register(
+        MQTTDeviceBinding(
+            device_id=DEVICE_ID,
+            request_topic="jarvis/request",
+            response_topic="jarvis/response",
+            allowed_capabilities=(CAPABILITY,),
+            allowed_response_keys=("state",),
+        )
+    )
+    mqtt_driver = MQTTDeviceDriver(store, client=client)
+    transport = DeviceTransportDriver()
+    transport.register(DEVICE_ID, mqtt_driver)
+    router = DeviceCommandRouter(
+        device_registry, transport, DeviceStateCoordinator()
+    )
+    capability_registry = CapabilityRegistry()
+    capability_registry.register(
+        DeviceRuntimeCapability.name, DeviceRuntimeCapability(router)
+    )
+    context = RuntimeContext(
+        event_bus=bus,
+        capability_registry=capability_registry,
+        device_registry=device_registry,
+    )
+    return Runtime(Planner(), context), mqtt_driver
 
 
 def valid_response(request_id, state):
@@ -994,6 +1030,48 @@ class IndependentAckTests(unittest.TestCase):
         self.assertTrue(record["observer_saw_response_driver_failed"])
         self.assertEqual(record["ack_observation_window_seconds"], 4)
         self.assertIsNone(record["latencies"]["mqtt_round_trip_ms"])
+
+
+class PassiveSubscriberStartupTests(unittest.TestCase):
+    def test_unavailable_client_degrades_without_attribute_error(self):
+        runtime, driver = make_broker_runtime(UnavailableMQTTClient())
+        hub = pilot.TimingHub()
+        self.assertEqual(
+            pilot.attach_mqtt_observer(runtime, hub), pilot.MQTT_OBSERVER_ATTACHED
+        )
+        # No broker is configured, so the independent subscriber must report
+        # itself unavailable instead of raising AttributeError on the missing
+        # broker-coordinate attributes of UnavailableMQTTClient.
+        self.assertIsNone(pilot.broker_capable_client(driver))
+        self.assertIsNone(pilot.start_passive_ack_subscriber(runtime, 0.01))
+        self.assertIs(
+            runtime.context.capability_registry.resolve(
+                pilot.DEVICE_EXECUTE_COMMAND
+            ).router.driver._drivers[DEVICE_ID],
+            driver,
+        )
+
+    def test_starts_against_real_paho_client(self):
+        runtime, _driver = make_broker_runtime(PahoMQTTClient(host="127.0.0.1"))
+        fake = FakeSubscriberClient()
+        with patch.object(paho_mqtt, "Client", return_value=fake) as factory:
+            subscriber = pilot.start_passive_ack_subscriber(runtime, 0.01)
+            self.assertIsInstance(subscriber, pilot.PassiveAckSubscriber)
+            self.assertEqual(
+                factory.call_args.kwargs.get("callback_api_version"),
+                paho_mqtt.CallbackAPIVersion.VERSION2,
+            )
+        self.assertIsNotNone(subscriber)
+        self.assertEqual(
+            fake.subscriptions,
+            [("jarvis/request", 0), ("jarvis/response", 0)],
+        )
+        drivers = (
+            runtime.context.capability_registry.resolve(pilot.DEVICE_EXECUTE_COMMAND)
+            .router.driver._drivers
+        )
+        self.assertIsInstance(drivers[DEVICE_ID], pilot.ObservedDriverBoundary)
+        subscriber.close()
 
 
 if __name__ == "__main__":
