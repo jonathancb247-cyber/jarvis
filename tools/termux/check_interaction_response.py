@@ -7,11 +7,14 @@ JSON boolean ``false``:
 - a nested ``commands_executed: false`` (for example inside ``decision``) does
   not satisfy the check;
 - a root ``true``, a missing field, a string (``"false"``), a number (``0``) or
-  malformed JSON are all rejected.
+  malformed JSON are all rejected;
+- duplicate keys are rejected in **every** object (root and nested), even when
+  the last value would otherwise pass, because a duplicate key means the
+  response is ambiguous.
 
 The checker is intentionally small and dependency-free so the smoke test can
 rely on real JSON parsing instead of substring matching. It never prints the
-response body, so it cannot leak captured content into logs.
+response body (or any key/value from it), so it cannot leak captured content.
 """
 
 from __future__ import annotations
@@ -20,6 +23,20 @@ import argparse
 import json
 import sys
 from pathlib import Path
+
+
+class DuplicateKeyError(ValueError):
+    """Raised when a JSON object contains the same key more than once."""
+
+
+def _reject_duplicate_keys(pairs):
+    """``object_pairs_hook`` applied by ``json`` to every JSON object."""
+    seen = set()
+    for key, _value in pairs:
+        if key in seen:
+            raise DuplicateKeyError
+        seen.add(key)
+    return dict(pairs)
 
 
 def _read_body(path_value: str) -> str:
@@ -49,7 +66,7 @@ def main(argv=None) -> int:
         prog="check_interaction_response.py",
         description=(
             "Validate that a JarvisOS interaction response has root-level "
-            "commands_executed === false."
+            "commands_executed === false and no duplicate JSON keys."
         ),
     )
     parser.add_argument(
@@ -77,7 +94,11 @@ def main(argv=None) -> int:
         return 1
 
     try:
-        payload = json.loads(raw)
+        payload = json.loads(raw, object_pairs_hook=_reject_duplicate_keys)
+    except DuplicateKeyError:
+        # Do not echo the offending key: it is response content.
+        print("invalid: response contains a duplicate JSON key", file=sys.stderr)
+        return 1
     except json.JSONDecodeError:
         print("invalid: response is not valid JSON", file=sys.stderr)
         return 1

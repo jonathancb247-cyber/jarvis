@@ -222,17 +222,30 @@ command route in interaction-only mode                              -> 404
   environment variable name, and the smoke test passes it to `curl` through a
   mode-`0600` config file, so the token value never appears in a process
   argument list.
-- Authenticated requests are refused unless the target is `127.0.0.1` or
-  `localhost` (loopback). Redirects are never followed (`--max-redirs 0`).
+- `JARVISOS_BASE` is validated **structurally** before anything else: only
+  `http://127.0.0.1[:PORT]` or `http://localhost[:PORT]` with a port in
+  `1..65535` is accepted. Userinfo (`user:pass@`), `@`, paths, queries,
+  fragments, non-HTTP schemes, ambiguous hosts (`127.0.0.1.evil.com`) and
+  malformed ports are rejected. The bearer token is not read or sent until this
+  validation has succeeded.
+- `curl` runs with `-q` (ignores `~/.curlrc`), `--noproxy '*'` and cleared proxy
+  environment variables, plus `--proto '=http'` and `--max-redirs 0`, so ambient
+  configuration cannot divert the request away from loopback or upgrade/redirect
+  it.
 - Every HTTP request has a connection timeout (`JARVISOS_CONNECT_TIMEOUT`,
   default 3s) and a total time budget (`JARVISOS_MAX_TIME`, default 10s). A
   timeout or transport error is reported as an explicit failure rather than a
   silent success.
+- `SIGINT`/`SIGTERM` stop the script: any in-flight request is killed, temporary
+  files are removed, no further requests are issued and the script exits
+  non-zero (130/143).
 - Where POSIX permissions apply (Termux/Linux), the token file must not be
   group- or world-readable; the scripts refuse to proceed otherwise and suggest
   `chmod 600`. On non-POSIX hosts (MINGW/MSYS/CYGWIN) this check is skipped.
 - The token generator validates an existing token before reuse and writes new
   tokens through a securely created temporary file that is atomically replaced.
+- The response checker rejects duplicate JSON keys in **every** object (root and
+  nested), so an ambiguous response can never be treated as a safe one.
 - The API binds to `127.0.0.1` only. Do not expose it to a LAN or the internet.
 - In interaction-only mode `POST /api/v1/commands` is disabled, so this path
   cannot trigger device execution.
@@ -271,12 +284,18 @@ They confirm that:
   existing token unless `--force` is given;
 - `check_interaction_response.py` accepts a root-level `commands_executed:
   false` and rejects a nested `false` alongside a root `true`, a missing field, a
-  string, a number and malformed JSON;
+  string, a number, malformed JSON and **duplicate keys** in any object;
 - the smoke test's strict validation rejects a crafted server response (nested
   `false`, root `true`) served over a real loopback socket;
-- the scripts keep the hardening properties (loopback guard, `--max-redirs 0`,
-  connection and total timeouts, `umask 077`, `trap` cleanup, `stat` permission
-  check) and never place the token in a `curl` argument list.
+- adversarial `JARVISOS_BASE` values (userinfo, `@`, paths, queries, fragments,
+  non-HTTP schemes, out-of-range or non-numeric ports, ambiguous hosts) are
+  refused before any request is sent, while valid loopback bases pass;
+- a `SIGTERM` during a slow request stops the script, leaves no temporary files
+  and issues no further requests (Bash + curl required);
+- the scripts keep the hardening properties (structural destination guard,
+  `-q`, `--noproxy '*'`, `--max-redirs 0`, `--proto '=http'`, connection and
+  total timeouts, `umask 077`, `trap` cleanup, `stat` permission check) and never
+  place the token in a `curl` argument list.
 
 ### Host-side smoke evidence (no device)
 
@@ -292,11 +311,17 @@ real interaction-only Runtime (profiles/android-termux.example.json):
 simulated server returning nested false / root true:
   same status codes, but the strict check FAILS               -> passed=5 failed=1 (exit 1)
 
-non-loopback JARVISOS_BASE:
-  refused before sending the token                            -> exit 1
+simulated server returning a duplicate root key (last value false):
+  the strict check FAILS on the duplicate key                 -> exit 1
+
+unsafe / adversarial JARVISOS_BASE (userinfo, path, bad port):
+  refused before any request, token never sent                -> exit 1
 
 loopback target that never responds (JARVISOS_MAX_TIME=1):
   every request fails explicitly ("request timed out")        -> exit 1
+
+SIGTERM during a slow (hanging) request:
+  stops promptly, cleans up temporaries, no further request   -> exit 143
 ```
 
 On-device validation inside Termux (package install, runtime start, Companion
