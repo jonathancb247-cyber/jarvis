@@ -8,6 +8,10 @@ the repository, and never printed. The default location is
 The generated token satisfies every constraint enforced by
 ``jarvis_core.api.interaction_service.InteractionAuth``: printable ASCII, no
 whitespace, and at least 16 characters long.
+
+An existing token is validated before it is reused: a stale or corrupted file is
+reported as an error instead of being silently trusted. New tokens are written
+through a securely created temporary file and atomically replaced into place.
 """
 
 from __future__ import annotations
@@ -16,19 +20,24 @@ import argparse
 import os
 import secrets
 import sys
+import tempfile
 from pathlib import Path
 
 MIN_INTERACTION_TOKEN_LENGTH = 16
 DEFAULT_TOKEN_PATH = Path.home() / ".jarvisos" / "interaction.token"
 
 
-def _validate_token(token: str) -> None:
+def _token_problem(token: str) -> str | None:
+    """Return a reason string when the token is unusable, else ``None``."""
+    if not token:
+        return "empty"
     if len(token) < MIN_INTERACTION_TOKEN_LENGTH:
-        raise SystemExit("error: generated token is too short.")
+        return f"shorter than {MIN_INTERACTION_TOKEN_LENGTH} characters"
     if not token.isascii() or not token.isprintable():
-        raise SystemExit("error: generated token must be printable ASCII.")
+        return "not printable ASCII"
     if any(character.isspace() for character in token):
-        raise SystemExit("error: generated token must not contain whitespace.")
+        return "contains whitespace"
+    return None
 
 
 def _chmod_best_effort(path: Path, mode: int) -> None:
@@ -42,6 +51,27 @@ def _chmod_best_effort(path: Path, mode: int) -> None:
 
 def _token_path(value: str) -> Path:
     return Path(value).expanduser()
+
+
+def _write_token_atomically(path: Path, token: str) -> None:
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=str(path.parent),
+        prefix=path.name + ".",
+        suffix=".tmp",
+    )
+    try:
+        with os.fdopen(descriptor, "w", encoding="ascii") as handle:
+            handle.write(token)
+            handle.flush()
+            os.fsync(handle.fileno())
+        _chmod_best_effort(Path(temporary_name), 0o600)
+        os.replace(temporary_name, path)
+    except BaseException:
+        try:
+            os.unlink(temporary_name)
+        except OSError:
+            pass
+        raise
 
 
 def main(argv=None) -> int:
@@ -69,16 +99,30 @@ def main(argv=None) -> int:
     _chmod_best_effort(path.parent, 0o700)
 
     if path.exists() and not args.force:
-        print(f"token already exists at {path} (use --force to replace)")
+        try:
+            existing = path.read_text(encoding="ascii").strip()
+        except (OSError, UnicodeDecodeError):
+            existing = ""
+        problem = _token_problem(existing)
+        if problem is not None:
+            print(
+                f"error: existing token at {path} is unusable ({problem}).",
+                file=sys.stderr,
+            )
+            print("re-run with --force to replace it.", file=sys.stderr)
+            return 1
+        print(f"existing token at {path} is valid; leaving it unchanged")
+        print("use --force to rotate it")
         return 0
 
     token = secrets.token_urlsafe(32)
-    _validate_token(token)
+    problem = _token_problem(token)
+    if problem is not None:
+        # Defence in depth: never write a token that the endpoint would reject.
+        print(f"error: generated token is unusable ({problem}).", file=sys.stderr)
+        return 1
 
-    temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(token, encoding="ascii")
-    _chmod_best_effort(temporary, 0o600)
-    os.replace(temporary, path)
+    _write_token_atomically(path, token)
 
     print(f"wrote interaction token to {path} (length={len(token)})")
     print("the token value is intentionally not printed")

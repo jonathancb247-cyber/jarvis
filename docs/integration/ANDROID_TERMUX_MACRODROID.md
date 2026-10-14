@@ -143,6 +143,12 @@ POST /api/v1/interactions "hola" + token    -> 200 (commands_executed=false)
 POST /api/v1/commands (interaction-only)    -> 404 (api_route_not_found)
 ```
 
+The greeting response is validated by `tools/termux/check_interaction_response.py`,
+which parses the JSON and requires the **root** `commands_executed` to be the
+JSON boolean `false`. A nested `commands_executed: false` (for example inside
+`decision`) never satisfies the check, and a root `true`, a missing field, a
+string, a number or malformed JSON make the smoke test fail.
+
 ### 7. Configure MacroDroid
 
 Create an HTTP Request action:
@@ -212,6 +218,21 @@ command route in interaction-only mode                              -> 404
 
 - The token file lives at `$HOME/.jarvisos/interaction.token`, outside the
   repository, and is never printed or committed.
+- The token is only ever read from a file. The launcher exports it through an
+  environment variable name, and the smoke test passes it to `curl` through a
+  mode-`0600` config file, so the token value never appears in a process
+  argument list.
+- Authenticated requests are refused unless the target is `127.0.0.1` or
+  `localhost` (loopback). Redirects are never followed (`--max-redirs 0`).
+- Every HTTP request has a connection timeout (`JARVISOS_CONNECT_TIMEOUT`,
+  default 3s) and a total time budget (`JARVISOS_MAX_TIME`, default 10s). A
+  timeout or transport error is reported as an explicit failure rather than a
+  silent success.
+- Where POSIX permissions apply (Termux/Linux), the token file must not be
+  group- or world-readable; the scripts refuse to proceed otherwise and suggest
+  `chmod 600`. On non-POSIX hosts (MINGW/MSYS/CYGWIN) this check is skipped.
+- The token generator validates an existing token before reuse and writes new
+  tokens through a securely created temporary file that is atomically replaced.
 - The API binds to `127.0.0.1` only. Do not expose it to a LAN or the internet.
 - In interaction-only mode `POST /api/v1/commands` is disabled, so this path
   cannot trigger device execution.
@@ -222,6 +243,9 @@ command route in interaction-only mode                              -> 404
 
 - Confirming the Termux Python environment requires running commands **inside
   Termux**; `adb` cannot read Termux private storage without root.
+- The Termux package from Google Play remains **without physical validation**.
+  Prefer installing Termux from F-Droid if a distribution change is acceptable;
+  the Play Store build is only assumed to work here and has not been validated.
 - MacroDroid (a Java/OkHttp app) may be subject to Android cleartext-traffic
   policy for `http://127.0.0.1`. Termux raw sockets are not affected.
 - The Companion must be running with a model loaded before non-greeting
@@ -238,6 +262,43 @@ The repository ships unit tests that validate these assets without a device:
 python -m unittest tests.test_android_termux_integration
 ```
 
-They confirm that the example profile is valid, offline-safe and free of
-addresses/secrets, that it builds a runtime without network access, and that the
-token tool writes a valid token without ever printing it.
+They confirm that:
+
+- the example profile is valid, offline-safe and free of addresses/secrets, and
+  builds a runtime without network access;
+- the token tool writes a valid token without ever printing it, is idempotent,
+  reuses an existing **valid** token, and refuses to replace an **invalid**
+  existing token unless `--force` is given;
+- `check_interaction_response.py` accepts a root-level `commands_executed:
+  false` and rejects a nested `false` alongside a root `true`, a missing field, a
+  string, a number and malformed JSON;
+- the smoke test's strict validation rejects a crafted server response (nested
+  `false`, root `true`) served over a real loopback socket;
+- the scripts keep the hardening properties (loopback guard, `--max-redirs 0`,
+  connection and total timeouts, `umask 077`, `trap` cleanup, `stat` permission
+  check) and never place the token in a `curl` argument list.
+
+### Host-side smoke evidence (no device)
+
+The smoke script was exercised on a Windows host using Git Bash (`MINGW64`) and
+loopback only. This validates the script and the validation logic; it does not
+validate the Termux build or the phone.
+
+```text
+real interaction-only Runtime (profiles/android-termux.example.json):
+  health 200, no-auth 401, bad-auth 401, greeting 200 (root commands_executed=false),
+  /api/v1/commands 404                                        -> passed=6 failed=0 (exit 0)
+
+simulated server returning nested false / root true:
+  same status codes, but the strict check FAILS               -> passed=5 failed=1 (exit 1)
+
+non-loopback JARVISOS_BASE:
+  refused before sending the token                            -> exit 1
+
+loopback target that never responds (JARVISOS_MAX_TIME=1):
+  every request fails explicitly ("request timed out")        -> exit 1
+```
+
+On-device validation inside Termux (package install, runtime start, Companion
+call) remains a separate manual gate.
+
