@@ -6,7 +6,9 @@
 #   1. GET  /api/v1/health                -> 200
 #   2. POST /api/v1/interactions (no auth) -> 401 api_unauthorized
 #   3. POST /api/v1/interactions (bad auth) -> 401 api_unauthorized
-#   4. POST /api/v1/interactions "hola"    -> 200, commands_executed=false
+#   4. POST /api/v1/interactions "hola"    -> 200, full conversation contract
+#      (schema_version=1, type=conversation, success=true, commands_executed=false,
+#       decision=null, error=null, non-empty response_text; no duplicate keys)
 #   5. POST /api/v1/commands (interaction-only) -> 404 api_route_not_found
 #
 # Security properties:
@@ -229,10 +231,10 @@ http_request "$TMP_DIR/greet.json" \
 expect_status "greeting accepted (200)" 200 "$(cat "$TMP_DIR/curl.code")"
 if [ "$interrupted" -eq 0 ] && [ "$CURL_RC" -eq 0 ]; then
   if python "$CHECKER" --file "$TMP_DIR/greet.json" --type conversation --expect-success true; then
-    echo "PASS: greeting response passes strict root-level commands_executed=false check"
+    echo "PASS: greeting response matches the documented conversation contract"
     passed=$((passed + 1))
   else
-    echo "FAIL: greeting response failed strict validation (root commands_executed must be false)"
+    echo "FAIL: greeting response does not match the documented conversation contract"
     failed=$((failed + 1))
   fi
 fi

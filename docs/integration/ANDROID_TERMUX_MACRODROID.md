@@ -144,10 +144,13 @@ POST /api/v1/commands (interaction-only)    -> 404 (api_route_not_found)
 ```
 
 The greeting response is validated by `tools/termux/check_interaction_response.py`,
-which parses the JSON and requires the **root** `commands_executed` to be the
-JSON boolean `false`. A nested `commands_executed: false` (for example inside
-`decision`) never satisfies the check, and a root `true`, a missing field, a
-string, a number or malformed JSON make the smoke test fail.
+which parses the JSON and checks the full documented conversation contract: root
+`commands_executed` must be the JSON boolean `false`, `schema_version` must be
+the integer `1`, `type` must be `conversation`, `success` must be `true`,
+`decision` and `error` must be `null`, and `response_text` must be a non-empty
+string. A nested `commands_executed: false` (for example inside `decision`) never
+satisfies the check; a root `true`, a missing, contradictory or wrong-typed
+field, duplicate keys and malformed JSON all make the smoke test fail.
 
 ### 7. Configure MacroDroid
 
@@ -282,11 +285,17 @@ They confirm that:
 - the token tool writes a valid token without ever printing it, is idempotent,
   reuses an existing **valid** token, and refuses to replace an **invalid**
   existing token unless `--force` is given;
-- `check_interaction_response.py` accepts a root-level `commands_executed:
-  false` and rejects a nested `false` alongside a root `true`, a missing field, a
-  string, a number, malformed JSON and **duplicate keys** in any object;
+- `check_interaction_response.py` requires the root `commands_executed` to be the
+  JSON boolean `false` and rejects **duplicate keys** in any object. When the
+  response is asserted to be a conversation (`--type conversation`), the full
+  documented contract from [Runtime API Routes](../api/ROUTES.md) is enforced:
+  `schema_version` is the integer `1` (`true` and `1.0` are rejected), `type` is
+  `"conversation"`, `success` is the boolean `true`, `decision` is `null`,
+  `error` is `null` and `response_text` is a non-empty string. Missing,
+  contradictory or wrong-typed fields fail the check;
 - the smoke test's strict validation rejects a crafted server response (nested
-  `false`, root `true`) served over a real loopback socket;
+  `false`, root `true`), a duplicate-key response and a contradictory greeting
+  (`schema_version: true`) served over a real loopback socket;
 - adversarial `JARVISOS_BASE` values (userinfo, `@`, paths, queries, fragments,
   non-HTTP schemes, out-of-range or non-numeric ports, ambiguous hosts) are
   refused before any request is sent, while valid loopback bases pass;
@@ -305,14 +314,17 @@ validate the Termux build or the phone.
 
 ```text
 real interaction-only Runtime (profiles/android-termux.example.json):
-  health 200, no-auth 401, bad-auth 401, greeting 200 (root commands_executed=false),
-  /api/v1/commands 404                                        -> passed=6 failed=0 (exit 0)
+  health 200, no-auth 401, bad-auth 401, greeting 200 (full conversation
+  contract), /api/v1/commands 404                        -> passed=6 failed=0 (exit 0)
 
 simulated server returning nested false / root true:
   same status codes, but the strict check FAILS               -> passed=5 failed=1 (exit 1)
 
 simulated server returning a duplicate root key (last value false):
   the strict check FAILS on the duplicate key                 -> exit 1
+
+simulated server returning a contradictory greeting (schema_version: true):
+  the strict check FAILS on the contract                      -> exit 1
 
 unsafe / adversarial JARVISOS_BASE (userinfo, path, bad port):
   refused before any request, token never sent                -> exit 1

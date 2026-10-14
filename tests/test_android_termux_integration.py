@@ -11,6 +11,7 @@ skipped otherwise.
 """
 
 import http.server
+import json
 import os
 import shutil
 import socket
@@ -120,8 +121,6 @@ class InteractionResponseCheckerTests(unittest.TestCase):
     def test_accepts_root_level_false(self):
         result = self._run(
             '{"type": "conversation", "success": true, "commands_executed": false}',
-            "--type",
-            "conversation",
             "--expect-success",
             "true",
         )
@@ -185,25 +184,129 @@ class InteractionResponseCheckerTests(unittest.TestCase):
 
     def test_accepts_unique_keys_with_nested_commands_executed(self):
         # Unique nested keys are fine: only the root value is authoritative.
+        # (The full conversation contract applies only with --type conversation.)
         result = self._run(
             '{"type": "conversation", "success": true, "commands_executed": false, '
             '"decision": {"commands_executed": false}}',
-            "--type",
-            "conversation",
             "--expect-success",
             "true",
         )
         self.assertEqual(result.returncode, 0, result.stderr)
 
 
-class SimulatedServerValidationTests(unittest.TestCase):
-    def test_checker_rejects_crafted_server_response(self):
-        body = (
-            b'{"type":"conversation","success":true,'
-            b'"decision":{"commands_executed":false},'
-            b'"commands_executed":true}'
-        )
+class ConversationContractTests(unittest.TestCase):
+    """Adversarial checks for the documented greeting contract (docs/api/ROUTES.md)."""
 
+    BASE = {
+        "schema_version": 1,
+        "type": "conversation",
+        "response_text": "Hola. ¿En qué puedo ayudarte?",
+        "commands_executed": False,
+        "decision": None,
+        "success": True,
+        "error": None,
+    }
+
+    def _run(self, payload):
+        text = payload if isinstance(payload, str) else json.dumps(payload)
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "response.json"
+            target.write_text(text, encoding="utf-8")
+            return subprocess.run(
+                [sys.executable, str(CHECKER), "--file", str(target),
+                 "--type", "conversation", "--expect-success", "true"],
+                capture_output=True,
+                text=True,
+            )
+
+    def _payload(self, **overrides):
+        data = dict(self.BASE)
+        data.update(overrides)
+        return data
+
+    def _payload_without(self, *keys):
+        data = dict(self.BASE)
+        for key in keys:
+            data.pop(key, None)
+        return data
+
+    def test_accepts_documented_contract(self):
+        result = self._run(self.BASE)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_rejects_missing_schema_version(self):
+        result = self._run(self._payload_without("schema_version"))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_schema_version_boolean_true(self):
+        # bool is an int subclass: `true` must not satisfy the integer 1.
+        result = self._run(self._payload(schema_version=True))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_schema_version_float(self):
+        result = self._run(self._payload(schema_version=1.0))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_schema_version_other_int(self):
+        result = self._run(self._payload(schema_version=2))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_success_false(self):
+        result = self._run(self._payload(success=False))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_success_string(self):
+        result = self._run(self._payload(success="true"))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_commands_executed_true(self):
+        result = self._run(self._payload(commands_executed=True))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_wrong_type(self):
+        result = self._run(self._payload(type="understanding"))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_decision_non_null(self):
+        result = self._run(self._payload(decision={"commands_executed": False}))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_decision_missing(self):
+        result = self._run(self._payload_without("decision"))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_error_non_null(self):
+        result = self._run(self._payload(error="api_request_invalid"))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_error_missing(self):
+        result = self._run(self._payload_without("error"))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_empty_response_text(self):
+        result = self._run(self._payload(response_text=""))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_missing_response_text(self):
+        result = self._run(self._payload_without("response_text"))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_non_string_response_text(self):
+        result = self._run(self._payload(response_text=123))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_duplicate_keys_even_with_valid_values(self):
+        raw = (
+            '{"schema_version":1,"type":"conversation","response_text":"Hola",'
+            '"commands_executed":false,"decision":null,"success":true,'
+            '"error":null,"error":null}'
+        )
+        result = self._run(raw)
+        self.assertNotEqual(result.returncode, 0)
+
+
+class SimulatedServerValidationTests(unittest.TestCase):
+    def _capture_via_server(self, body):
         class Handler(http.server.BaseHTTPRequestHandler):
             def do_GET(self):
                 self.send_response(200)
@@ -221,21 +324,41 @@ class SimulatedServerValidationTests(unittest.TestCase):
         try:
             url = f"http://127.0.0.1:{server.server_address[1]}/api/v1/interactions"
             with urllib.request.urlopen(url, timeout=5) as response:
-                captured = response.read()
+                return response.read()
         finally:
             server.shutdown()
             server.server_close()
             thread.join(timeout=5)
 
+    def _check(self, body):
+        captured = self._capture_via_server(body)
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "captured.json"
             target.write_bytes(captured)
-            result = subprocess.run(
-                [sys.executable, str(CHECKER), "--file", str(target)],
+            return subprocess.run(
+                [sys.executable, str(CHECKER), "--file", str(target),
+                 "--type", "conversation", "--expect-success", "true"],
                 capture_output=True,
                 text=True,
             )
-        self.assertNotEqual(result.returncode, 0)
+
+    def test_checker_rejects_crafted_server_response(self):
+        body = (
+            b'{"type":"conversation","success":true,'
+            b'"decision":{"commands_executed":false},'
+            b'"commands_executed":true}'
+        )
+        self.assertNotEqual(self._check(body).returncode, 0)
+
+    def test_checker_rejects_contradictory_greeting_from_server(self):
+        # Everything looks like a valid greeting except schema_version is `true`,
+        # which the previous checker accepted and the contract forbids.
+        body = (
+            b'{"schema_version":true,"type":"conversation",'
+            b'"response_text":"Hola","commands_executed":false,'
+            b'"decision":null,"success":true,"error":null}'
+        )
+        self.assertNotEqual(self._check(body).returncode, 0)
 
 
 class AndroidTermuxTokenToolTests(unittest.TestCase):
