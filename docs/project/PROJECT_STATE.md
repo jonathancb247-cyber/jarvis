@@ -37,7 +37,7 @@ For operational rules, read [../../AGENTS.md](../../AGENTS.md).
 - Phase 12.2 is completed: MQTT Request/Response Driver Minimal Implementation merged in PR #43.
 - MQTT Driver is Current / Experimental: synchronous request/response only with fake-client CI validation, per-device HTTP/MQTT composition, and Runtime shutdown ownership verified.
 - Phase 12.3 is completed: Local Mosquitto Integration Validation merged in PR #45.
-- Phase 12.4 is blocked until explicitly opened for ESP32 MQTT reference node work.
+- Phase 12.4 is in progress: ESP32 MQTT reference node implementation and physical validation are open in the current development task.
 - Voice Phase 1 is completed: Voice Experience Benchmark Harness - Fake Providers Only merged in PR #49.
 - Voice Phase 1 merge commit: `1b4c6f7821900a55681087ffe8c591fd92b3f6c3`.
 - Voice Phase 1 validation: 560 tests passing and default CLI smoke passed.
@@ -251,7 +251,7 @@ Independent transport line:
 - Phase 12.3 merge commit: `871f5f02cdac5f00741534d3f87e2a799d060417`.
 - Phase 12.3 validation: 538 tests passing, default CLI, HTTP profile CLI, API-only and Dashboard regressions passed.
 - Phase 12.3 validation remains local only: no ESP32 MQTT hardware, MQTT auth/TLS, retained state, subscriptions, retries, cloud broker or Dashboard MQTT UI.
-- Phase 12.4 - ESP32 MQTT Reference Node is blocked until explicitly opened.
+- Phase 12.4 - ESP32 MQTT Reference Node is in progress for separate ESP32 MQTT firmware, profile, documentation and physical validation.
 
 Independent voice line:
 
@@ -538,7 +538,7 @@ Not currently implemented:
 - migrations;
 - Dashboard validation beyond the Phase 11.4 profile-based hardware Dashboard validation;
 - MQTT over LAN, public MQTT, cloud MQTT, production broker deployment or broker UI;
-- ESP32 MQTT node validation;
+- completed ESP32 MQTT node validation;
 - MQTT subscriptions, retained messages, availability topics, TLS/authentication or credentials;
 - hardware discovery;
 - persistent trust;

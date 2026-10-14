@@ -108,11 +108,13 @@ CI uses fake MQTT clients only. Tests cover request envelope generation, respons
 
 Phase 12.3 adds a manual/local integration gate using a foreground Mosquitto broker bound to `127.0.0.1`, a Paho-backed client adapter, and a validation-only simulated MQTT lamp. See [MQTT Local Broker Validation](MQTT_VALIDATION.md).
 
+Phase 12.4 adds a separate ESP32 MQTT LED reference example and physical validation workflow. See [MQTT ESP32 Validation](MQTT_ESP32_VALIDATION.md). The ESP32 path remains unaccepted until the physical gate is completed and recorded.
+
 ## Not Implemented
 
-Phase 12.3 still does not implement:
+The current MQTT scope still does not implement:
 
-- ESP32 firmware;
+- completed ESP32 MQTT physical validation;
 - MQTT subscriptions;
 - retained messages;
 - LWT or availability topics;
@@ -122,5 +124,3 @@ Phase 12.3 still does not implement:
 - Dashboard MQTT UI;
 - MQTT API routes;
 - AI/provider changes.
-
-Phase 12.4 remains blocked until explicitly opened for ESP32 MQTT reference node work.

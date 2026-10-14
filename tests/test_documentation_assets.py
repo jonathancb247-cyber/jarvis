@@ -31,6 +31,7 @@ REQUIRED_FILES = [
     "docs/design/WEARABLE_BOUNDARY.md",
     "docs/drivers/MQTT_DRIVER.md",
     "docs/drivers/MQTT_VALIDATION.md",
+    "docs/drivers/MQTT_ESP32_VALIDATION.md",
     "docs/ai/README.md",
     "docs/ai/STRUCTURED_PLAN.md",
     "docs/ai/SAFE_CONTEXT.md",
@@ -69,12 +70,20 @@ REQUIRED_FILES = [
     "examples/http-led/protocol-examples/error-operation-not-supported.json",
     "profiles/http-lab.example.json",
     "profiles/mqtt-lab.example.json",
+    "profiles/mqtt-esp32.example.json",
     "tools/mosquitto-loopback.conf",
+    "tools/mosquitto-esp32-lan.example.conf",
     "examples/http-led/esp32-idf/CMakeLists.txt",
     "examples/http-led/esp32-idf/README.md",
     "examples/http-led/esp32-idf/main/CMakeLists.txt",
     "examples/http-led/esp32-idf/main/Kconfig.projbuild",
     "examples/http-led/esp32-idf/main/jarvis_http_led_main.c",
+    "examples/mqtt-led/README.md",
+    "examples/mqtt-led/esp32-idf/CMakeLists.txt",
+    "examples/mqtt-led/esp32-idf/README.md",
+    "examples/mqtt-led/esp32-idf/main/CMakeLists.txt",
+    "examples/mqtt-led/esp32-idf/main/Kconfig.projbuild",
+    "examples/mqtt-led/esp32-idf/main/jarvis_mqtt_led_main.c",
 ]
 
 
@@ -101,10 +110,31 @@ class DocumentationAssetsTests(unittest.TestCase):
             "../state/http-lab.state.json",
         )
 
+    def test_mqtt_esp32_profile_documents_lamp_contract(self):
+        profile = REPO_ROOT / "profiles" / "mqtt-esp32.example.json"
+        payload = json.loads(profile.read_text(encoding="utf-8"))
+        binding = payload["mqtt_bindings"][0]
+
+        self.assertEqual(payload["schema_version"], 1)
+        self.assertEqual(payload["profile"], "mqtt-esp32")
+        self.assertEqual(payload["devices"][0]["id"], "lamp_1")
+        self.assertEqual(payload["devices"][0]["type"], "light")
+        self.assertEqual(binding["transport"], "mqtt")
+        self.assertEqual(binding["request_topic"], "jarvis/lab/lamp_1/request")
+        self.assertEqual(binding["response_topic"], "jarvis/lab/lamp_1/response")
+        self.assertEqual(
+            binding["allowed_capabilities"],
+            ["power.switch", "status.read"],
+        )
+        self.assertEqual(binding["allowed_response_keys"], ["power"])
+        self.assertNotIn("#", binding["request_topic"])
+        self.assertNotIn("+", binding["response_topic"])
+
     def test_local_profiles_are_gitignored(self):
         gitignore = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
 
         self.assertIn("profiles/*.local.json", gitignore)
+        self.assertIn("tools/*.local.conf", gitignore)
 
     def test_source_of_truth_policy_is_documented(self):
         guide = REPO_ROOT / "docs" / "device-integration" / "README.md"
@@ -152,7 +182,7 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("Phase 12.3 - Local Mosquitto Integration Validation is completed", project_state)
         self.assertIn("real local loopback Mosquitto validation was completed", project_state)
         self.assertIn("validating a real loopback Mosquitto broker", project_state)
-        self.assertIn("Phase 12.4 is blocked", project_state)
+        self.assertIn("Phase 12.4 is in progress", project_state)
         self.assertIn("Cognitive Phase 1 is completed", project_state)
         self.assertIn("Deterministic Cognitive Vertical Slice merged in PR #58", project_state)
         self.assertIn("bc92c31992544f6d3824a7a1a39666b405977b23", project_state)
@@ -288,6 +318,7 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertNotIn("Phase 12.3 is pending merge", project_state)
         self.assertNotIn("local loopback Mosquitto validation is pending merge", project_state)
         self.assertNotIn("Phase 12.3 - Local Mosquitto Integration Validation is pending merge", project_state)
+        self.assertNotIn("Phase 12.4 is blocked", project_state)
         self.assertIn("80e83fc77534e96da74dc440942845f911ae47b4", project_state)
         self.assertIn("871f5f02cdac5f00741534d3f87e2a799d060417", project_state)
         self.assertIn("e374d30f2c28865c82fcb880f7079974ea1dfca4", project_state)
@@ -628,7 +659,8 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("request_id", text)
         self.assertIn("No AI provider", text)
         self.assertIn("MQTT Local Broker Validation", text)
-        self.assertIn("Phase 12.4 remains blocked", text)
+        self.assertIn("MQTT ESP32 Validation", text)
+        self.assertIn("completed ESP32 MQTT physical validation", text)
         self.assertNotIn("Mosquitto setup", text.split("## Testing", 1)[0])
 
     def test_mqtt_validation_documentation_states_loopback_boundary(self):
@@ -640,12 +672,54 @@ class DocumentationAssetsTests(unittest.TestCase):
         self.assertIn("python tools\\mqtt_simulated_lamp.py", text)
         self.assertIn("profiles\\mqtt-lab.example.json", text)
         self.assertIn("No AI provider", text)
-        self.assertIn("Phase 12.4 remains blocked", text)
+        self.assertIn("MQTT ESP32 Validation", text)
         self.assertNotIn("0.0.0.0", text.split("Do not use:", 1)[0])
+
+    def test_mqtt_esp32_validation_documents_physical_gate_and_non_goals(self):
+        guide = REPO_ROOT / "docs" / "drivers" / "MQTT_ESP32_VALIDATION.md"
+        text = guide.read_text(encoding="utf-8")
+
+        self.assertIn("examples/mqtt-led/esp32-idf/", text)
+        self.assertIn("profiles/mqtt-esp32.example.json", text)
+        self.assertIn("jarvis/lab/lamp_1/request", text)
+        self.assertIn("jarvis/lab/lamp_1/response", text)
+        self.assertIn("response envelope is the acknowledgement", text)
+        self.assertIn("Responses must be non-retained", text)
+        self.assertIn("state becomes stale/not current", text)
+        self.assertIn("No AI provider", text)
+        self.assertIn("no retained state", text)
+        self.assertIn("no LWT", text)
+        self.assertIn("no polling", text)
+        self.assertIn("no discovery", text)
+        self.assertIn("Anonymous LAN access is acceptable only for this controlled lab gate", text)
+
+    def test_mqtt_esp32_firmware_uses_required_topics_and_non_retained_publish(self):
+        firmware = (
+            REPO_ROOT
+            / "examples"
+            / "mqtt-led"
+            / "esp32-idf"
+            / "main"
+            / "jarvis_mqtt_led_main.c"
+        )
+        text = firmware.read_text(encoding="utf-8")
+
+        self.assertIn('"jarvis/lab/lamp_1/request"', text)
+        self.assertIn('"jarvis/lab/lamp_1/response"', text)
+        self.assertIn('"lamp_1"', text)
+        self.assertIn('"status.read"', text)
+        self.assertIn('"power.switch"', text)
+        self.assertIn("esp_mqtt_client_publish(client, RESPONSE_TOPIC, body, 0, 0, 0)", text)
+        self.assertNotIn("retain=true", text)
+        self.assertNotIn("will_topic", text)
 
 
 def _documentation_files():
-    for base in (REPO_ROOT / "docs", REPO_ROOT / "examples" / "http-led"):
+    for base in (
+        REPO_ROOT / "docs",
+        REPO_ROOT / "examples" / "http-led",
+        REPO_ROOT / "examples" / "mqtt-led",
+    ):
         yield from base.rglob("*.md")
 
 

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "profile": "mqtt-esp32",
+  "devices": [
+    {
+      "id": "lamp_1",
+      "name": "ESP32 MQTT LED",
+      "type": "light",
+      "capabilities": [
+        {
+          "name": "power.switch",
+          "kind": "action",
+          "parameters": {
+            "state": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "constraints": {},
+          "availability_policy": {}
+        },
+        {
+          "name": "status.read",
+          "kind": "reading",
+          "parameters": {},
+          "constraints": {},
+          "availability_policy": {}
+        }
+      ],
+      "metadata": {}
+    }
+  ],
+  "http_bindings": [],
+  "mqtt_bindings": [
+    {
+      "transport": "mqtt",
+      "device_id": "lamp_1",
+      "request_topic": "jarvis/lab/lamp_1/request",
+      "response_topic": "jarvis/lab/lamp_1/response",
+      "timeout_seconds": 2.0,
+      "allowed_capabilities": [
+        "power.switch",
+        "status.read"
+      ],
+      "allowed_response_keys": [
+        "power"
+      ]
+    }
+  ],
+  "runtime_options": {
+    "state_store_path": "../state/mqtt-esp32.state.json"
+  }
+}
