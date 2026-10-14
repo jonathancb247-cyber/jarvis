@@ -1,0 +1,21 @@
+apply plugin: "com.android.application"
+
+def receiverUrl = providers.gradleProperty("jarvis.receiverUrl").orElse("http://127.0.0.1:8766/wearable/presence")
+
+android {
+    namespace "dev.jarvisos.wearableprobe"
+    compileSdk 35
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    defaultConfig {
+        applicationId "dev.jarvisos.wearableprobe"
+        minSdk 30
+        targetSdk 35
+        versionCode 1
+        versionName "0.1"
+        buildConfigField "String", "RECEIVER_URL", "\"${receiverUrl.get()}\""
+    }
+}

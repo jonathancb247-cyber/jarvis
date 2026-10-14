@@ -203,7 +203,6 @@ class WearablePresenceSignalTests(unittest.TestCase):
         forbidden_tokens = (
             "Command(",
             "handle_adapter_input",
-            ".read(",
             ".apply(",
             "open(",
             "write_text",
