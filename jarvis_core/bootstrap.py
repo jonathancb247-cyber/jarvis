@@ -30,11 +30,13 @@ from jarvis_core.http_driver import (
     HttpDeviceDriver,
     UrllibHttpJsonTransport,
 )
+from jarvis_core.mqtt_deployment import MQTTDeploymentConfig
 from jarvis_core.mqtt_driver import (
     MQTTDeviceBindingStore,
     MQTTDeviceDriver,
     UnavailableMQTTClient,
 )
+from jarvis_core.mqtt_paho import PahoMQTTClient
 from jarvis_core.onboarding import SimulatedOnboardingProvider
 from jarvis_core.planner import Planner
 from jarvis_core.registry import CapabilityRegistry
@@ -113,7 +115,7 @@ def _driver_from_profile(profile, http_transport=None, mqtt_client=None):
         mqtt_binding_store.register(binding)
     mqtt_driver = MQTTDeviceDriver(
         mqtt_binding_store,
-        client=mqtt_client or UnavailableMQTTClient(),
+        client=_resolve_mqtt_client(mqtt_client),
     )
 
     driver = DeviceTransportDriver()
@@ -122,6 +124,30 @@ def _driver_from_profile(profile, http_transport=None, mqtt_client=None):
     for binding in mqtt_binding_store.list():
         driver.register(binding.device_id, mqtt_driver)
     return driver
+
+
+def _resolve_mqtt_client(mqtt_client, environ=None):
+    """Resolve the MQTT client used by the composed MQTT driver.
+
+    An explicitly injected client always wins. Otherwise the broker deployment
+    configuration decides:
+
+    - no broker host configured -> fail-closed ``UnavailableMQTTClient``,
+      which is the existing default behavior;
+    - broker host configured -> a real ``PahoMQTTClient`` for that broker.
+
+    Nothing is discovered and no address is assumed.
+    """
+    if mqtt_client is not None:
+        return mqtt_client
+    deployment = MQTTDeploymentConfig.from_environment(environ=environ)
+    if deployment is None:
+        return UnavailableMQTTClient()
+    return PahoMQTTClient(
+        host=deployment.host,
+        port=deployment.port,
+        allow_lan=deployment.allow_lan,
+    )
 
 
 def _build_runtime_with_driver(driver, devices=None, state_store=None):

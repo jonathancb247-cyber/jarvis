@@ -1,5 +1,6 @@
 """Paho-backed MQTT request/response client adapter for local validation."""
 
+import ipaddress
 import json
 import threading
 import time
@@ -39,9 +40,9 @@ class PahoMQTTClient:
         max_response_bytes=MAX_RESPONSE_BYTES,
         client_factory=None,
         client_id=None,
+        allow_lan=False,
     ):
-        if host not in LOOPBACK_HOSTS:
-            raise ValueError("PahoMQTTClient host must be loopback")
+        _validate_broker_host(host, allow_lan=allow_lan)
         if not isinstance(port, int) or port <= 0 or port > 65535:
             raise ValueError("PahoMQTTClient port is invalid")
         if connect_timeout_seconds <= 0:
@@ -52,6 +53,7 @@ class PahoMQTTClient:
             raise ValueError("PahoMQTTClient response limit is invalid")
         self.host = host
         self.port = port
+        self.allow_lan = bool(allow_lan)
         self.connect_timeout_seconds = float(connect_timeout_seconds)
         self.keepalive_seconds = int(keepalive_seconds)
         self.max_response_bytes = max_response_bytes
@@ -212,6 +214,35 @@ class PahoMQTTClient:
         with self._condition:
             self._pending[(topic, request_id)] = payload
             self._condition.notify_all()
+
+
+def _validate_broker_host(host, allow_lan=False):
+    """Fail-closed broker address policy.
+
+    Loopback is always allowed. A private/link-local LAN address requires
+    explicit opt-in through ``allow_lan``. Public Internet addresses are
+    rejected outright in this phase, and hostnames are rejected because they
+    cannot be classified without DNS resolution or discovery.
+    """
+    if not isinstance(host, str) or not host:
+        raise ValueError("PahoMQTTClient host must be a non-empty string")
+    if host.strip() != host:
+        raise ValueError("PahoMQTTClient host must not have outer spaces")
+    if host in LOOPBACK_HOSTS:
+        return None
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        raise ValueError(
+            "PahoMQTTClient host must be a loopback name or a literal IP address"
+        ) from None
+    if address.is_loopback:
+        return None
+    if address.is_global or not (address.is_private or address.is_link_local):
+        raise ValueError("PahoMQTTClient host must not be a public Internet address")
+    if not allow_lan:
+        raise ValueError("PahoMQTTClient LAN host requires explicit LAN authorization")
+    return None
 
 
 def _is_success_reason(reason_code):

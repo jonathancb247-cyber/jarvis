@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "profile": "mqtt-esp32",
+  "devices": [
+    {
+      "id": "relay_1",
+      "name": "ESP32 MQTT Relay",
+      "type": "light",
+      "capabilities": [
+        {
+          "name": "power.switch",
+          "kind": "action",
+          "parameters": {
+            "state": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "constraints": {},
+          "availability_policy": {}
+        }
+      ],
+      "metadata": {}
+    }
+  ],
+  "http_bindings": [],
+  "mqtt_bindings": [
+    {
+      "transport": "mqtt",
+      "device_id": "relay_1",
+      "request_topic": "jarvis/devices/relay_1/request",
+      "response_topic": "jarvis/devices/relay_1/response",
+      "timeout_seconds": 2.0,
+      "allowed_capabilities": [
+        "power.switch"
+      ],
+      "allowed_response_keys": [
+        "state"
+      ]
+    }
+  ],
+  "runtime_options": {
+    "state_store_path": "../state/mqtt-esp32.state.json"
+  }
+}
